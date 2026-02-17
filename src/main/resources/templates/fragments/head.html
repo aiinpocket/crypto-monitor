@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">BtcTrade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#F59E0B',
+                        'primary-hover': '#D97706',
+                        secondary: '#FBBF24',
+                        cta: '#8B5CF6',
+                        'cta-hover': '#7C3AED',
+                        'bg-dark': '#0F172A',
+                        'bg-card': '#1E293B',
+                        'bg-input': '#0F172A',
+                        'border-main': '#334155',
+                        'text-main': '#F8FAFC',
+                        'text-muted': '#94A3B8',
+                        'text-heading': '#E2E8F0',
+                        positive: '#22C55E',
+                        negative: '#EF4444',
+                        warning: '#F59E0B',
+                    },
+                    fontFamily: {
+                        heading: ['Orbitron', 'sans-serif'],
+                        body: ['Exo 2', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Exo 2', sans-serif; }
+        .font-heading { font-family: 'Orbitron', sans-serif; }
+        .glow-gold { text-shadow: 0 0 10px rgba(245,158,11,0.3); }
+        .glow-purple { box-shadow: 0 0 15px rgba(139,92,246,0.2); }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #1E293B; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+    </style>
+</head>
+</html>

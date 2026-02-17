@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head th:replace="~{fragments/head :: head('BtcTrade - 策略管理')}"></head>
+<body class="bg-bg-dark text-text-main min-h-screen">
+
+<!-- 頂部導航列 -->
+<div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+
+<!-- 主內容區 -->
+<main class="pt-[72px] px-6 pb-12 max-w-6xl mx-auto"
+      x-data="strategiesApp()">
+
+    <!-- 頁面標題 -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="font-heading text-2xl font-bold text-primary glow-gold">策略管理</h1>
+            <p class="text-text-muted text-sm mt-1">管理您的交易策略模板 — 克隆、調參、回測</p>
+        </div>
+    </div>
+
+    <!-- 策略模板卡片列表 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <template x-for="tmpl in templates" :key="tmpl.id">
+            <div class="bg-bg-card border border-border-main rounded-xl p-5 hover:border-primary/30 transition-all duration-200"
+                 :class="tmpl.systemDefault ? 'border-l-4 border-l-primary' : ''">
+                <!-- 標題列 -->
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-semibold text-text-heading text-base" x-text="tmpl.name"></h3>
+                        <span x-show="tmpl.systemDefault"
+                              class="text-[10px] px-2 py-0.5 bg-primary/20 text-primary rounded-full font-medium">系統預設</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="cloneTemplate(tmpl.id)"
+                                class="text-xs px-3 py-1.5 bg-cta/10 text-cta rounded-lg hover:bg-cta/20 transition-colors duration-200 cursor-pointer">
+                            克隆
+                        </button>
+                        <button x-show="!tmpl.systemDefault" @click="openEditor(tmpl)"
+                                class="text-xs px-3 py-1.5 bg-white/5 text-text-muted rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer">
+                            編輯
+                        </button>
+                        <button x-show="!tmpl.systemDefault" @click="deleteTemplate(tmpl.id)"
+                                class="text-xs px-3 py-1.5 bg-negative/10 text-negative rounded-lg hover:bg-negative/20 transition-colors duration-200 cursor-pointer">
+                            刪除
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 參數概覽 -->
+                <div class="grid grid-cols-3 gap-3 text-xs">
+                    <div class="bg-bg-input rounded-lg p-2">
+                        <span class="text-text-muted block">停損</span>
+                        <span class="text-text-main font-mono font-semibold" x-text="(tmpl.stopLossPct * 100).toFixed(1) + '%'"></span>
+                    </div>
+                    <div class="bg-bg-input rounded-lg p-2">
+                        <span class="text-text-muted block">移動停利</span>
+                        <span class="text-text-main font-mono font-semibold"
+                              x-text="(tmpl.trailingActivatePct * 100).toFixed(1) + '% / ' + (tmpl.trailingOffsetPct * 100).toFixed(1) + '%'"></span>
+                    </div>
+                    <div class="bg-bg-input rounded-lg p-2">
+                        <span class="text-text-muted block">最大持倉</span>
+                        <span class="text-text-main font-mono font-semibold" x-text="tmpl.maxHoldingDays + '天'"></span>
+                    </div>
+                    <div class="bg-bg-input rounded-lg p-2">
+                        <span class="text-text-muted block">EMA</span>
+                        <span class="text-text-main font-mono font-semibold" x-text="tmpl.emaShort + '/' + tmpl.emaLong"></span>
+                    </div>
+                    <div class="bg-bg-input rounded-lg p-2">
+                        <span class="text-text-muted block">RSI</span>
+                        <span class="text-text-main font-mono font-semibold" x-text="tmpl.rsiPeriod"></span>
+                    </div>
+                    <div class="bg-bg-input rounded-lg p-2">
+                        <span class="text-text-muted block">初始資金</span>
+                        <span class="text-text-main font-mono font-semibold" x-text="'$' + tmpl.initialCapital.toLocaleString()"></span>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- 空狀態 -->
+    <div x-show="templates.length === 0" class="text-center py-16 text-text-muted">
+        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
+        </svg>
+        <p>尚無策略模板</p>
+    </div>
+
+    <!-- 策略編輯彈窗 -->
+    <div x-show="showEditor" x-cloak
+         class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60"
+         @click.self="showEditor = false">
+        <div class="bg-bg-card border border-border-main rounded-xl p-6 w-[640px] max-h-[85vh] overflow-y-auto shadow-2xl scrollbar-thin">
+            <h3 class="font-heading text-lg font-bold text-text-main mb-6" x-text="'編輯：' + editing.name"></h3>
+
+            <!-- 模板名稱 -->
+            <div class="mb-4">
+                <label class="block text-xs font-medium text-text-muted mb-1">模板名稱</label>
+                <input type="text" x-model="editing.name"
+                       class="w-full px-3 py-2 bg-bg-input border border-border-main rounded-lg text-text-main text-sm focus:outline-none focus:border-primary transition-colors duration-200">
+            </div>
+
+            <!-- 技術指標參數 -->
+            <h4 class="text-sm font-semibold text-text-heading mt-6 mb-3 border-b border-border-main pb-2">技術指標</h4>
+            <div class="grid grid-cols-2 gap-4">
+                <template x-for="field in indicatorFields" :key="field.key">
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1" x-text="field.label"></label>
+                        <input type="number" x-model.number="editing[field.key]" :step="field.step || 1"
+                               class="w-full px-3 py-2 bg-bg-input border border-border-main rounded-lg text-text-main text-sm focus:outline-none focus:border-primary transition-colors duration-200">
+                    </div>
+                </template>
+            </div>
+
+            <!-- 風控參數 -->
+            <h4 class="text-sm font-semibold text-text-heading mt-6 mb-3 border-b border-border-main pb-2">風險控制</h4>
+            <div class="grid grid-cols-2 gap-4">
+                <template x-for="field in riskFields" :key="field.key">
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1" x-text="field.label"></label>
+                        <input type="number" x-model.number="editing[field.key]" :step="field.step || 1" :min="field.min || 0"
+                               class="w-full px-3 py-2 bg-bg-input border border-border-main rounded-lg text-text-main text-sm focus:outline-none focus:border-primary transition-colors duration-200">
+                    </div>
+                </template>
+            </div>
+
+            <!-- RSI 參數 -->
+            <h4 class="text-sm font-semibold text-text-heading mt-6 mb-3 border-b border-border-main pb-2">RSI 進出場</h4>
+            <div class="grid grid-cols-2 gap-4">
+                <template x-for="field in rsiFields" :key="field.key">
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1" x-text="field.label"></label>
+                        <input type="number" x-model.number="editing[field.key]" :step="field.step || 1" min="0" max="100"
+                               class="w-full px-3 py-2 bg-bg-input border border-border-main rounded-lg text-text-main text-sm focus:outline-none focus:border-primary transition-colors duration-200">
+                    </div>
+                </template>
+            </div>
+
+            <!-- 儲存按鈕 -->
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-border-main">
+                <button @click="showEditor = false"
+                        class="px-4 py-2 text-sm text-text-muted bg-white/5 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer">
+                    取消
+                </button>
+                <button @click="saveTemplate()"
+                        class="px-6 py-2 text-sm text-white bg-cta hover:bg-cta-hover rounded-lg transition-colors duration-200 cursor-pointer glow-purple">
+                    儲存變更
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作結果提示 -->
+    <div x-show="message" x-cloak
+         x-transition class="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium shadow-lg z-50"
+         :class="messageType === 'success' ? 'bg-positive/20 text-positive border border-positive/30' : 'bg-negative/20 text-negative border border-negative/30'"
+         x-text="message"></div>
+</main>
+
+<script>
+    function strategiesApp() {
+        return {
+            templates: [],
+            showEditor: false,
+            editing: {},
+            message: '', messageType: 'success',
+
+            /* 技術指標欄位定義 */
+            indicatorFields: [
+                { key: 'emaShort', label: 'EMA 短期', step: 1 },
+                { key: 'emaLong', label: 'EMA 長期', step: 1 },
+                { key: 'rsiPeriod', label: 'RSI 週期', step: 1 },
+                { key: 'macdShort', label: 'MACD 快線', step: 1 },
+                { key: 'macdLong', label: 'MACD 慢線', step: 1 },
+                { key: 'macdSignal', label: 'MACD 信號線', step: 1 },
+                { key: 'donchianEntry', label: '唐奇安進場', step: 1 },
+                { key: 'donchianExit', label: '唐奇安出場', step: 1 },
+            ],
+
+            /* 風控欄位定義 */
+            riskFields: [
+                { key: 'stopLossPct', label: '停損 (%)', step: 0.001 },
+                { key: 'maxHoldingDays', label: '最大持倉(天)', step: 1 },
+                { key: 'initialCapital', label: '初始資金 (USD)', step: 1000 },
+                { key: 'maxTradesPerDay', label: '每日最大交易', step: 1 },
+                { key: 'trailingActivatePct', label: '移動停利啟動 (%)', step: 0.001 },
+                { key: 'trailingOffsetPct', label: '移動停利偏移 (%)', step: 0.001 },
+                { key: 'timeStopDays', label: '時間止損(天)', step: 1 },
+                { key: 'cooldownDays', label: '冷卻天數', step: 1 },
+            ],
+
+            /* RSI 欄位定義 */
+            rsiFields: [
+                { key: 'rsiLongEntryMin', label: '做多進場 RSI 下限', step: 1 },
+                { key: 'rsiLongEntryMax', label: '做多進場 RSI 上限', step: 1 },
+                { key: 'rsiShortEntryMin', label: '做空進場 RSI 下限', step: 1 },
+                { key: 'rsiShortEntryMax', label: '做空進場 RSI 上限', step: 1 },
+                { key: 'rsiLongExitExtreme', label: '做多出場極端值', step: 1 },
+                { key: 'rsiShortExitExtreme', label: '做空出場極端值', step: 1 },
+            ],
+
+            async init() {
+                await this.loadTemplates();
+            },
+
+            async loadTemplates() {
+                try {
+                    const resp = await fetch('/api/user/strategies');
+                    if (resp.ok) this.templates = await resp.json();
+                } catch (e) {
+                    console.error('[策略管理] 載入模板失敗:', e);
+                }
+            },
+
+            async cloneTemplate(id) {
+                const name = prompt('請輸入新模板名稱:');
+                if (!name) return;
+                try {
+                    const resp = await fetch('/api/user/strategies/clone', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sourceId: id, name })
+                    });
+                    if (resp.ok) {
+                        this.showMsg('模板已克隆', 'success');
+                        await this.loadTemplates();
+                    } else {
+                        const err = await resp.json();
+                        this.showMsg(err.error || '克隆失敗', 'error');
+                    }
+                } catch (e) {
+                    this.showMsg('網路錯誤', 'error');
+                }
+            },
+
+            openEditor(tmpl) {
+                this.editing = JSON.parse(JSON.stringify(tmpl));
+                this.showEditor = true;
+            },
+
+            async saveTemplate() {
+                try {
+                    const resp = await fetch(`/api/user/strategies/${this.editing.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.editing)
+                    });
+                    if (resp.ok) {
+                        this.showEditor = false;
+                        this.showMsg('模板已更新', 'success');
+                        await this.loadTemplates();
+                    } else {
+                        const err = await resp.json();
+                        this.showMsg(err.error || '更新失敗', 'error');
+                    }
+                } catch (e) {
+                    this.showMsg('網路錯誤', 'error');
+                }
+            },
+
+            async deleteTemplate(id) {
+                if (!confirm('確定要刪除此策略模板嗎？此操作無法復原。')) return;
+                try {
+                    const resp = await fetch(`/api/user/strategies/${id}`, { method: 'DELETE' });
+                    if (resp.ok) {
+                        this.showMsg('模板已刪除', 'success');
+                        await this.loadTemplates();
+                    } else {
+                        const err = await resp.json();
+                        this.showMsg(err.error || '刪除失敗', 'error');
+                    }
+                } catch (e) {
+                    this.showMsg('網路錯誤', 'error');
+                }
+            },
+
+            showMsg(msg, type) {
+                this.message = msg;
+                this.messageType = type;
+                setTimeout(() => { this.message = ''; }, 3000);
+            }
+        };
+    }
+</script>
+</body>
+</html>

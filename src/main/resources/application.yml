@@ -1,0 +1,146 @@
+spring:
+  application:
+    name: BtcTrade
+
+  # ── 資料庫配置 ──
+  # 開發環境使用 Docker Compose 自動啟動的 PostgreSQL。
+  # 生產環境請透過環境變數 DB_USERNAME / DB_PASSWORD 覆蓋預設值。
+  datasource:
+    url: jdbc:postgresql://localhost:5432/btctrade
+    username: ${DB_USERNAME:btctrade}
+    password: ${DB_PASSWORD:btctrade_dev}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 500
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+
+  flyway:
+    enabled: false
+
+  quartz:
+    job-store-type: memory
+    properties:
+      org.quartz.threadPool.threadCount: 4
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid, email, profile
+        provider:
+          google:
+            user-name-attribute: sub
+
+  # ── 系統郵件 SMTP 配置（Gmail App Password） ──
+  # 用於通知系統向使用者發送交易訊號郵件
+  # SYSTEM_GMAIL_ADDRESS 和 SYSTEM_GMAIL_APP_PASSWORD 須設為環境變數
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SYSTEM_GMAIL_ADDRESS:${SYSTEM_GMAIL_ADDRESS}}
+    password: ${SYSTEM_GMAIL_APP_PASSWORD:changeme}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  docker:
+    compose:
+      lifecycle-management: start-and-stop
+
+binance:
+  api:
+    base-url: https://api.binance.com
+    klines-path: /api/v3/klines
+    default-symbol: BTCUSDT
+    rate-limit-ms: 200
+    ws-base-url: wss://stream.binance.com:9443
+    default-interval: 5m
+    exchange-info-path: /api/v3/exchangeInfo
+    delist-error-threshold: 3
+
+trading:
+  interval: 5m
+  strategy:
+    ema-short: 12
+    ema-long: 26
+    rsi-period: 14
+    macd-short: 12
+    macd-long: 26
+    macd-signal: 9
+    donchian-entry: 20
+    donchian-exit: 10
+  risk:
+    stop-loss-pct: 0.02
+    max-holding-days: 3
+    initial-capital: 10000.00
+    max-trades-per-day: 5
+    leverage: 1
+    trailing-activate-pct: 0.015
+    trailing-offset-pct: 0.003
+    time-stop-days: 1
+    cooldown-days: 0
+  rsi:
+    long-entry-min: 30
+    long-entry-max: 65
+    short-entry-min: 35
+    short-entry-max: 70
+    long-exit-extreme: 75
+    short-exit-extreme: 25
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,quartz
+
+# ── 日誌配置 ──
+# 按套件分層設定日誌等級，方便 K8s 部署時綁定不同 namespace 觀察特定模組。
+# 在 K8s 中可透過環境變數覆蓋，例如：
+#   LOGGING_LEVEL_COM_AIINPOCKET_BTCTRADE_SERVICE_NOTIFICATION=DEBUG
+logging:
+  level:
+    root: INFO
+    # 應用核心套件
+    com.aiinpocket.btctrade: INFO
+    # 策略引擎和回測（核心業務邏輯）
+    com.aiinpocket.btctrade.service.StrategyService: INFO
+    com.aiinpocket.btctrade.service.BacktestService: INFO
+    com.aiinpocket.btctrade.service.TradeExecutionService: INFO
+    # 通知系統（外部 API 呼叫，可能需要 DEBUG 排查連線問題）
+    com.aiinpocket.btctrade.service.notification: INFO
+    # 資料同步（Binance API 和 WebSocket）
+    com.aiinpocket.btctrade.service.BinanceApiService: INFO
+    com.aiinpocket.btctrade.service.BinanceWebSocketClient: INFO
+    com.aiinpocket.btctrade.service.HistoricalSyncService: INFO
+    # 認證和安全
+    com.aiinpocket.btctrade.security: INFO
+    # 降低第三方框架噪音
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+    org.quartz: WARN
+  pattern:
+    # 日誌格式包含線程名稱，便於追蹤多執行緒（hist-sync-, notify-, backtest-）
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

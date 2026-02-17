@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<aside th:fragment="sidebar(symbols, allSymbols, userSymbols, activeSymbol)"
+       class="fixed left-0 top-[57px] bottom-0 w-64 bg-bg-card border-r border-border-main overflow-y-auto scrollbar-thin"
+       x-data="sidebarData()">
+
+    <!-- 觀察清單 -->
+    <div class="p-4">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-bold text-text-muted uppercase tracking-wider">觀察清單</h2>
+            <button @click="openAddModal()"
+                    class="text-primary hover:text-primary-hover transition-colors duration-200 cursor-pointer"
+                    title="新增到觀察清單">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </button>
+        </div>
+
+        <!-- 符號列表 -->
+        <ul class="space-y-1">
+            <li th:each="ts : ${symbols}" class="group">
+                <a th:href="'/?symbol=' + ${ts.symbol}"
+                   class="flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 cursor-pointer"
+                   th:classappend="${ts.symbol == activeSymbol} ? 'bg-primary/10 border-l-2 border-primary text-primary' : 'hover:bg-white/5 text-text-main'"
+                   th:attrappend="class=${ts.syncStatus.name() == 'DELISTED'} ? ' opacity-50' : ''">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-semibold" th:text="${ts.symbol}">BTCUSDT</span>
+                        <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="text-xs text-negative">已下架</span>
+                        <span th:unless="${ts.syncStatus.name() == 'DELISTED'}" class="text-xs text-text-muted" th:text="${ts.displayName}">BTC/USDT</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- 同步狀態 -->
+                        <span th:if="${ts.syncStatus.name() == 'READY'}" class="w-2 h-2 rounded-full bg-positive"></span>
+                        <span th:if="${ts.syncStatus.name() == 'SYNCING'}" class="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
+                        <span th:if="${ts.syncStatus.name() == 'PENDING'}" class="w-2 h-2 rounded-full bg-text-muted"></span>
+                        <span th:if="${ts.syncStatus.name() == 'ERROR'}" class="w-2 h-2 rounded-full bg-negative"></span>
+                        <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="w-2 h-2 rounded-full bg-negative ring-1 ring-negative/50"></span>
+                        <!-- 即時價格（下架幣對不顯示） -->
+                        <span th:unless="${ts.syncStatus.name() == 'DELISTED'}" class="text-xs font-mono font-semibold text-primary" th:id="'price-' + ${ts.symbol}">--</span>
+                        <!-- 移除按鈕 -->
+                        <button class="opacity-0 group-hover:opacity-100 text-text-muted hover:text-negative transition-all duration-200 cursor-pointer"
+                                th:data-symbol="${ts.symbol}"
+                                onclick="event.preventDefault(); event.stopPropagation(); removeFromWatchlist(this.dataset.symbol);">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                </a>
+            </li>
+        </ul>
+
+        <div th:if="${#lists.isEmpty(symbols)}" class="text-center py-8 text-text-muted text-sm">
+            <svg class="w-8 h-8 mx-auto mb-2 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            尚無觀察幣對<br>
+            <button @click="openAddModal()" class="text-primary hover:underline mt-1 cursor-pointer">點此新增</button>
+        </div>
+    </div>
+
+    <!-- 全域幣對池 -->
+    <div class="p-4 border-t border-border-main">
+        <h2 class="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">全域幣對</h2>
+        <ul class="space-y-1">
+            <li th:each="ts : ${allSymbols}" class="flex items-center justify-between px-3 py-2 text-sm"
+                th:classappend="${ts.syncStatus.name() == 'DELISTED'} ? 'opacity-50' : ''">
+                <div class="flex items-center gap-2">
+                    <span th:if="${ts.syncStatus.name() == 'READY'}" class="w-1.5 h-1.5 rounded-full bg-positive"></span>
+                    <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="w-1.5 h-1.5 rounded-full bg-negative"></span>
+                    <span th:if="${ts.syncStatus.name() != 'READY' && ts.syncStatus.name() != 'DELISTED'}" class="w-1.5 h-1.5 rounded-full bg-text-muted"></span>
+                    <span class="text-text-muted" th:text="${ts.symbol}">BTCUSDT</span>
+                    <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="text-[10px] text-negative">下架</span>
+                </div>
+                <!-- 下架幣對顯示重新啟用按鈕 -->
+                <button th:if="${ts.syncStatus.name() == 'DELISTED'}"
+                        class="text-xs text-warning hover:text-primary cursor-pointer transition-colors duration-200"
+                        th:data-symbol="${ts.symbol}"
+                        onclick="reenableSymbol(this.dataset.symbol)">
+                    重新啟用
+                </button>
+                <button th:if="${ts.syncStatus.name() != 'DELISTED' && !#lists.contains(userSymbols, ts.symbol)}"
+                        class="text-xs text-cta hover:text-cta-hover cursor-pointer transition-colors duration-200"
+                        th:data-symbol="${ts.symbol}"
+                        onclick="addToWatchlist(this.dataset.symbol)">
+                    + 加入
+                </button>
+                <span th:if="${ts.syncStatus.name() != 'DELISTED' && #lists.contains(userSymbols, ts.symbol)}"
+                      class="text-xs text-positive">已加入</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 搜尋下拉式新增幣對對話框 -->
+    <div x-show="showAddModal" x-cloak
+         class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60"
+         @click.self="closeAddModal()">
+        <div class="bg-bg-card border border-border-main rounded-xl p-6 w-[420px] shadow-2xl">
+            <h3 class="font-heading text-lg font-bold text-text-main mb-4">新增追蹤幣對</h3>
+
+            <!-- 搜尋輸入框 -->
+            <div class="relative mb-3">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" x-model="searchQuery" @input="filterPairs()"
+                       placeholder="搜尋幣對（如 BTC、ETH、SOL）"
+                       class="w-full pl-10 pr-3 py-2.5 bg-bg-input border border-border-main rounded-lg text-text-main text-sm focus:outline-none focus:border-primary transition-colors duration-200 uppercase"
+                       x-ref="searchInput">
+            </div>
+
+            <!-- 載入狀態 -->
+            <div x-show="loading" class="text-center py-8 text-text-muted text-sm">
+                <svg class="w-6 h-6 mx-auto mb-2 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                正在載入可用幣對...
+            </div>
+
+            <!-- 錯誤訊息 -->
+            <div x-show="addError" class="text-negative text-xs mb-2 px-1" x-text="addError"></div>
+
+            <!-- 幣對列表 -->
+            <div x-show="!loading" class="max-h-72 overflow-y-auto scrollbar-thin border border-border-main rounded-lg">
+                <template x-if="filteredPairs.length === 0 && !loading">
+                    <div class="text-center py-6 text-text-muted text-sm">
+                        <template x-if="searchQuery.length > 0">
+                            <span>找不到符合的幣對</span>
+                        </template>
+                        <template x-if="searchQuery.length === 0">
+                            <span>輸入關鍵字搜尋幣對</span>
+                        </template>
+                    </div>
+                </template>
+                <template x-for="pair in filteredPairs" :key="pair.symbol">
+                    <button @click="selectPair(pair)"
+                            class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/5 transition-colors duration-200 cursor-pointer border-b border-border-main last:border-b-0"
+                            :class="pair.tracked ? 'opacity-50' : ''">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary"
+                                 x-text="pair.baseAsset.substring(0, Math.min(3, pair.baseAsset.length))"></div>
+                            <div class="text-left">
+                                <div class="text-sm font-semibold text-text-main" x-text="pair.symbol"></div>
+                                <div class="text-xs text-text-muted" x-text="pair.baseAsset + ' / USDT'"></div>
+                            </div>
+                        </div>
+                        <template x-if="pair.tracked">
+                            <span class="text-xs text-positive flex items-center gap-1">
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                已追蹤
+                            </span>
+                        </template>
+                        <template x-if="!pair.tracked">
+                            <span class="text-xs text-cta">+ 加入</span>
+                        </template>
+                    </button>
+                </template>
+            </div>
+
+            <!-- 結果計數 -->
+            <div x-show="!loading && filteredPairs.length > 0" class="text-xs text-text-muted mt-2 px-1">
+                顯示 <span x-text="filteredPairs.length"></span> / <span x-text="allPairs.length"></span> 個幣對
+            </div>
+
+            <div class="flex justify-end mt-4">
+                <button @click="closeAddModal()"
+                        class="px-4 py-2 text-sm text-text-muted bg-white/5 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        /* 已追蹤的全域幣對集合（用於在搜尋結果中標記） */
+        const trackedSymbolSet = new Set(/*[[${allSymbols.![symbol]}]]*/ []);
+        const userSymbolSet = new Set(/*[[${userSymbols}]]*/ []);
+
+        function sidebarData() {
+            return {
+                showAddModal: false,
+                searchQuery: '',
+                allPairs: [],
+                filteredPairs: [],
+                loading: false,
+                addError: '',
+
+                async openAddModal() {
+                    this.showAddModal = true;
+                    this.searchQuery = '';
+                    this.addError = '';
+                    this.filteredPairs = [];
+                    this.loading = true;
+
+                    try {
+                        const resp = await fetch('/api/symbols/available-pairs');
+                        if (!resp.ok) throw new Error('載入失敗');
+                        this.allPairs = (await resp.json()).map(p => ({
+                            ...p,
+                            tracked: trackedSymbolSet.has(p.symbol)
+                        }));
+                        this.filteredPairs = this.allPairs.slice(0, 50);
+                    } catch (e) {
+                        this.addError = '無法載入可用幣對';
+                        this.allPairs = [];
+                        this.filteredPairs = [];
+                    } finally {
+                        this.loading = false;
+                        this.$nextTick(() => this.$refs.searchInput?.focus());
+                    }
+                },
+
+                filterPairs() {
+                    const q = this.searchQuery.toUpperCase().trim();
+                    if (!q) {
+                        this.filteredPairs = this.allPairs.slice(0, 50);
+                        return;
+                    }
+                    this.filteredPairs = this.allPairs
+                        .filter(p => p.symbol.includes(q) || p.baseAsset.includes(q))
+                        .slice(0, 50);
+                },
+
+                async selectPair(pair) {
+                    if (pair.tracked) return;
+                    this.addError = '';
+
+                    try {
+                        // 先加入全域追蹤
+                        const resp = await fetch('/api/symbols', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ symbol: pair.symbol, displayName: pair.baseAsset + '/USDT' })
+                        });
+                        if (!resp.ok) {
+                            const err = await resp.json();
+                            // 如果已存在也沒關係，繼續加入觀察清單
+                            if (!err.error?.includes('已在追蹤')) {
+                                this.addError = err.error || '新增失敗';
+                                return;
+                            }
+                        }
+                        // 加入用戶觀察清單
+                        await fetch('/api/user/watchlist', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ symbol: pair.symbol })
+                        });
+                        this.closeAddModal();
+                        location.reload();
+                    } catch (e) {
+                        this.addError = '網路錯誤';
+                    }
+                },
+
+                closeAddModal() {
+                    this.showAddModal = false;
+                    this.searchQuery = '';
+                    this.addError = '';
+                }
+            };
+        }
+
+        async function addToWatchlist(symbol) {
+            const resp = await fetch('/api/user/watchlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol })
+            });
+            if (resp.ok) location.reload();
+        }
+
+        async function removeFromWatchlist(symbol) {
+            await fetch('/api/user/watchlist/' + symbol, { method: 'DELETE' });
+            location.reload();
+        }
+
+        async function reenableSymbol(symbol) {
+            try {
+                const resp = await fetch('/api/symbols/' + symbol + '/reenable', { method: 'POST' });
+                if (resp.ok) {
+                    location.reload();
+                } else {
+                    const err = await resp.json();
+                    alert(err.error || '重新啟用失敗');
+                }
+            } catch (e) {
+                alert('網路錯誤');
+            }
+        }
+    </script>
+</aside>
+</html>
