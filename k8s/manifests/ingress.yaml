@@ -9,12 +9,8 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
 spec:
   ingressClassName: nginx
-  tls:
-    - hosts:
-        - crypto-monitor.aiinpocket.com
-      secretName: cloudflare-origin-cert-aiinpocket
   rules:
-    - host: crypto-monitor.aiinpocket.com
+    - host: crypto-monitor.kubeinpocket.com
       http:
         paths:
           - path: /

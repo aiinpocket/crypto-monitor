@@ -237,7 +237,7 @@ LOGGING_LEVEL_COM_AIINPOCKET_BTCTRADE_SERVICE_NOTIFICATION=DEBUG
 
 ## K8s 部署
 
-**線上環境**: https://crypto-monitor.aiinpocket.com
+**線上環境**: https://crypto-monitor.kubeinpocket.com
 
 ### 架構
 
@@ -298,5 +298,5 @@ kubectl rollout restart deployment/crypto-monitor-api -n app
 
 生產環境需在 Google Cloud Console 新增：
 ```
-https://crypto-monitor.aiinpocket.com/login/oauth2/code/google
+https://crypto-monitor.kubeinpocket.com/login/oauth2/code/google
 ```

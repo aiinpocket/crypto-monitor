@@ -79,7 +79,7 @@ jobs:
       - name: Health check
         run: |
           for i in $(seq 1 5); do
-            RESP=$(curl -sfL https://crypto-monitor.aiinpocket.com/actuator/health 2>/dev/null || true)
+            RESP=$(curl -sfL https://crypto-monitor.kubeinpocket.com/actuator/health 2>/dev/null || true)
             if echo "$RESP" | grep -q '"status":"UP"'; then
               echo "Health check passed: $RESP"
               exit 0
