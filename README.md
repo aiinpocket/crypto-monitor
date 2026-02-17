@@ -48,18 +48,18 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 
 | 項目 | 技術 |
 |------|------|
-| 語言 | Java 21 (GraalVM CE) |
+| 語言 | Java 21 |
 | 框架 | Spring Boot 4.0.2, Spring Framework 7.x |
 | 認證 | Spring Security + Google OAuth2 |
-| 資料庫 | PostgreSQL 17 (Docker) |
+| 資料庫 | PostgreSQL 17 |
 | 技術分析 | ta4j 0.17+ |
 | 排程 | Quartz Scheduler (RAM JobStore) |
 | 即時通訊 | WebSocket (`/ws/trades`) |
 | 前端 | Thymeleaf + Tailwind CSS (CDN) + Alpine.js |
 | 序列化 | Jackson 3 (`tools.jackson`) |
 | 圖表 | Chart.js (CDN) |
-| 容器 | Docker Compose / Kubernetes |
-| CI/CD | GitHub Actions + ArgoCD |
+| 容器 | Docker Compose (開發) / Kubernetes (生產) |
+| CI/CD | GitHub Actions + ArgoCD (GitOps) |
 | 容器映像 | ghcr.io (GitHub Container Registry) |
 
 ## 架構
@@ -136,7 +136,7 @@ Binance WebSocket → KlineTick 事件 → 儲存 K 線
 |------|------|------|
 | `GOOGLE_CLIENT_SECRET` | **是** | Google OAuth2 Client Secret |
 | `DB_USERNAME` | 否 | PostgreSQL 用戶名（預設：btctrade） |
-| `DB_PASSWORD` | 否 | PostgreSQL 密碼（預設：btctrade_dev） |
+| `DB_PASSWORD` | 否 | PostgreSQL 密碼 |
 | `SYSTEM_GMAIL_ADDRESS` | 否 | 系統通知用 Gmail 地址 |
 | `SYSTEM_GMAIL_APP_PASSWORD` | 否 | Gmail App Password |
 
@@ -185,12 +185,12 @@ Google Console 設定 Redirect URI：`http://localhost:8080/login/oauth2/code/go
 
 | Method | Path | 說明 |
 |--------|------|------|
-| POST | `/api/backtest/run` | 系統回測（原始端點） |
+| POST | `/api/backtest/run` | 系統回測 |
 | GET/POST/DELETE | `/api/symbols` | 全域幣對管理 |
 | WS | `/ws/trades` | WebSocket 即時推送 |
 | GET | `/actuator/health` | 健康檢查 |
 
-## 設定
+## 策略參數
 
 所有交易參數在 `src/main/resources/application.yml` 的 `trading:` 區塊：
 
@@ -220,9 +220,74 @@ trading:
 | DataFetchJob | 每 5 分鐘 | Gap-fill 缺失的 K 線資料 |
 | TradingEvaluationJob | 每小時 | 備份策略評估（主要由事件驅動） |
 
+## 部署
+
+### Docker (開發)
+
+```bash
+# Spring Boot 會自動啟動 Docker Compose 中的 PostgreSQL
+./mvnw spring-boot:run
+```
+
+### Kubernetes (生產)
+
+本專案使用 GitOps 模式部署到 Kubernetes：
+
+```
+git push main
+    │
+    ├─ GitHub Actions ──▶ Build Docker Image ──▶ Push to ghcr.io
+    │                                                │
+    └─ k8s/manifests/ ◀── sed update image tag ◀─────┘
+           │
+           ▼ (ArgoCD auto-sync)
+    K8s Cluster
+    ├── crypto-monitor-api (Deployment + Service)
+    ├── crypto-monitor-postgres (Deployment + PVC)
+    ├── crypto-monitor-ingress (Ingress)
+    └── ConfigMap / Secrets
+```
+
+#### CI/CD 流程
+
+1. `git push main` 觸發 GitHub Actions
+2. 構建 Docker image 並推送到 ghcr.io
+3. 更新 `k8s/manifests/app.yaml` 中的 image tag 並 push `[skip ci]`
+4. ArgoCD 偵測 Git 變動，自動同步到 K8s
+5. Smoke test 驗證健康檢查端點
+
+#### K8s 資源
+
+| 資源 | 名稱 | 說明 |
+|------|------|------|
+| Deployment | `crypto-monitor-api` | Spring Boot 應用 |
+| Deployment | `crypto-monitor-postgres` | PostgreSQL 17 |
+| Service | `crypto-monitor-api` | port 80 → 8080 |
+| Service | `crypto-monitor-postgres` | port 5432 |
+| Ingress | `crypto-monitor-ingress` | HTTPS (Cloudflare TLS) |
+| PVC | `crypto-monitor-postgres-data` | 20Gi 持久卷 |
+| ConfigMap | `crypto-monitor-config` | 非敏感配置 |
+| Secret | `crypto-monitor-secrets` | OAuth + DB 密碼 |
+
+#### K8s Spring Profile
+
+生產環境使用 `application-k8s.yml`（`SPRING_PROFILES_ACTIVE=k8s`），覆蓋：
+- 資料庫連線指向 K8s 內部 Service
+- 禁用 Docker Compose 自動啟動
+- 禁用 Mail Health Indicator（避免 liveness probe 因 SMTP 配置缺失而失敗）
+- 啟用 Prometheus metrics endpoint
+
+#### 自行部署
+
+1. 建立 K8s namespace 和 secrets
+2. 設定 ArgoCD Application 指向 `k8s/manifests/` 目錄
+3. 設定 GitHub Actions secrets（`GH_PAT` 用於 push image tag 回 repo）
+4. 設定 ghcr.io imagePullSecret
+5. 在 Google Cloud Console 新增生產環境的 OAuth Redirect URI
+
 ## 日誌配置
 
-日誌按套件分層設定，線程名前綴便於 K8s 環境過濾：
+日誌按套件分層設定，線程名前綴便於環境過濾：
 
 ```
 hist-sync-*  → 歷史資料同步
@@ -235,68 +300,6 @@ backtest-*   → 回測計算
 LOGGING_LEVEL_COM_AIINPOCKET_BTCTRADE_SERVICE_NOTIFICATION=DEBUG
 ```
 
-## K8s 部署
+## License
 
-**線上環境**: https://crypto-monitor.kubeinpocket.com
-
-### 架構
-
-```
-GitHub (main branch)
-    │
-    ├─ GitHub Actions ──▶ Build Docker Image ──▶ Push to ghcr.io
-    │                                                │
-    └─ k8s/manifests/ ◀── sed update image tag ◀─────┘
-           │
-           ▼ (ArgoCD auto-sync)
-    K8s Cluster (namespace: app)
-    ├── crypto-monitor-api (Deployment)
-    ├── crypto-monitor-postgres (Deployment + PVC)
-    ├── crypto-monitor-ingress (Ingress + TLS)
-    └── Secrets / ConfigMap
-```
-
-### CI/CD 流程
-
-1. 開發者 `git push main`
-2. GitHub Actions 自動構建 Docker image 並推送到 ghcr.io
-3. Actions 更新 `k8s/manifests/app.yaml` 中的 image tag 並 push `[skip ci]`
-4. ArgoCD 偵測 Git 變動，自動同步到 K8s
-5. Smoke test 驗證健康檢查端點
-
-### K8s 資源
-
-| 資源 | 名稱 | 說明 |
-|------|------|------|
-| Namespace | `app` | 應用共用命名空間 |
-| Deployment | `crypto-monitor-api` | Spring Boot 應用 |
-| Deployment | `crypto-monitor-postgres` | PostgreSQL 17 |
-| Service | `crypto-monitor-api` | 內部 port 80 → 8080 |
-| Service | `crypto-monitor-postgres` | 內部 port 5432 |
-| Ingress | `crypto-monitor-ingress` | TLS + Cloudflare |
-| PVC | `crypto-monitor-postgres-data` | 20Gi NFS 持久卷 |
-| ConfigMap | `crypto-monitor-config` | 非敏感配置 |
-| Secret | `crypto-monitor-secrets` | OAuth + DB 密碼 |
-
-### K8s 常用命令
-
-```bash
-# 查看 Pod 狀態
-kubectl get pods -n app
-
-# 查看應用日誌
-kubectl logs -n app deployment/crypto-monitor-api -f
-
-# 查看 ArgoCD 同步狀態
-kubectl get application crypto-monitor -n argocd
-
-# 手動重啟
-kubectl rollout restart deployment/crypto-monitor-api -n app
-```
-
-### Google OAuth2 Redirect URI
-
-生產環境需在 Google Cloud Console 新增：
-```
-https://crypto-monitor.kubeinpocket.com/login/oauth2/code/google
-```
+MIT
