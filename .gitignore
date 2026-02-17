@@ -33,5 +33,6 @@ build/
 .vscode/
 
 .idea/
+CLAUDE.md
 .mvn
 target
