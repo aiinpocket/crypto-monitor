@@ -7,7 +7,7 @@
 <div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
 
 <!-- 主內容區 -->
-<main class="pt-[72px] px-6 pb-12 max-w-6xl mx-auto"
+<main class="pt-[72px] px-6 pb-12 max-w-7xl mx-auto"
       x-data="strategiesApp()">
 
     <!-- 頁面標題 -->
@@ -84,6 +84,91 @@
             <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
         </svg>
         <p>尚無策略模板</p>
+    </div>
+
+    <!-- ===== 績效對比表格 ===== -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="font-heading text-xl font-bold text-text-heading">績效對比</h2>
+                <p class="text-text-muted text-xs mt-1">基準: BTCUSDT | 每 4 小時自動更新</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span x-show="perfLoading" class="text-xs text-text-muted animate-pulse">計算中...</span>
+                <button @click="refreshAllPerformance()"
+                        :disabled="perfLoading"
+                        class="text-xs px-4 py-2 bg-cta/10 text-cta rounded-lg hover:bg-cta/20 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    重新計算
+                </button>
+            </div>
+        </div>
+
+        <!-- 績效指標選擇 -->
+        <div class="flex gap-2 mb-3">
+            <template x-for="m in metricOptions" :key="m.key">
+                <button @click="selectedMetric = m.key"
+                        class="text-xs px-3 py-1.5 rounded-lg transition-colors duration-200 cursor-pointer"
+                        :class="selectedMetric === m.key
+                            ? 'bg-primary/20 text-primary border border-primary/30'
+                            : 'bg-white/5 text-text-muted hover:bg-white/10 border border-transparent'"
+                        x-text="m.label"></button>
+            </template>
+        </div>
+
+        <!-- 表格容器 (水平滾動) -->
+        <div class="bg-bg-card border border-border-main rounded-xl overflow-hidden"
+             x-show="perfSummaries.length > 0">
+            <div class="overflow-x-auto scrollbar-thin">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="border-b border-border-main">
+                            <th class="sticky left-0 z-10 bg-bg-card px-4 py-3 text-left text-text-muted font-medium min-w-[160px]">策略</th>
+                            <template x-for="col in periodColumns" :key="col.key">
+                                <th class="px-3 py-3 text-right text-text-muted font-medium min-w-[90px] whitespace-nowrap" x-text="col.label"></th>
+                            </template>
+                            <th class="px-3 py-3 text-right text-text-muted font-medium min-w-[100px]">未實現 P&amp;L</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="s in perfSummaries" :key="s.templateId">
+                            <tr class="border-b border-border-main/50 hover:bg-white/[0.02] transition-colors">
+                                <!-- 策略名 (sticky) -->
+                                <td class="sticky left-0 z-10 bg-bg-card px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-medium text-text-heading truncate max-w-[140px]" x-text="s.templateName"></span>
+                                        <span x-show="s.systemDefault"
+                                              class="text-[9px] px-1.5 py-0.5 bg-primary/15 text-primary rounded-full shrink-0">預設</span>
+                                    </div>
+                                </td>
+                                <!-- 各時段指標 -->
+                                <template x-for="col in periodColumns" :key="col.key">
+                                    <td class="px-3 py-3 text-right font-mono"
+                                        :class="getCellColor(getMetricValue(s, col.key, selectedMetric))">
+                                        <span x-text="formatMetric(getMetricValue(s, col.key, selectedMetric), selectedMetric)"></span>
+                                    </td>
+                                </template>
+                                <!-- 未實現 P&L -->
+                                <td class="px-3 py-3 text-right font-mono">
+                                    <span x-html="formatUnrealized(s)"></span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <!-- 最後更新時間 -->
+            <div class="px-4 py-2 border-t border-border-main/50 text-[10px] text-text-muted">
+                <span x-show="lastComputedTime">最後更新: <span x-text="lastComputedTime"></span></span>
+                <span x-show="!lastComputedTime">尚未計算 — 請點擊「重新計算」</span>
+            </div>
+        </div>
+
+        <!-- 績效表空狀態 -->
+        <div x-show="perfSummaries.length === 0 && !perfLoading"
+             class="bg-bg-card border border-border-main rounded-xl p-8 text-center text-text-muted">
+            <p class="text-sm mb-2">尚無績效數據</p>
+            <p class="text-xs">點擊「重新計算」開始計算策略績效</p>
+        </div>
     </div>
 
     <!-- 策略編輯彈窗 -->
@@ -165,6 +250,33 @@
             editing: {},
             message: '', messageType: 'success',
 
+            // 績效對比相關
+            perfSummaries: [],
+            perfLoading: false,
+            selectedMetric: 'totalReturn',
+            lastComputedTime: '',
+
+            /* 績效指標選項 */
+            metricOptions: [
+                { key: 'totalReturn', label: '累計報酬' },
+                { key: 'annualizedReturn', label: '年化報酬' },
+                { key: 'winRate', label: '勝率' },
+                { key: 'maxDrawdown', label: '最大回撤' },
+                { key: 'sharpeRatio', label: 'Sharpe' },
+                { key: 'totalTrades', label: '交易數' },
+            ],
+
+            /* 時段欄位 — 與後端 PerformancePeriod enum 順序對應 */
+            periodColumns: [
+                { key: 'SINCE_2021', label: '2021至今' },
+                { key: 'RECENT_5Y', label: '近5年' },
+                { key: 'RECENT_3Y', label: '近3年' },
+                { key: 'RECENT_1Y', label: '近1年' },
+                { key: 'RECENT_6M', label: '近6月' },
+                { key: 'RECENT_3M', label: '近3月' },
+                { key: 'RECENT_1M', label: '近1月' },
+            ],
+
             /* 技術指標欄位定義 */
             indicatorFields: [
                 { key: 'emaShort', label: 'EMA 短期', step: 1 },
@@ -201,6 +313,7 @@
 
             async init() {
                 await this.loadTemplates();
+                await this.loadPerformance();
             },
 
             async loadTemplates() {
@@ -209,6 +322,114 @@
                     if (resp.ok) this.templates = await resp.json();
                 } catch (e) {
                     console.error('[策略管理] 載入模板失敗:', e);
+                }
+            },
+
+            async loadPerformance() {
+                try {
+                    const resp = await fetch('/api/user/strategies/performance');
+                    if (resp.ok) {
+                        this.perfSummaries = await resp.json();
+                        // 計算最後更新時間
+                        const times = this.perfSummaries
+                            .filter(s => s.lastComputedAt)
+                            .map(s => new Date(s.lastComputedAt));
+                        if (times.length > 0) {
+                            const latest = new Date(Math.max(...times));
+                            this.lastComputedTime = latest.toLocaleString('zh-TW', {
+                                year: 'numeric', month: '2-digit', day: '2-digit',
+                                hour: '2-digit', minute: '2-digit'
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error('[策略管理] 載入績效失敗:', e);
+                }
+            },
+
+            /** 從績效摘要中取得指定時段的指定指標值 */
+            getMetricValue(summary, periodKey, metricKey) {
+                const period = summary.periods?.find(p => p.periodKey === periodKey);
+                if (!period) return null;
+                return period[metricKey];
+            },
+
+            /** 格式化指標值 */
+            formatMetric(value, metricKey) {
+                if (value === null || value === undefined) return '-';
+                const num = Number(value);
+                if (isNaN(num)) return '-';
+
+                switch (metricKey) {
+                    case 'totalReturn':
+                    case 'annualizedReturn':
+                    case 'maxDrawdown':
+                        return (num * 100).toFixed(1) + '%';
+                    case 'winRate':
+                        return (num * 100).toFixed(1) + '%';
+                    case 'sharpeRatio':
+                        return num.toFixed(2);
+                    case 'totalTrades':
+                        return Math.round(num).toString();
+                    default:
+                        return num.toFixed(2);
+                }
+            },
+
+            /** 根據數值正負返回顏色 class */
+            getCellColor(value) {
+                if (value === null || value === undefined) return 'text-text-muted';
+                const num = Number(value);
+                if (isNaN(num)) return 'text-text-muted';
+
+                // maxDrawdown 本身是負數，用絕對值比較
+                if (this.selectedMetric === 'maxDrawdown') {
+                    const abs = Math.abs(num);
+                    if (abs > 0.25) return 'text-red-400';
+                    if (abs > 0.15) return 'text-yellow-400';
+                    return 'text-green-400';
+                }
+
+                if (this.selectedMetric === 'totalTrades') return 'text-text-main';
+
+                if (num > 0) return 'text-green-400';
+                if (num < 0) return 'text-red-400';
+                return 'text-text-muted';
+            },
+
+            /** 格式化未實現 P&L 欄位 */
+            formatUnrealized(summary) {
+                // 從最短時段 (RECENT_1M) 取未實現損益
+                const period = summary.periods?.find(p => p.periodKey === 'RECENT_1M');
+                if (!period || period.unrealizedPnlPct === null || period.unrealizedPnlPct === undefined) {
+                    return '<span class="text-text-muted">-</span>';
+                }
+                const pct = (Number(period.unrealizedPnlPct) * 100).toFixed(2);
+                const dir = period.unrealizedDirection === 'LONG' ? 'L' : 'S';
+                const color = Number(period.unrealizedPnlPct) >= 0 ? 'text-green-400' : 'text-red-400';
+                const sign = Number(period.unrealizedPnlPct) >= 0 ? '+' : '';
+                return `<span class="${color}">${dir} ${sign}${pct}%</span>`;
+            },
+
+            /** 觸發所有模板績效重算 */
+            async refreshAllPerformance() {
+                this.perfLoading = true;
+                try {
+                    const resp = await fetch('/api/user/strategies/refresh-all-performance', { method: 'POST' });
+                    if (resp.ok) {
+                        this.showMsg('績效計算已排入佇列，請稍後重新整理', 'success');
+                        // 延遲重新載入績效
+                        setTimeout(async () => {
+                            await this.loadPerformance();
+                            this.perfLoading = false;
+                        }, 5000);
+                    } else {
+                        this.perfLoading = false;
+                        this.showMsg('觸發績效計算失敗', 'error');
+                    }
+                } catch (e) {
+                    this.perfLoading = false;
+                    this.showMsg('網路錯誤', 'error');
                 }
             },
 
@@ -247,7 +468,7 @@
                     });
                     if (resp.ok) {
                         this.showEditor = false;
-                        this.showMsg('模板已更新', 'success');
+                        this.showMsg('模板已更新，績效將自動重算', 'success');
                         await this.loadTemplates();
                     } else {
                         const err = await resp.json();
@@ -265,6 +486,7 @@
                     if (resp.ok) {
                         this.showMsg('模板已刪除', 'success');
                         await this.loadTemplates();
+                        await this.loadPerformance();
                     } else {
                         const err = await resp.json();
                         this.showMsg(err.error || '刪除失敗', 'error');

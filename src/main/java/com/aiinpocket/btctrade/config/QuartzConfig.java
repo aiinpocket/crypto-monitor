@@ -1,6 +1,7 @@
 package com.aiinpocket.btctrade.config;
 
 import com.aiinpocket.btctrade.job.DataFetchJob;
+import com.aiinpocket.btctrade.job.PerformanceComputeJob;
 import com.aiinpocket.btctrade.job.TradingEvaluationJob;
 import org.quartz.*;
 import org.springframework.context.annotation.Bean;
@@ -42,6 +43,24 @@ public class QuartzConfig {
                 .forJob(tradingEvaluationJobDetail)
                 .withIdentity("tradingEvalTrigger", "trading")
                 .withSchedule(CronScheduleBuilder.cronSchedule("0 0 * * * ?"))
+                .build();
+    }
+
+    // PerformanceComputeJob：每 4 小時計算所有策略模板的績效指標
+    @Bean
+    public JobDetail performanceComputeJobDetail() {
+        return JobBuilder.newJob(PerformanceComputeJob.class)
+                .withIdentity("performanceComputeJob", "trading")
+                .storeDurably()
+                .build();
+    }
+
+    @Bean
+    public Trigger performanceComputeTrigger(JobDetail performanceComputeJobDetail) {
+        return TriggerBuilder.newTrigger()
+                .forJob(performanceComputeJobDetail)
+                .withIdentity("performanceComputeTrigger", "trading")
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 0 */4 * * ?"))
                 .build();
     }
 }

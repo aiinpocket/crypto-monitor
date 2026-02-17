@@ -3,6 +3,7 @@ package com.aiinpocket.btctrade.service;
 import com.aiinpocket.btctrade.config.TradingStrategyProperties;
 import com.aiinpocket.btctrade.model.entity.AppUser;
 import com.aiinpocket.btctrade.model.entity.StrategyTemplate;
+import com.aiinpocket.btctrade.repository.StrategyPerformanceRepository;
 import com.aiinpocket.btctrade.repository.StrategyTemplateRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,9 @@ import java.util.List;
 public class StrategyTemplateService {
 
     private final StrategyTemplateRepository templateRepo;
+    private final StrategyPerformanceRepository perfRepo;
     private final TradingStrategyProperties defaultProps;
+    private final StrategyPerformanceService performanceService;
 
     /** 每位用戶最大自訂模板數量 */
     private static final int MAX_USER_TEMPLATES = 10;
@@ -117,6 +120,10 @@ public class StrategyTemplateService {
         templateRepo.save(clone);
         log.info("[策略模板] 用戶 {} 從模板 {} 克隆新模板 {} (id={})",
                 user.getId(), sourceId, clone.getName(), clone.getId());
+
+        // 非同步計算新模板的績效
+        performanceService.computePerformanceAsync(clone.getId());
+
         return clone;
     }
 
@@ -176,6 +183,10 @@ public class StrategyTemplateService {
 
         templateRepo.save(template);
         log.info("[策略模板] 用戶 {} 更新模板 {} (id={})", userId, template.getName(), templateId);
+
+        // 參數變更後非同步重算績效
+        performanceService.computePerformanceAsync(templateId);
+
         return template;
     }
 
@@ -195,6 +206,8 @@ public class StrategyTemplateService {
             throw new IllegalArgumentException("無權刪除此策略模板");
         }
 
+        // 先清理績效資料再刪除模板
+        perfRepo.deleteByStrategyTemplateId(templateId);
         templateRepo.delete(template);
         log.info("[策略模板] 用戶 {} 刪除模板 {} (id={})", userId, template.getName(), templateId);
     }

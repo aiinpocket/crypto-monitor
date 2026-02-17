@@ -1,7 +1,9 @@
 package com.aiinpocket.btctrade.controller;
 
+import com.aiinpocket.btctrade.model.dto.StrategyPerformanceSummary;
 import com.aiinpocket.btctrade.model.entity.StrategyTemplate;
 import com.aiinpocket.btctrade.security.AppUserPrincipal;
+import com.aiinpocket.btctrade.service.StrategyPerformanceService;
 import com.aiinpocket.btctrade.service.StrategyTemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ import java.util.Map;
 public class StrategyTemplateController {
 
     private final StrategyTemplateService templateService;
+    private final StrategyPerformanceService performanceService;
 
     /** 取得用戶可用的所有策略模板（系統預設 + 用戶自建） */
     @GetMapping
@@ -91,6 +94,41 @@ public class StrategyTemplateController {
             log.warn("[策略API] 更新模板失敗: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    /** 取得用戶可見策略的績效摘要 */
+    @GetMapping("/performance")
+    public List<StrategyPerformanceSummary> getPerformance(
+            @AuthenticationPrincipal AppUserPrincipal principal) {
+        return performanceService.getPerformanceSummaries(principal.getUserId());
+    }
+
+    /** 手動觸發單個模板的績效重算 */
+    @PostMapping("/{id}/refresh-performance")
+    public ResponseEntity<?> refreshPerformance(
+            @AuthenticationPrincipal AppUserPrincipal principal,
+            @PathVariable Long id) {
+        try {
+            templateService.getTemplate(id, principal.getUserId()); // 驗證權限
+            performanceService.computePerformanceAsync(id);
+            log.info("[策略API] 用戶 {} 觸發模板 {} 績效重算", principal.getUserId(), id);
+            return ResponseEntity.ok(Map.of("message", "績效計算已排入佇列"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /** 手動觸發所有模板的績效重算 */
+    @PostMapping("/refresh-all-performance")
+    public ResponseEntity<?> refreshAllPerformance(
+            @AuthenticationPrincipal AppUserPrincipal principal) {
+        log.info("[策略API] 用戶 {} 觸發所有模板績效重算", principal.getUserId());
+        // 查詢用戶可見的模板並逐一觸發
+        var templates = templateService.getTemplatesForUser(principal.getUserId());
+        for (var tmpl : templates) {
+            performanceService.computePerformanceAsync(tmpl.getId());
+        }
+        return ResponseEntity.ok(Map.of("message", "已排入 " + templates.size() + " 個模板的績效計算"));
     }
 
     /** 刪除用戶自訂模板（系統預設不可刪除） */

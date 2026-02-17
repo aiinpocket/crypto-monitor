@@ -5,6 +5,7 @@ import com.aiinpocket.btctrade.config.TradingStrategyProperties;
 import com.aiinpocket.btctrade.model.dto.BacktestReport;
 import com.aiinpocket.btctrade.model.dto.BacktestReport.EquityCurvePoint;
 import com.aiinpocket.btctrade.model.dto.BacktestReport.TradeDetail;
+import com.aiinpocket.btctrade.model.dto.BacktestResultWithUnrealized;
 import com.aiinpocket.btctrade.model.dto.IndicatorSnapshot;
 import com.aiinpocket.btctrade.model.entity.Kline;
 import com.aiinpocket.btctrade.model.enums.PositionDirection;
@@ -98,19 +99,42 @@ public class BacktestService {
         TechnicalIndicatorService customIndicator = new TechnicalIndicatorService(customProps);
         StrategyService customStrategy = new StrategyService(customProps, intervalParams);
 
-        return executeBacktest(symbol, startDate, endDate, customProps, customIndicator, customStrategy);
+        return executeBacktest(symbol, startDate, endDate, customProps, customIndicator, customStrategy, true).report();
+    }
+
+    /**
+     * 績效計算專用回測入口。
+     * 回測結束時不強制平倉，改為回報未平倉部位的浮盈方向和百分比。
+     *
+     * @param symbol      交易對符號
+     * @param startDate   回測起始時間
+     * @param endDate     回測結束時間
+     * @param customProps 自訂策略參數
+     * @return 含未實現損益的回測結果
+     */
+    public BacktestResultWithUnrealized runBacktestForPerformance(
+            String symbol, Instant startDate, Instant endDate,
+            TradingStrategyProperties customProps) {
+
+        TechnicalIndicatorService customIndicator = new TechnicalIndicatorService(customProps);
+        StrategyService customStrategy = new StrategyService(customProps, intervalParams);
+
+        return executeBacktest(symbol, startDate, endDate, customProps, customIndicator, customStrategy, false);
     }
 
     /**
      * 回測引擎核心邏輯。
      * 從資料庫載入 K 線資料，逐根模擬交易策略的進出場決策。
      * 純記憶體運算，零 DB 寫入，無前瞻偏差。
+     *
+     * @param forceCloseAtEnd true=結束時強制平倉（標準回測），false=保留未平倉部位（績效計算用）
      */
-    private BacktestReport executeBacktest(
+    private BacktestResultWithUnrealized executeBacktest(
             String symbol, Instant startDate, Instant endDate,
             TradingStrategyProperties backtestProps,
             TechnicalIndicatorService backtestIndicator,
-            StrategyService backtestStrategy) {
+            StrategyService backtestStrategy,
+            boolean forceCloseAtEnd) {
 
         List<Kline> klines = klineRepo
                 .findBySymbolAndIntervalTypeAndOpenTimeBetweenOrderByOpenTimeAsc(
@@ -198,18 +222,31 @@ public class BacktestService {
             equityCurve.add(new EquityCurvePoint(barTime, equity));
         }
 
-        // 結束時強制平倉
-        if (openPos != null) {
+        // 結束時處理未平倉部位
+        BigDecimal unrealizedPnlPct = null;
+        String unrealizedDirection = null;
+
+        if (openPos != null && forceCloseAtEnd) {
+            // 標準回測：強制平倉
             BigDecimal lastClose = klines.getLast().getClosePrice();
             BigDecimal pnl = calcPnl(openPos, lastClose);
             capital = openPos.capitalUsed.add(pnl);
             tradeNumber++;
             trades.add(buildTradeDetail(tradeNumber, openPos, lastClose,
                     klines.getLast().getOpenTime(), pnl, "END_OF_BACKTEST", series.getBarCount() - 1));
+        } else if (openPos != null) {
+            // 績效計算模式：計算未實現損益，不加入 trades
+            BigDecimal lastClose = klines.getLast().getClosePrice();
+            BigDecimal pnl = calcPnl(openPos, lastClose);
+            unrealizedPnlPct = pnl.divide(openPos.capitalUsed, 6, RoundingMode.HALF_UP);
+            unrealizedDirection = openPos.direction.name();
+            // finalCapital = 已回收資金（不含未平倉 PnL）
+            capital = capital.add(openPos.capitalUsed);
         }
 
-        return buildReport(symbol, startDate, endDate, series.getBarCount(),
+        BacktestReport report = buildReport(symbol, startDate, endDate, series.getBarCount(),
                 trades, equityCurve, initialCapital, capital);
+        return new BacktestResultWithUnrealized(report, unrealizedPnlPct, unrealizedDirection);
     }
 
     /**
