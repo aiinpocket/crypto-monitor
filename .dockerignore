@@ -13,4 +13,3 @@ k8s/
 compose.yaml
 .dockerignore
 Dockerfile
-.mvn/wrapper/maven-wrapper.jar
