@@ -9,7 +9,6 @@ import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
@@ -28,7 +27,6 @@ public class BinanceApiService {
     private final KlineRepository klineRepository;
     private final ObjectMapper objectMapper;
 
-    @Transactional
     public List<Kline> fetchAndStoreHistoricalData(
             String symbol, String interval,
             Instant startTime, Instant endTime) {
@@ -138,8 +136,8 @@ public class BinanceApiService {
 
     /**
      * 帶進度回調的歷史資料同步（供 HistoricalSyncService 使用）。
+     * 每批次獨立 commit，避免長時間事務造成效能瓶頸。
      */
-    @Transactional
     public List<Kline> fetchAndStoreHistoricalDataWithProgress(
             String symbol, String interval,
             Instant startTime, Instant endTime,
