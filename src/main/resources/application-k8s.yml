@@ -1,0 +1,25 @@
+# ── K8s Production Profile ──
+# 啟用方式: SPRING_PROFILES_ACTIVE=k8s
+
+spring:
+  datasource:
+    url: jdbc:postgresql://crypto-monitor-postgres:5432/btctrade
+    username: ${DB_USERNAME:btctrade}
+    password: ${DB_PASSWORD}
+
+  docker:
+    compose:
+      enabled: false
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+server:
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

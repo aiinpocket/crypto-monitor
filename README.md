@@ -58,7 +58,9 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 | 前端 | Thymeleaf + Tailwind CSS (CDN) + Alpine.js |
 | 序列化 | Jackson 3 (`tools.jackson`) |
 | 圖表 | Chart.js (CDN) |
-| 容器 | Docker Compose |
+| 容器 | Docker Compose / Kubernetes |
+| CI/CD | GitHub Actions + ArgoCD |
+| 容器映像 | ghcr.io (GitHub Container Registry) |
 
 ## 架構
 
@@ -231,4 +233,70 @@ backtest-*   → 回測計算
 可透過環境變數覆蓋特定模組日誌等級：
 ```bash
 LOGGING_LEVEL_COM_AIINPOCKET_BTCTRADE_SERVICE_NOTIFICATION=DEBUG
+```
+
+## K8s 部署
+
+**線上環境**: https://crypto-monitor.aiinpocket.com
+
+### 架構
+
+```
+GitHub (main branch)
+    │
+    ├─ GitHub Actions ──▶ Build Docker Image ──▶ Push to ghcr.io
+    │                                                │
+    └─ k8s/manifests/ ◀── sed update image tag ◀─────┘
+           │
+           ▼ (ArgoCD auto-sync)
+    K8s Cluster (namespace: app)
+    ├── crypto-monitor-api (Deployment)
+    ├── crypto-monitor-postgres (Deployment + PVC)
+    ├── crypto-monitor-ingress (Ingress + TLS)
+    └── Secrets / ConfigMap
+```
+
+### CI/CD 流程
+
+1. 開發者 `git push main`
+2. GitHub Actions 自動構建 Docker image 並推送到 ghcr.io
+3. Actions 更新 `k8s/manifests/app.yaml` 中的 image tag 並 push `[skip ci]`
+4. ArgoCD 偵測 Git 變動，自動同步到 K8s
+5. Smoke test 驗證健康檢查端點
+
+### K8s 資源
+
+| 資源 | 名稱 | 說明 |
+|------|------|------|
+| Namespace | `app` | 應用共用命名空間 |
+| Deployment | `crypto-monitor-api` | Spring Boot 應用 |
+| Deployment | `crypto-monitor-postgres` | PostgreSQL 17 |
+| Service | `crypto-monitor-api` | 內部 port 80 → 8080 |
+| Service | `crypto-monitor-postgres` | 內部 port 5432 |
+| Ingress | `crypto-monitor-ingress` | TLS + Cloudflare |
+| PVC | `crypto-monitor-postgres-data` | 20Gi NFS 持久卷 |
+| ConfigMap | `crypto-monitor-config` | 非敏感配置 |
+| Secret | `crypto-monitor-secrets` | OAuth + DB 密碼 |
+
+### K8s 常用命令
+
+```bash
+# 查看 Pod 狀態
+kubectl get pods -n app
+
+# 查看應用日誌
+kubectl logs -n app deployment/crypto-monitor-api -f
+
+# 查看 ArgoCD 同步狀態
+kubectl get application crypto-monitor -n argocd
+
+# 手動重啟
+kubectl rollout restart deployment/crypto-monitor-api -n app
+```
+
+### Google OAuth2 Redirect URI
+
+生產環境需在 Google Cloud Console 新增：
+```
+https://crypto-monitor.aiinpocket.com/login/oauth2/code/google
 ```

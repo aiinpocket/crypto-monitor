@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crypto-monitor-postgres
+  namespace: app
+  labels:
+    app: crypto-monitor-postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: crypto-monitor-postgres
+  template:
+    metadata:
+      labels:
+        app: crypto-monitor-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: btctrade
+            - name: POSTGRES_USER
+              value: btctrade
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: crypto-monitor-secrets
+                  key: DB_PASSWORD
+            - name: TZ
+              value: Asia/Taipei
+            - name: PGTZ
+              value: Asia/Taipei
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+              subPath: pgdata
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d/init.sql
+              subPath: init.sql
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - btctrade
+                - -d
+                - btctrade
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - btctrade
+                - -d
+                - btctrade
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: crypto-monitor-postgres-data
+        - name: init-sql
+          configMap:
+            name: crypto-monitor-init-sql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crypto-monitor-postgres
+  namespace: app
+spec:
+  selector:
+    app: crypto-monitor-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
