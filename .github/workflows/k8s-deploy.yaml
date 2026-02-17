@@ -79,11 +79,12 @@ jobs:
       - name: Health check
         run: |
           for i in $(seq 1 5); do
-            if curl -sf https://crypto-monitor.aiinpocket.com/actuator/health; then
-              echo "Health check passed"
+            RESP=$(curl -sfL https://crypto-monitor.aiinpocket.com/actuator/health 2>/dev/null || true)
+            if echo "$RESP" | grep -q '"status":"UP"'; then
+              echo "Health check passed: $RESP"
               exit 0
             fi
-            echo "Attempt $i failed, retrying in 30s..."
+            echo "Attempt $i failed (response: $RESP), retrying in 30s..."
             sleep 30
           done
           echo "Health check failed after 5 attempts"
