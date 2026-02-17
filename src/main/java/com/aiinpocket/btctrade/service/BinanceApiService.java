@@ -13,7 +13,6 @@ import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,12 +26,12 @@ public class BinanceApiService {
     private final KlineRepository klineRepository;
     private final ObjectMapper objectMapper;
 
-    public List<Kline> fetchAndStoreHistoricalData(
+    public void fetchAndStoreHistoricalData(
             String symbol, String interval,
             Instant startTime, Instant endTime) {
 
-        List<Kline> allKlines = new ArrayList<>();
         Instant currentStart = startTime;
+        int totalSaved = 0;
 
         while (currentStart.isBefore(endTime)) {
             List<BinanceKlineResponse> batch = fetchKlines(
@@ -47,8 +46,7 @@ public class BinanceApiService {
                     .map(r -> mapToEntity(r, symbol, interval))
                     .toList();
 
-            List<Kline> saved = saveNewKlines(entities);
-            allKlines.addAll(saved);
+            totalSaved += saveNewKlines(entities).size();
 
             long lastCloseTime = batch.getLast().closeTime();
             currentStart = Instant.ofEpochMilli(lastCloseTime + 1);
@@ -57,8 +55,7 @@ public class BinanceApiService {
         }
 
         log.info("Fetched and stored {} klines for {} [{}]",
-                allKlines.size(), symbol, interval);
-        return allKlines;
+                totalSaved, symbol, interval);
     }
 
     public Optional<Kline> fetchLatestKline(String symbol, String interval) {
@@ -138,14 +135,14 @@ public class BinanceApiService {
      * 帶進度回調的歷史資料同步（供 HistoricalSyncService 使用）。
      * 每批次獨立 commit，避免長時間事務造成效能瓶頸。
      */
-    public List<Kline> fetchAndStoreHistoricalDataWithProgress(
+    public int fetchAndStoreHistoricalDataWithProgress(
             String symbol, String interval,
             Instant startTime, Instant endTime,
             java.util.function.BiConsumer<Integer, Integer> progressCallback) {
 
-        List<Kline> allKlines = new ArrayList<>();
         Instant currentStart = startTime;
         int batchCount = 0;
+        int totalSaved = 0;
 
         // 估算總批次數
         long totalMinutes = java.time.Duration.between(startTime, endTime).toMinutes();
@@ -169,8 +166,7 @@ public class BinanceApiService {
                     .map(r -> mapToEntity(r, symbol, interval))
                     .toList();
 
-            List<Kline> saved = saveNewKlines(entities);
-            allKlines.addAll(saved);
+            totalSaved += saveNewKlines(entities).size();
 
             batchCount++;
             if (progressCallback != null) {
@@ -184,8 +180,8 @@ public class BinanceApiService {
         }
 
         log.info("Fetched and stored {} klines for {} [{}] in {} batches",
-                allKlines.size(), symbol, interval, batchCount);
-        return allKlines;
+                totalSaved, symbol, interval, batchCount);
+        return totalSaved;
     }
 
     private List<Kline> saveNewKlines(List<Kline> klines) {
