@@ -2,7 +2,9 @@ package com.aiinpocket.btctrade.repository;
 
 import com.aiinpocket.btctrade.model.entity.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
@@ -12,4 +14,8 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     Optional<AppUser> findByEmail(String email);
 
     boolean existsByOauthProviderAndOauthId(String oauthProvider, String oauthId);
+
+    /** 排行榜 Top N（避免全表掃描 + 應用層排序） */
+    @Query("SELECT u FROM AppUser u ORDER BY u.level DESC, u.experience DESC LIMIT 10")
+    List<AppUser> findTop10ByOrderByLevelDescExperienceDesc();
 }

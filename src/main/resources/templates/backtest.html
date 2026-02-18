@@ -43,7 +43,10 @@
                 <button @click="submitBacktest()" :disabled="running || !form.templateId"
                         class="w-full pixel-btn pixel-btn-gold text-[8px] py-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span x-show="!running">&#9876; 開始挑戰！</span>
-                    <span x-show="running" class="anim-flash">&#9876; 挑戰中...</span>
+                    <span x-show="running" class="flex items-center justify-center gap-2">
+                        <span class="anim-flash">&#9876;</span>
+                        <span x-text="'挑戰中... ' + pollPct + '%'"></span>
+                    </span>
                 </button>
             </div>
         </div>
@@ -168,7 +171,7 @@
         return {
             form: { templateId: '', symbol: serverSymbols[0] || 'BTCUSDT', years: 5 },
             allTemplates: [], symbols: serverSymbols, running: false, result: null, history: [],
-            equityChart: null, message: '', messageType: 'success',
+            equityChart: null, message: '', messageType: 'success', pollPct: 0,
             async init() { await Promise.all([this.loadTemplates(), this.loadHistory()]); },
             async loadTemplates() { try { const r=await fetch('/api/user/strategies'); if(r.ok) this.allTemplates=await r.json(); } catch(e){} },
             async loadHistory() { try { const r=await fetch('/api/user/backtest/history'); if(r.ok) this.history=await r.json(); } catch(e){} },
@@ -181,14 +184,15 @@
                 } catch(e){this.showMsg('網路錯誤','error');this.running=false;}
             },
             async pollResult(runId) {
-                for(let i=0;i<120;i++){await new Promise(r=>setTimeout(r,2000));
+                this.pollPct=0;
+                for(let i=0;i<120;i++){this.pollPct=Math.min(99,Math.round((i/120)*100));await new Promise(r=>setTimeout(r,2000));
                     try{const r=await fetch(`/api/user/backtest/${runId}`);if(!r.ok)continue;const d=await r.json();
-                        if(d.status==='COMPLETED'){this.result=JSON.parse(d.resultJson);this.running=false;
+                        if(d.status==='COMPLETED'){this.pollPct=100;this.result=JSON.parse(d.resultJson);this.running=false;
                             this.showMsg(this.result.passed?'&#127942; 挑戰成功！':'&#128128; 挑戰失敗','success');
                             await this.loadHistory();this.$nextTick(()=>this.renderChart());return;}
-                        else if(d.status==='FAILED'){this.running=false;this.showMsg('回測失敗','error');await this.loadHistory();return;}
+                        else if(d.status==='FAILED'){this.running=false;this.pollPct=0;this.showMsg('回測失敗','error');await this.loadHistory();return;}
                     }catch(e){}}
-                this.running=false;this.showMsg('超時','error');
+                this.running=false;this.pollPct=0;this.showMsg('超時','error');
             },
             async loadResult(runId) { try{const r=await fetch(`/api/user/backtest/${runId}`);if(!r.ok)return;const d=await r.json();if(d.status==='COMPLETED'&&d.resultJson){this.result=JSON.parse(d.resultJson);this.$nextTick(()=>this.renderChart());}}catch(e){this.showMsg('載入失敗','error');} },
             renderChart() {

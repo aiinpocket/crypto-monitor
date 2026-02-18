@@ -238,12 +238,7 @@ public class GamificationService {
      * 取得排行榜（Top 10）。
      */
     public List<LeaderboardEntry> getLeaderboard() {
-        return userRepo.findAll().stream()
-                .sorted((a, b) -> {
-                    int cmp = Integer.compare(b.getLevel(), a.getLevel());
-                    return cmp != 0 ? cmp : Long.compare(b.getExperience(), a.getExperience());
-                })
-                .limit(10)
+        return userRepo.findTop10ByOrderByLevelDescExperienceDesc().stream()
                 .map(u -> new LeaderboardEntry(
                         u.getDisplayName(),
                         u.getLevel(),

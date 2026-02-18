@@ -51,10 +51,15 @@
         </template>
     </div>
 
-    <div x-show="templates.length === 0" class="text-center py-12 text-text-muted text-[8px]">
-        <div class="text-[24px] mb-2 opacity-50">&#128214;</div>
-        <p>尚無策略模板</p>
-        <p class="mt-2 text-[7px]">系統會提供預設策略，你可以複製後自訂參數</p>
+    <div x-show="templates.length === 0" class="text-center py-12">
+        <div class="text-[24px] mb-3 opacity-40">&#128214;</div>
+        <p class="text-text-heading text-[9px]">歡迎踏上交易之旅！</p>
+        <p class="text-text-muted text-[8px] mt-2 leading-relaxed">系統提供傳說級策略，複製後自訂參數即可開始回測</p>
+        <div class="mt-4 text-[7px] text-text-muted leading-loose">
+            <span class="block">1. 複製傳說級策略卷軸</span>
+            <span class="block">2. 前往 <a href="/backtest" class="text-cta hover:text-cta-hover underline">副本挑戰</a> 調參回測</span>
+            <span class="block">3. 至 <a href="/settings" class="text-cta hover:text-cta-hover underline">設定</a> 開啟交易通知</span>
+        </div>
     </div>
 
     <!-- 績效對比 -->
