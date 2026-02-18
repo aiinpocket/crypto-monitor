@@ -182,6 +182,11 @@
         let wsRetryCount = 0;
         let wsCountdownId = null;
 
+        const actionLabels = {
+            'LONG_ENTRY': '做多進場', 'SHORT_ENTRY': '做空進場',
+            'LONG_EXIT': '做多出場', 'SHORT_EXIT': '做空出場'
+        };
+
         function connectWs() {
             const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(protocol + '//' + location.host + '/ws/trades');
@@ -206,7 +211,8 @@
                             timeSpan.textContent = '[' + time + '] ';
                             const actionSpan = document.createElement('span');
                             actionSpan.className = isEntry ? 'text-positive' : 'text-negative';
-                            actionSpan.textContent = (isEntry ? '\u2694 \u9032\u5834 ' : '\u{1F6E1} \u51FA\u5834 ') + String(data.action);
+                            const label = actionLabels[String(data.action)] || String(data.action);
+                            actionSpan.textContent = (isEntry ? '\u2694 ' : '\u{1F6E1} ') + label;
                             const priceSpan = document.createElement('span');
                             priceSpan.className = 'text-primary';
                             priceSpan.textContent = ' @ ' + Number(data.price).toLocaleString();

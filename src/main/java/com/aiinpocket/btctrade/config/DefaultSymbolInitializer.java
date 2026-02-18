@@ -2,6 +2,7 @@ package com.aiinpocket.btctrade.config;
 
 import com.aiinpocket.btctrade.model.entity.TrackedSymbol;
 import com.aiinpocket.btctrade.model.enums.SyncStatus;
+import com.aiinpocket.btctrade.repository.TrackedSymbolRepository;
 import com.aiinpocket.btctrade.service.HistoricalSyncService;
 import com.aiinpocket.btctrade.service.TrackedSymbolService;
 import lombok.RequiredArgsConstructor;
@@ -10,12 +11,13 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
  * 應用啟動時確保預設追蹤幣對存在且資料同步完成。
  * - 若 BTCUSDT 不存在：自動新增並觸發歷史資料同步
- * - 若 BTCUSDT 狀態為 SYNCING/PENDING/ERROR：重新觸發同步（處理重啟恢復）
+ * - 所有 active 且非 READY/DELISTED 的幣對：重新觸發同步（處理重啟恢復）
  */
 @Component
 @RequiredArgsConstructor
@@ -25,31 +27,40 @@ public class DefaultSymbolInitializer implements ApplicationRunner {
     private static final String DEFAULT_SYMBOL = "BTCUSDT";
 
     private final TrackedSymbolService trackedSymbolService;
+    private final TrackedSymbolRepository trackedSymbolRepo;
     private final HistoricalSyncService historicalSyncService;
 
     @Override
     public void run(ApplicationArguments args) {
-        Optional<TrackedSymbol> existing = trackedSymbolService.getBySymbol(DEFAULT_SYMBOL);
+        ensureDefaultSymbol();
+        recoverStuckSyncs();
+    }
 
+    private void ensureDefaultSymbol() {
+        Optional<TrackedSymbol> existing = trackedSymbolService.getBySymbol(DEFAULT_SYMBOL);
         if (existing.isEmpty()) {
             TrackedSymbol saved = trackedSymbolService.addSymbol(DEFAULT_SYMBOL, null);
             log.info("[預設幣對] 已自動新增 {}，開始歷史資料同步", DEFAULT_SYMBOL);
             if (saved.getSyncStatus() == SyncStatus.PENDING) {
                 historicalSyncService.syncHistoricalData(DEFAULT_SYMBOL);
             }
+        }
+    }
+
+    private void recoverStuckSyncs() {
+        List<TrackedSymbol> stuckSymbols = trackedSymbolRepo.findByActiveTrue().stream()
+                .filter(s -> s.getSyncStatus() != SyncStatus.READY && s.getSyncStatus() != SyncStatus.DELISTED)
+                .toList();
+
+        if (stuckSymbols.isEmpty()) {
+            log.debug("[啟動恢復] 所有 active 幣對皆已就緒");
             return;
         }
 
-        TrackedSymbol symbol = existing.get();
-        SyncStatus status = symbol.getSyncStatus();
-
-        if (status == SyncStatus.READY) {
-            log.debug("[預設幣對] {} 已就緒，跳過初始化", DEFAULT_SYMBOL);
-            return;
+        log.info("[啟動恢復] 發現 {} 個未完成同步的幣對，逐一重新觸發", stuckSymbols.size());
+        for (TrackedSymbol symbol : stuckSymbols) {
+            log.info("[啟動恢復] {} 狀態為 {}，重新觸發歷史資料同步", symbol.getSymbol(), symbol.getSyncStatus());
+            historicalSyncService.syncHistoricalData(symbol.getSymbol());
         }
-
-        // SYNCING / PENDING / ERROR → 重新觸發同步（處理前次中斷）
-        log.info("[預設幣對] {} 狀態為 {}，重新觸發歷史資料同步", DEFAULT_SYMBOL, status);
-        historicalSyncService.syncHistoricalData(DEFAULT_SYMBOL);
     }
 }
