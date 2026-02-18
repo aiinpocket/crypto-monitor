@@ -185,9 +185,17 @@ public class BinanceApiService {
     }
 
     private List<Kline> saveNewKlines(List<Kline> klines) {
+        if (klines.isEmpty()) return List.of();
+
+        // 批次查詢已存在的 openTime，避免 N+1（每批 1000 條只需 1 次查詢）
+        String symbol = klines.getFirst().getSymbol();
+        String interval = klines.getFirst().getIntervalType();
+        List<Instant> openTimes = klines.stream().map(Kline::getOpenTime).toList();
+        var existingTimes = new java.util.HashSet<>(
+                klineRepository.findExistingOpenTimes(symbol, interval, openTimes));
+
         List<Kline> toSave = klines.stream()
-                .filter(k -> !klineRepository.existsBySymbolAndIntervalTypeAndOpenTime(
-                        k.getSymbol(), k.getIntervalType(), k.getOpenTime()))
+                .filter(k -> !existingTimes.contains(k.getOpenTime()))
                 .toList();
         return klineRepository.saveAll(toSave);
     }

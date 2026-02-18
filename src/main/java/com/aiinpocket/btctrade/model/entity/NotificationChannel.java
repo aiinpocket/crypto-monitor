@@ -20,7 +20,8 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "notification_channel", indexes = {
-        @Index(name = "idx_notif_user_type", columnList = "user_id, channel_type")
+        @Index(name = "idx_notif_user_type", columnList = "user_id, channel_type"),
+        @Index(name = "idx_notif_user_enabled", columnList = "user_id, enabled")
 })
 @Getter
 @Setter

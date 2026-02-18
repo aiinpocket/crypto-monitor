@@ -70,23 +70,28 @@ public class NotificationChannelService {
         return channel;
     }
 
-    /** 刪除通知管道 */
+    /** 刪除通知管道（驗證所有權） */
     @Transactional
     public void deleteChannel(Long userId, Long channelId) {
-        channelRepo.findById(channelId).ifPresent(channel -> {
-            if (channel.getUser().getId().equals(userId)) {
-                channelRepo.delete(channel);
-                log.info("[通知管道] 使用者 {} 刪除 {} 管道", userId, channel.getChannelType());
-            }
-        });
+        NotificationChannel channel = channelRepo.findById(channelId)
+                .orElseThrow(() -> new IllegalArgumentException("通知管道不存在"));
+        if (!channel.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("無權操作此通知管道");
+        }
+        channelRepo.delete(channel);
+        log.info("[通知管道] 使用者 {} 刪除 {} 管道", userId, channel.getChannelType());
     }
 
     /**
-     * 測試通知管道的連線。
+     * 測試通知管道的連線（驗證所有權）。
      * 會實際發送一條測試訊息，確認管道配置正確。
      */
-    public boolean testChannel(Long channelId) {
+    public boolean testChannel(Long userId, Long channelId) {
         return channelRepo.findById(channelId).map(channel -> {
+            if (!channel.getUser().getId().equals(userId)) {
+                log.warn("[通知管道] 使用者 {} 嘗試測試非自己的管道 {}", userId, channelId);
+                return false;
+            }
             NotificationSender sender = senderMap.get(channel.getChannelType());
             if (sender == null) {
                 log.warn("[通知管道] 找不到 {} 類型的發送器", channel.getChannelType());

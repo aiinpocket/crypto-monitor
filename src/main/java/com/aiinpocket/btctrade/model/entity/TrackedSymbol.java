@@ -9,6 +9,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "tracked_symbol", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"symbol"})
+}, indexes = {
+        @Index(name = "idx_tracked_active_status", columnList = "active, sync_status")
 })
 @Getter
 @Setter

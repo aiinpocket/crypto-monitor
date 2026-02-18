@@ -60,9 +60,12 @@ public class NotificationController {
                     "channelType", channel.getChannelType().name(),
                     "enabled", channel.isEnabled()
             ));
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             log.warn("[通知API] 儲存管道失敗: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[通知API] 儲存管道意外錯誤", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "儲存失敗，請稍後重試"));
         }
     }
 
@@ -77,8 +80,10 @@ public class NotificationController {
 
     /** 測試通知管道連線（會實際發送測試訊息） */
     @PostMapping("/{id}/test")
-    public ResponseEntity<?> testChannel(@PathVariable Long id) {
-        boolean success = channelService.testChannel(id);
+    public ResponseEntity<?> testChannel(
+            @AuthenticationPrincipal AppUserPrincipal principal,
+            @PathVariable Long id) {
+        boolean success = channelService.testChannel(principal.getUserId(), id);
         return ResponseEntity.ok(Map.of("success", success));
     }
 }

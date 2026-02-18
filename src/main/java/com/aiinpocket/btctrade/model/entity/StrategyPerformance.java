@@ -15,7 +15,10 @@ import java.time.Instant;
 @Table(name = "strategy_performance",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_perf_template_period_symbol",
-                columnNames = {"strategy_template_id", "period_key", "symbol"}))
+                columnNames = {"strategy_template_id", "period_key", "symbol"}),
+        indexes = {
+                @Index(name = "idx_perf_template_symbol", columnList = "strategy_template_id, symbol")
+        })
 @Getter
 @Setter
 @NoArgsConstructor

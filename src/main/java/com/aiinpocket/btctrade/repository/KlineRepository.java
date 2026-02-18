@@ -24,4 +24,8 @@ public interface KlineRepository extends JpaRepository<Kline, Long> {
 
     boolean existsBySymbolAndIntervalTypeAndOpenTime(
             String symbol, String intervalType, Instant openTime);
+
+    /** 批次查詢已存在的 openTime（用於減少 N+1 查詢） */
+    @Query("SELECT k.openTime FROM Kline k WHERE k.symbol = :symbol AND k.intervalType = :intervalType AND k.openTime IN :openTimes")
+    List<Instant> findExistingOpenTimes(String symbol, String intervalType, List<Instant> openTimes);
 }

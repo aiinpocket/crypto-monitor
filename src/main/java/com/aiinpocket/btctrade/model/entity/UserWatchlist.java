@@ -13,6 +13,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "user_watchlist", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "symbol"})
+}, indexes = {
+        @Index(name = "idx_watchlist_symbol", columnList = "symbol")
 })
 @Getter
 @Setter

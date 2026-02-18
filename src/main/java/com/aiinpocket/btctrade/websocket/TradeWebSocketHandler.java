@@ -13,6 +13,8 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import org.springframework.scheduling.annotation.Scheduled;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -140,6 +142,30 @@ public class TradeWebSocketHandler extends TextWebSocketHandler {
             }
         } catch (Exception e) {
             log.error("Failed to serialize broadcast message", e);
+        }
+    }
+
+    /** 定期清理已關閉的死連線，防止記憶體洩漏 */
+    @Scheduled(fixedRate = 300_000) // 每 5 分鐘
+    public void cleanupDeadSessions() {
+        int removed = 0;
+        var deadSessions = sessions.stream().filter(s -> !s.isOpen()).toList();
+        for (var session : deadSessions) {
+            sessions.remove(session);
+            removed++;
+            Long userId = getUserId(session);
+            if (userId != null) {
+                Set<WebSocketSession> set = userSessions.get(userId);
+                if (set != null) {
+                    set.remove(session);
+                    if (set.isEmpty()) {
+                        userSessions.remove(userId);
+                    }
+                }
+            }
+        }
+        if (removed > 0) {
+            log.info("WebSocket 清理了 {} 個死連線，剩餘 {} 個活躍連線", removed, sessions.size());
         }
     }
 

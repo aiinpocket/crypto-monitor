@@ -49,9 +49,19 @@ public class UserBacktestController {
             @AuthenticationPrincipal AppUserPrincipal principal,
             @RequestBody Map<String, Object> body) {
         try {
+            if (body.get("templateId") == null || body.get("symbol") == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "templateId 和 symbol 為必填"));
+            }
             Long templateId = ((Number) body.get("templateId")).longValue();
-            String symbol = ((String) body.get("symbol")).toUpperCase();
+            String symbol = ((String) body.get("symbol")).trim().toUpperCase();
             int years = body.containsKey("years") ? ((Number) body.get("years")).intValue() : 5;
+
+            if (symbol.isEmpty() || symbol.length() > 20) {
+                return ResponseEntity.badRequest().body(Map.of("error", "symbol 格式不正確"));
+            }
+            if (years < 1 || years > 10) {
+                return ResponseEntity.badRequest().body(Map.of("error", "回測年數需在 1~10 之間"));
+            }
 
             // 計算回測的起始和結束時間
             Instant endDate = Instant.now();
@@ -72,8 +82,8 @@ public class UserBacktestController {
             // 已有 RUNNING 回測
             return ResponseEntity.status(429).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            log.warn("[回測API] 提交回測失敗: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.error("[回測API] 提交回測意外錯誤", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "回測提交失敗，請稍後重試"));
         }
     }
 

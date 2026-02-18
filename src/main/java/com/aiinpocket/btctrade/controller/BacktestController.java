@@ -26,6 +26,10 @@ public class BacktestController {
             @RequestParam(defaultValue = "BTCUSDT") String symbol,
             @RequestParam(defaultValue = "5") int years) {
 
+        if (years < 1 || years > 10) {
+            return ResponseEntity.badRequest().build();
+        }
+
         log.info("Starting backtest for {} over {} years", symbol, years);
 
         Instant endDate = Instant.now();

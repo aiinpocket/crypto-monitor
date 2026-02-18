@@ -12,7 +12,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "trade_position", indexes = {
         @Index(name = "idx_position_status", columnList = "status"),
-        @Index(name = "idx_position_entry_time", columnList = "entry_time")
+        @Index(name = "idx_position_entry_time", columnList = "entry_time"),
+        @Index(name = "idx_position_symbol_status", columnList = "symbol, status")
 })
 @Getter
 @Setter

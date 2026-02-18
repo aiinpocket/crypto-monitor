@@ -148,8 +148,9 @@
                                     </td>
                                 </template>
                                 <!-- 未實現 P&L -->
-                                <td class="px-3 py-3 text-right font-mono">
-                                    <span x-html="formatUnrealized(s)"></span>
+                                <td class="px-3 py-3 text-right font-mono"
+                                    :class="getUnrealizedColor(s)">
+                                    <span x-text="formatUnrealized(s)"></span>
                                 </td>
                             </tr>
                         </template>
@@ -397,18 +398,25 @@
                 return 'text-text-muted';
             },
 
-            /** 格式化未實現 P&L 欄位 */
-            formatUnrealized(summary) {
-                // 從最短時段 (RECENT_1M) 取未實現損益
+            /** 取得未實現 P&L 的顏色 class */
+            getUnrealizedColor(summary) {
                 const period = summary.periods?.find(p => p.periodKey === 'RECENT_1M');
                 if (!period || period.unrealizedPnlPct === null || period.unrealizedPnlPct === undefined) {
-                    return '<span class="text-text-muted">-</span>';
+                    return 'text-text-muted';
+                }
+                return Number(period.unrealizedPnlPct) >= 0 ? 'text-green-400' : 'text-red-400';
+            },
+
+            /** 格式化未實現 P&L 欄位（純文字） */
+            formatUnrealized(summary) {
+                const period = summary.periods?.find(p => p.periodKey === 'RECENT_1M');
+                if (!period || period.unrealizedPnlPct === null || period.unrealizedPnlPct === undefined) {
+                    return '-';
                 }
                 const pct = (Number(period.unrealizedPnlPct) * 100).toFixed(2);
                 const dir = period.unrealizedDirection === 'LONG' ? 'L' : 'S';
-                const color = Number(period.unrealizedPnlPct) >= 0 ? 'text-green-400' : 'text-red-400';
                 const sign = Number(period.unrealizedPnlPct) >= 0 ? '+' : '';
-                return `<span class="${color}">${dir} ${sign}${pct}%</span>`;
+                return `${dir} ${sign}${pct}%`;
             },
 
             /** 觸發所有模板績效重算 */

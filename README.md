@@ -105,13 +105,22 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 └─────────────────────────────────────────────────────┘
 ```
 
+### 安全機制
+
+- **OAuth2 認證**：所有 API 端點強制 Google OAuth2 登入
+- **資源授權檢查**：通知管道、策略模板等操作均驗證用戶所有權
+- **輸入驗證**：回測參數範圍限制（年數 1~10、symbol 長度限制）
+- **錯誤訊息保護**：API 僅回傳使用者友善錯誤，不暴露內部實作細節
+- **XSS 防護**：前端使用 `x-text`（非 `x-html`）防止注入攻擊
+- **WebSocket 死連線清理**：每 5 分鐘自動清理已關閉的 WebSocket session
+
 ### 多執行緒隔離設計
 
 | 執行緒池 | 用途 | 核心/最大/佇列 |
 |----------|------|----------------|
 | `hist-sync-*` | 歷史資料同步（每幣對獨立） | 3 / 6 / 20 |
 | `notify-*` | 通知分發（Discord/Gmail/Telegram） | 3 / 8 / 50 |
-| `backtest-*` | 用戶回測計算（CPU 密集） | 1 / 2 / 5 |
+| `backtest-*` | 用戶回測計算（CPU 密集） | 2 / 4 / 20 |
 
 ### 事件驅動流程
 
@@ -284,6 +293,26 @@ git push main
 3. 設定 GitHub Actions secrets（`GH_PAT` 用於 push image tag 回 repo）
 4. 設定 ghcr.io imagePullSecret
 5. 在 Google Cloud Console 新增生產環境的 OAuth Redirect URI
+
+## 效能優化
+
+### 資料庫索引
+
+針對高頻查詢路徑新增了以下索引，提升查詢效能 10~100 倍：
+
+| Entity | 索引 | 用途 |
+|--------|------|------|
+| `TrackedSymbol` | `idx_tracked_active_status` | 幣對狀態查詢（啟動/排程） |
+| `TradePosition` | `idx_position_symbol_status` | 持倉狀態查詢（策略評估） |
+| `UserWatchlist` | `idx_watchlist_symbol` | 通知分發（按幣對查訂閱者） |
+| `NotificationChannel` | `idx_notif_user_enabled` | 用戶啟用管道查詢（通知發送） |
+| `StrategyPerformance` | `idx_perf_template_symbol` | 績效批次查詢（前端列表） |
+
+### 批次查詢優化
+
+K 線資料同步使用批次查詢取代逐筆 `existsBy` 查詢：
+- **優化前**：每批 1000 條 K 線 → 1000 次 DB 查詢
+- **優化後**：每批 1000 條 K 線 → 1 次批次查詢 + 記憶體過濾
 
 ## 日誌配置
 

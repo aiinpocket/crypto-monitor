@@ -71,9 +71,12 @@ public class StrategyTemplateController {
             log.info("[策略API] 用戶 {} 克隆模板: sourceId={}, newId={}",
                     principal.getUserId(), sourceId, clone.getId());
             return ResponseEntity.ok(Map.of("id", clone.getId(), "name", clone.getName()));
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             log.warn("[策略API] 克隆模板失敗: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[策略API] 克隆模板意外錯誤", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "操作失敗，請稍後重試"));
         }
     }
 
@@ -90,9 +93,12 @@ public class StrategyTemplateController {
             StrategyTemplate updated = templateService.updateTemplate(id, principal.getUserId(), updates);
             log.info("[策略API] 用戶 {} 更新模板 {} 成功", principal.getUserId(), id);
             return ResponseEntity.ok(Map.of("id", updated.getId(), "name", updated.getName()));
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             log.warn("[策略API] 更新模板失敗: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[策略API] 更新模板意外錯誤", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "操作失敗，請稍後重試"));
         }
     }
 
@@ -139,9 +145,12 @@ public class StrategyTemplateController {
         try {
             templateService.deleteTemplate(id, principal.getUserId());
             return ResponseEntity.noContent().build();
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             log.warn("[策略API] 刪除模板失敗: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[策略API] 刪除模板意外錯誤", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "操作失敗，請稍後重試"));
         }
     }
 }
