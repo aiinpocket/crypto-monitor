@@ -42,6 +42,11 @@ public class NotificationChannelService {
         return channelRepo.findByUserId(userId);
     }
 
+    /** 取得使用者特定類型的通知管道 */
+    public NotificationChannel getChannelByUserAndType(Long userId, ChannelType type) {
+        return channelRepo.findByUserIdAndChannelType(userId, type).orElse(null);
+    }
+
     /**
      * 新增或更新通知管道。
      * 每種類型（Discord/Gmail/Telegram）每位使用者只能有一個。

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <nav th:fragment="navbar(user)" class="fixed top-0 left-0 right-0 z-50 bg-bg-card/95 backdrop-blur pixel-border-dark px-3 md:px-5 py-2"
-     x-data="{ mobileOpen: false }">
+     x-data="{ mobileOpen: false, path: window.location.pathname }"
     <div class="flex items-center justify-between max-w-screen-2xl mx-auto">
         <!-- Logo 像素風格 -->
         <a href="/" class="flex items-center gap-2 no-underline">
@@ -18,16 +18,20 @@
 
         <!-- 桌面導航 -->
         <div class="hidden md:flex items-center gap-1">
-            <a href="/" class="pixel-btn pixel-btn-gold text-xs py-1.5 px-3">
+            <a href="/" class="pixel-btn pixel-btn-gold text-xs py-1.5 px-3"
+               :class="path === '/' && 'ring-2 ring-primary brightness-125'">
                 &#127968; 主控台
             </a>
-            <a href="/strategies" class="pixel-btn pixel-btn-purple text-xs py-1.5 px-3">
+            <a href="/strategies" class="pixel-btn pixel-btn-purple text-xs py-1.5 px-3"
+               :class="path === '/strategies' && 'ring-2 ring-cta brightness-125'">
                 &#128214; 策略
             </a>
-            <a href="/backtest" class="pixel-btn pixel-btn-gold text-xs py-1.5 px-3">
+            <a href="/backtest" class="pixel-btn pixel-btn-gold text-xs py-1.5 px-3"
+               :class="path === '/backtest' && 'ring-2 ring-primary brightness-125'">
                 &#9889; 回測
             </a>
-            <a href="/settings" class="pixel-btn pixel-btn-purple text-xs py-1.5 px-3">
+            <a href="/settings" class="pixel-btn pixel-btn-purple text-xs py-1.5 px-3"
+               :class="path === '/settings' && 'ring-2 ring-cta brightness-125'">
                 &#9881; 設定
             </a>
         </div>
@@ -56,11 +60,11 @@
     <!-- 手機下拉選單 -->
     <div x-show="mobileOpen" x-cloak x-transition
          class="md:hidden mt-2 pb-2 border-t border-border-main pt-2 space-y-1">
-        <a href="/" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#127968; 主控台</a>
+        <a href="/" class="block px-3 py-2 text-sm" :class="path === '/' ? 'text-primary font-bold' : 'text-text-muted hover:text-primary'">&#127968; 主控台</a>
         <a @click="mobileOpen = false; $dispatch('sidebar-toggle')" class="block px-3 py-2 text-text-muted hover:text-primary text-sm cursor-pointer">&#128065; 觀察清單</a>
-        <a href="/strategies" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#128214; 策略</a>
-        <a href="/backtest" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#9889; 回測</a>
-        <a href="/settings" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#9881; 設定</a>
+        <a href="/strategies" class="block px-3 py-2 text-sm" :class="path === '/strategies' ? 'text-cta font-bold' : 'text-text-muted hover:text-primary'">&#128214; 策略</a>
+        <a href="/backtest" class="block px-3 py-2 text-sm" :class="path === '/backtest' ? 'text-primary font-bold' : 'text-text-muted hover:text-primary'">&#9889; 回測</a>
+        <a href="/settings" class="block px-3 py-2 text-sm" :class="path === '/settings' ? 'text-cta font-bold' : 'text-text-muted hover:text-primary'">&#9881; 設定</a>
         <div class="flex items-center justify-between px-3 py-2 border-t border-border-main mt-1 pt-2">
             <span class="text-sm text-text-main" th:text="${user.displayName}">User</span>
             <a href="/logout" class="text-sm text-negative">登出</a>

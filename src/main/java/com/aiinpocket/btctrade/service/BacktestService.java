@@ -219,7 +219,7 @@ public class BacktestService {
                             ? PositionDirection.LONG : PositionDirection.SHORT;
                     BigDecimal price = snap.closePrice();
                     // 按倉位比例計算進場資金（positionSizePct=1.0 為全倉，0.5 為半倉）
-                    double posPct = backtestProps.risk().positionSizePct();
+                    double posPct = Math.max(0.01, Math.min(1.0, backtestProps.risk().positionSizePct()));
                     BigDecimal positionCapital = capital.multiply(BigDecimal.valueOf(posPct))
                             .setScale(2, RoundingMode.HALF_DOWN);
                     BigDecimal qty = positionCapital.divide(price, 8, RoundingMode.HALF_DOWN);

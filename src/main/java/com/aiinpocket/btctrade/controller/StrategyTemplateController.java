@@ -63,8 +63,19 @@ public class StrategyTemplateController {
             @AuthenticationPrincipal AppUserPrincipal principal,
             @RequestBody Map<String, Object> body) {
         try {
-            Long sourceId = ((Number) body.get("sourceId")).longValue();
-            String name = (String) body.get("name");
+            if (body.get("sourceId") == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "sourceId 為必填"));
+            }
+            Long sourceId;
+            try {
+                sourceId = Long.parseLong(body.get("sourceId").toString());
+            } catch (NumberFormatException e) {
+                return ResponseEntity.badRequest().body(Map.of("error", "sourceId 格式不正確"));
+            }
+            String name = body.get("name") != null ? body.get("name").toString().trim() : null;
+            if (name != null && name.length() > 100) {
+                return ResponseEntity.badRequest().body(Map.of("error", "模板名稱不能超過 100 字元"));
+            }
             StrategyTemplate clone = templateService.cloneTemplate(
                     sourceId, principal.getAppUser(), name);
 

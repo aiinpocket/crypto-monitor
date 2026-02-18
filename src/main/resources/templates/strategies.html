@@ -49,7 +49,7 @@
                     </div>
                     <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">倉位</span>
-                        <span class="text-text-main" x-text="((tmpl.positionSizePct || 1) * 100).toFixed(0) + '%'"></span>
+                        <span class="text-text-main" x-text="((tmpl.positionSizePct != null ? tmpl.positionSizePct : 1) * 100).toFixed(0) + '%'"></span>
                     </div>
                     <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">EMA</span>

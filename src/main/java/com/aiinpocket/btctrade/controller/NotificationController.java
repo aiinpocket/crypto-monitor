@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,10 +30,23 @@ public class NotificationController {
     private final NotificationChannelService channelService;
     private final ObjectMapper objectMapper;
 
-    /** 取得當前使用者的所有通知管道 */
+    private static final String MASK_PREFIX = "****";
+
+    /** 取得當前使用者的所有通知管道（Token 遮蔽） */
     @GetMapping
-    public List<NotificationChannel> getChannels(@AuthenticationPrincipal AppUserPrincipal principal) {
-        return channelService.getChannels(principal.getUserId());
+    public List<Map<String, Object>> getChannels(@AuthenticationPrincipal AppUserPrincipal principal) {
+        return channelService.getChannels(principal.getUserId()).stream()
+                .map(ch -> {
+                    Map<String, Object> dto = new HashMap<>();
+                    dto.put("id", ch.getId());
+                    dto.put("channelType", ch.getChannelType().name());
+                    dto.put("enabled", ch.isEnabled());
+                    dto.put("notifyOnEntry", ch.isNotifyOnEntry());
+                    dto.put("notifyOnExit", ch.isNotifyOnExit());
+                    dto.put("configJson", maskConfigJson(ch.getChannelType(), ch.getConfigJson()));
+                    return dto;
+                })
+                .toList();
     }
 
     /**
@@ -56,6 +70,9 @@ public class NotificationController {
             boolean enabled = (Boolean) body.getOrDefault("enabled", true);
             boolean notifyOnEntry = (Boolean) body.getOrDefault("notifyOnEntry", true);
             boolean notifyOnExit = (Boolean) body.getOrDefault("notifyOnExit", true);
+
+            // 若 token 為遮蔽值，從既有管道取回完整 token
+            configJson = restoreMaskedTokens(principal.getUserId(), type, configJson);
 
             // 驗證 configJson 格式與必填欄位
             String validationError = validateConfigJson(type, configJson);
@@ -145,5 +162,62 @@ public class NotificationController {
     private static String textValue(JsonNode node, String field) {
         JsonNode child = node.get(field);
         return child != null && child.isTextual() ? child.textValue().trim() : "";
+    }
+
+    /** 遮蔽 configJson 中的敏感 token（只保留末 4 碼） */
+    private String maskConfigJson(ChannelType type, String configJson) {
+        try {
+            JsonNode cfg = objectMapper.readTree(configJson);
+            Map<String, Object> masked = new HashMap<>();
+            switch (type) {
+                case DISCORD -> {
+                    masked.put("botToken", maskToken(textValue(cfg, "botToken")));
+                    masked.put("channelId", textValue(cfg, "channelId"));
+                }
+                case GMAIL -> masked.put("recipientEmail", textValue(cfg, "recipientEmail"));
+                case TELEGRAM -> {
+                    masked.put("botToken", maskToken(textValue(cfg, "botToken")));
+                    masked.put("chatId", textValue(cfg, "chatId"));
+                }
+            }
+            return objectMapper.writeValueAsString(masked);
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private static String maskToken(String token) {
+        if (token == null || token.length() <= 4) return MASK_PREFIX;
+        return MASK_PREFIX + token.substring(token.length() - 4);
+    }
+
+    /** 若前端送回遮蔽的 token，從 DB 中取回完整值 */
+    private String restoreMaskedTokens(Long userId, ChannelType type, String configJson) {
+        try {
+            JsonNode cfg = objectMapper.readTree(configJson);
+            String botToken = textValue(cfg, "botToken");
+            if (!botToken.startsWith(MASK_PREFIX)) return configJson;
+
+            // 從既有管道取回完整 token
+            var existing = channelService.getChannelByUserAndType(userId, type);
+            if (existing == null) return configJson;
+
+            JsonNode existCfg = objectMapper.readTree(existing.getConfigJson());
+            Map<String, Object> restored = new HashMap<>();
+            switch (type) {
+                case DISCORD -> {
+                    restored.put("botToken", textValue(existCfg, "botToken"));
+                    restored.put("channelId", textValue(cfg, "channelId"));
+                }
+                case TELEGRAM -> {
+                    restored.put("botToken", textValue(existCfg, "botToken"));
+                    restored.put("chatId", textValue(cfg, "chatId"));
+                }
+                default -> { return configJson; }
+            }
+            return objectMapper.writeValueAsString(restored);
+        } catch (Exception e) {
+            return configJson;
+        }
     }
 }
