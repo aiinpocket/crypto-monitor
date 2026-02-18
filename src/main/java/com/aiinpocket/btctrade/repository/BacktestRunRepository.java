@@ -35,6 +35,9 @@ public interface BacktestRunRepository extends JpaRepository<BacktestRun, Long> 
     /** 檢查用戶是否有正在執行的回測（限制每位用戶同時只能有 1 個 RUNNING 回測） */
     boolean existsByUserIdAndStatus(Long userId, BacktestRunStatus status);
 
+    /** 檢查用戶是否有任何指定狀態的回測（PENDING + RUNNING 雙重檢查，防止 race condition） */
+    boolean existsByUserIdAndStatusIn(Long userId, List<BacktestRunStatus> statuses);
+
     /** 查詢所有指定狀態的回測（用於系統監控或清理逾時任務） */
     List<BacktestRun> findByStatus(BacktestRunStatus status);
 

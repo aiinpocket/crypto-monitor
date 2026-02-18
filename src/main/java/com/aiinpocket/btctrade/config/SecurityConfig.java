@@ -29,8 +29,8 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
                         // WebSocket 端點放行（由 UserWebSocketInterceptor 自行處理認證）
                         .requestMatchers("/ws/**").permitAll()
-                        // Actuator 端點放行（K8s 健康檢查用）
-                        .requestMatchers("/actuator/**").permitAll()
+                        // Actuator 只放行健康檢查端點（K8s liveness/readiness probe 用）
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         // 其餘所有請求都需要認證
                         .anyRequest().authenticated()
                 )

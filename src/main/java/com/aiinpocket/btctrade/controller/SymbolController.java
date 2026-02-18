@@ -80,11 +80,8 @@ public class SymbolController {
         return ResponseEntity.ok(Map.of("valid", trading, "symbol", upper, "tracked", tracked));
     }
 
-    @DeleteMapping("/{symbol}")
-    public ResponseEntity<Void> removeSymbol(@PathVariable String symbol) {
-        trackedSymbolService.removeSymbol(symbol);
-        return ResponseEntity.noContent().build();
-    }
+    // DELETE 端點已移除 — 全域刪除幣對影響所有用戶，需要管理員權限體系
+    // 若需管理功能，可透過 DB 或專用管理面板操作
 
     /**
      * 查詢 Binance 可用的 USDT 交易對（快取 1 小時）。

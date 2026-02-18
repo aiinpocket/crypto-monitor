@@ -83,10 +83,12 @@ public class UserBacktestService {
      * @return 新建立的 BacktestRun 紀錄（狀態 PENDING）
      * @throws IllegalStateException 用戶已有 RUNNING 的回測
      */
+    @Transactional
     public BacktestRun submitBacktest(AppUser user, Long templateId, String symbol,
                                        Instant startDate, Instant endDate) {
-        // 限制每位用戶同時只能有 1 個執行中的回測
-        if (runRepo.existsByUserIdAndStatus(user.getId(), BacktestRunStatus.RUNNING)) {
+        // 限制每位用戶同時只能有 1 個執行中的回測（含 PENDING + RUNNING）
+        if (runRepo.existsByUserIdAndStatusIn(user.getId(),
+                List.of(BacktestRunStatus.RUNNING, BacktestRunStatus.PENDING))) {
             throw new IllegalStateException("您已有一個回測正在執行中，請等待完成後再提交新的回測");
         }
 

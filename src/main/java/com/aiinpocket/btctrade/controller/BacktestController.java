@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 import java.time.Instant;
 
+/**
+ * 系統回測 API（僅供內部/管理員使用）。
+ * 一般用戶應使用 /api/user/backtest/run 端點。
+ *
+ * <p>此端點為同步阻塞式，會先拉取歷史資料再執行回測，
+ * 適合開發偵錯用途，不適合前端直接呼叫。
+ */
 @RestController
 @RequestMapping("/api/backtest")
 @RequiredArgsConstructor
@@ -26,20 +33,21 @@ public class BacktestController {
             @RequestParam(defaultValue = "BTCUSDT") String symbol,
             @RequestParam(defaultValue = "5") int years) {
 
-        if (years < 1 || years > 10) {
+        String safeSymbol = symbol.toUpperCase().trim();
+        if (safeSymbol.length() > 20 || years < 1 || years > 10) {
             return ResponseEntity.badRequest().build();
         }
 
-        log.info("Starting backtest for {} over {} years", symbol, years);
+        log.info("[系統回測] {} over {} years", safeSymbol, years);
 
         Instant endDate = Instant.now();
         Instant startDate = endDate.minus(Duration.ofDays(365L * years));
 
         binanceApiService.fetchAndStoreHistoricalData(
-                symbol, apiProperties.defaultInterval(), startDate, endDate);
+                safeSymbol, apiProperties.defaultInterval(), startDate, endDate);
 
         BacktestReport report = backtestService.runBacktest(
-                symbol, startDate, endDate);
+                safeSymbol, startDate, endDate);
 
         return ResponseEntity.ok(report);
     }
