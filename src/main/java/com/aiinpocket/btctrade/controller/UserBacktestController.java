@@ -52,9 +52,9 @@ public class UserBacktestController {
             if (body.get("templateId") == null || body.get("symbol") == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "templateId 和 symbol 為必填"));
             }
-            Long templateId = ((Number) body.get("templateId")).longValue();
-            String symbol = ((String) body.get("symbol")).trim().toUpperCase();
-            int years = body.containsKey("years") ? ((Number) body.get("years")).intValue() : 5;
+            Long templateId = Long.parseLong(body.get("templateId").toString());
+            String symbol = body.get("symbol").toString().trim().toUpperCase();
+            int years = body.containsKey("years") ? Integer.parseInt(body.get("years").toString()) : 5;
 
             if (symbol.isEmpty() || symbol.length() > 20) {
                 return ResponseEntity.badRequest().body(Map.of("error", "symbol 格式不正確"));
