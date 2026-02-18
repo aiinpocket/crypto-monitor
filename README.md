@@ -386,6 +386,13 @@ git push main
 | `TradeSignal` | `idx_signal_symbol_backtest_time` | 儀表板最近訊號查詢 |
 | `TradePosition` | `idx_position_backtest_entry` | 非回測持倉按時間排序 |
 
+### 回測記憶體優化
+
+回測引擎針對大量資料（5 年 5 分鐘 ≈ 52 萬根 K 線）進行記憶體優化：
+- **輕量 BarData**：DB 查詢後立即轉為 record 結構，釋放 JPA entity 記憶體
+- **權益曲線降採樣**：超過 2000 點時自動取樣，避免前端圖表渲染瓶頸
+- **JVM 調優**：`-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC`，充分利用容器記憶體
+
 ### 回測指標計算優化
 
 ta4j 指標計算器支援預建立模式（`IndicatorSet`），回測迴圈外一次性建立所有指標實例，
