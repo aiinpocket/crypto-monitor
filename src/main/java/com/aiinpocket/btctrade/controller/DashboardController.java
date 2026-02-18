@@ -68,7 +68,7 @@ public class DashboardController {
         model.addAttribute("allSymbols", allTrackedSymbols);
         model.addAttribute("userSymbols", userSymbols);
         model.addAttribute("activeSymbol", activeSymbol);
-        model.addAttribute("livePositions", dashboardService.getLivePositions());
+        model.addAttribute("livePositions", dashboardService.getLivePositions(activeSymbol));
         model.addAttribute("openPosition", dashboardService.getOpenPosition(activeSymbol).orElse(null));
         model.addAttribute("klineCount", dashboardService.getKlineCount(activeSymbol, interval));
         model.addAttribute("recentSignals", dashboardService.getRecentSignals(activeSymbol));

@@ -101,20 +101,43 @@ public class StrategyPerformanceService {
     }
 
     /**
-     * 遍歷所有模板並行計算績效（供 Quartz Job 呼叫）。
-     * 利用 backtestExecutor 線程池平行處理，大幅縮短全量計算時間。
+     * 非同步逐一計算多個模板的績效（避免多個大型回測同時執行導致 OOM）。
+     * 單一 async 任務內順序執行，確保同一時間只有一個回測在跑。
+     */
+    @Async("backtestExecutor")
+    public void computeMultiplePerformancesAsync(List<Long> templateIds) {
+        log.info("[績效計算] 開始逐一計算 {} 個模板的績效", templateIds.size());
+        int completed = 0;
+        for (Long templateId : templateIds) {
+            try {
+                computePerformance(templateId);
+                completed++;
+            } catch (Exception e) {
+                log.error("[績效計算] 模板 {} 計算失敗: {}", templateId, e.getMessage());
+            }
+        }
+        log.info("[績效計算] 完成 {}/{} 個模板", completed, templateIds.size());
+    }
+
+    /**
+     * 逐一計算所有模板的績效（供 Quartz Job 和前端「重新計算」呼叫）。
+     * 改為逐一順序執行，避免多個大型回測同時佔用記憶體導致 OOM。
      */
     public void computeAllPerformances() {
         List<StrategyTemplate> allTemplates = templateRepo.findAll();
-        log.info("[績效排程] 開始非同步計算 {} 個模板的績效", allTemplates.size());
+        log.info("[績效排程] 開始逐一計算 {} 個模板的績效", allTemplates.size());
 
+        int completed = 0;
         for (StrategyTemplate template : allTemplates) {
             try {
-                computePerformanceAsync(template.getId());
+                computePerformance(template.getId());
+                completed++;
             } catch (Exception e) {
-                log.error("[績效排程] 提交模板 {} 非同步計算失敗: {}", template.getId(), e.getMessage());
+                log.error("[績效排程] 模板 {} ({}) 計算失敗: {}",
+                        template.getId(), template.getName(), e.getMessage());
             }
         }
+        log.info("[績效排程] 完成 {}/{} 個模板的績效計算", completed, allTemplates.size());
     }
 
     /**

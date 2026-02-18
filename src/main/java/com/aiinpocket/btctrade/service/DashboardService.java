@@ -27,8 +27,8 @@ public class DashboardService {
         return trackedSymbolRepo.findByActiveTrue();
     }
 
-    public List<TradePosition> getLivePositions() {
-        return positionRepo.findByBacktestOrderByEntryTimeAsc(false);
+    public List<TradePosition> getLivePositions(String symbol) {
+        return positionRepo.findBySymbolAndBacktestOrderByEntryTimeAsc(symbol, false);
     }
 
     public Optional<TradePosition> getOpenPosition(String symbol) {

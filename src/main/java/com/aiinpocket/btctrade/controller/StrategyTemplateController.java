@@ -135,17 +135,15 @@ public class StrategyTemplateController {
         }
     }
 
-    /** 手動觸發所有模板的績效重算 */
+    /** 手動觸發所有模板的績效重算（逐一順序執行，避免 OOM） */
     @PostMapping("/refresh-all-performance")
     public ResponseEntity<?> refreshAllPerformance(
             @AuthenticationPrincipal AppUserPrincipal principal) {
         log.info("[策略API] 用戶 {} 觸發所有模板績效重算", principal.getUserId());
-        // 查詢用戶可見的模板並逐一觸發
-        var templates = templateService.getTemplatesForUser(principal.getUserId());
-        for (var tmpl : templates) {
-            performanceService.computePerformanceAsync(tmpl.getId());
-        }
-        return ResponseEntity.ok(Map.of("message", "已排入 " + templates.size() + " 個模板的績效計算"));
+        var templateIds = templateService.getTemplatesForUser(principal.getUserId())
+                .stream().map(t -> t.getId()).toList();
+        performanceService.computeMultiplePerformancesAsync(templateIds);
+        return ResponseEntity.ok(Map.of("message", "已排入 " + templateIds.size() + " 個模板的績效計算（逐一執行）"));
     }
 
     /** 刪除用戶自訂模板（系統預設不可刪除） */

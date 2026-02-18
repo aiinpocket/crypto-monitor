@@ -38,6 +38,9 @@
                                 class="text-[13px] text-negative hover:text-red-300 cursor-pointer px-1">&#10005;</button>
                     </div>
                 </div>
+                <div x-show="tmpl.systemDefault" class="text-xs text-text-muted mb-2 leading-relaxed bg-primary/5 px-2 py-1 pixel-border-dark">
+                    &#128161; 系統預設策略不可直接編輯。請先點「複製卷軸」建立個人副本後再調整參數。
+                </div>
                 <div class="grid grid-cols-4 gap-2 text-xs">
                     <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">停損</span>
@@ -246,7 +249,32 @@
             getUnrealizedColor(s) { const p=s.periods?.find(p=>p.periodKey==='RECENT_1M'); if(!p||p.unrealizedPnlPct==null)return'text-text-muted'; return Number(p.unrealizedPnlPct)>=0?'text-green-400':'text-red-400'; },
             formatUnrealized(s) { const p=s.periods?.find(p=>p.periodKey==='RECENT_1M'); if(!p||p.unrealizedPnlPct==null)return'-';
                 const pct=(Number(p.unrealizedPnlPct)*100).toFixed(2); const dir=p.unrealizedDirection==='LONG'?'L':'S'; const sign=Number(p.unrealizedPnlPct)>=0?'+':''; return `${dir} ${sign}${pct}%`; },
-            async refreshAllPerformance() { this.perfLoading=true; try { const r=await fetch('/api/user/strategies/refresh-all-performance',{method:'POST'}); if(r.ok){this.showMsg('績效計算已排入佇列','success'); setTimeout(async()=>{await this.loadPerformance();this.perfLoading=false;},5000);} else{this.perfLoading=false;this.showMsg('觸發失敗','error');}} catch(e){this.perfLoading=false;this.showMsg('網路錯誤','error');} },
+            async refreshAllPerformance() {
+                this.perfLoading=true;
+                try {
+                    const r=await fetch('/api/user/strategies/refresh-all-performance',{method:'POST'});
+                    if(r.ok){
+                        this.showMsg('績效計算中，請稍候...','success');
+                        // 輪詢機制：每 5 秒檢查一次，最多等 3 分鐘
+                        let attempts = 0;
+                        const maxAttempts = 36;
+                        const poll = async () => {
+                            attempts++;
+                            await this.loadPerformance();
+                            if (this.perfSummaries.length > 0 && this.lastComputedTime) {
+                                this.perfLoading = false;
+                                this.showMsg('績效計算完成','success');
+                            } else if (attempts < maxAttempts) {
+                                setTimeout(poll, 5000);
+                            } else {
+                                this.perfLoading = false;
+                                this.showMsg('計算可能仍在進行中，請稍後手動重新整理','info');
+                            }
+                        };
+                        setTimeout(poll, 8000);
+                    } else {this.perfLoading=false;this.showMsg('觸發失敗','error');}
+                } catch(e){this.perfLoading=false;this.showMsg('網路錯誤','error');}
+            },
             async cloneTemplate(id) { const name=await pixelPrompt('請輸入新卷軸名稱:'); if(!name)return; try { const r=await fetch('/api/user/strategies/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sourceId:id,name})}); if(r.ok){this.showMsg('已複製卷軸！','success');await this.loadTemplates();}else{const e=await r.json();this.showMsg(e.error||'克隆失敗','error');}} catch(e){this.showMsg('網路錯誤','error');} },
             openEditor(t) { this.editing=JSON.parse(JSON.stringify(t)); this.showEditor=true; },
             async saveTemplate() { try { const r=await fetch(`/api/user/strategies/${this.editing.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(this.editing)}); if(r.ok){this.showEditor=false;this.showMsg('模板已更新','success');await this.loadTemplates();}else{const e=await r.json();this.showMsg(e.error||'更新失敗','error');}} catch(e){this.showMsg('網路錯誤','error');} },

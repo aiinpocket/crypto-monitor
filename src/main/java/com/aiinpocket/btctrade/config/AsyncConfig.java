@@ -64,15 +64,15 @@ public class AsyncConfig {
     /**
      * 回測執行緒池。
      * 用戶自訂策略回測 + 績效排程計算為 CPU 密集型操作，使用獨立線程池避免影響即時交易。
-     * 核心 2 線程 / 最大 4 線程：容納排程批次計算 + 用戶回測並行。
-     * 隊列容量 20：績效排程會一次排入多個模板的計算任務。
+     * 核心 1 線程 / 最大 2 線程：限制並行回測數量，避免多個 540K+ BarSeries 同時載入導致 OOM。
+     * 隊列容量 10：績效計算改為逐一順序執行，不再大量排入。
      */
     @Bean
     public TaskExecutor backtestExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);
-        executor.setMaxPoolSize(4);
-        executor.setQueueCapacity(20);
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(2);
+        executor.setQueueCapacity(10);
         executor.setThreadNamePrefix("backtest-");
         executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();

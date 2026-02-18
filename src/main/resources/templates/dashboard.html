@@ -22,9 +22,9 @@
                         <div :class="'pixel-char-' + charClass.toLowerCase()"></div>
                     </div>
                     <div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 leading-normal min-h-[1.5rem]">
                             <span class="font-heading text-sm text-primary glow-gold" x-text="'Lv.' + level"></span>
-                            <span class="text-[13px] text-text-heading" th:text="${user.displayName}">勇者</span>
+                            <span class="text-[13px] text-text-heading leading-normal" th:text="${user.displayName}">勇者</span>
                             <span class="text-xs px-1.5 py-0.5 pixel-border text-[13px]" x-text="charLabel"></span>
                         </div>
                         <!-- EXP 條 -->
@@ -82,7 +82,7 @@
             </div>
             <div class="pixel-card p-3">
                 <div class="text-xs text-text-muted mb-1">&#128202; K 線資料</div>
-                <div class="font-heading text-base text-text-main" th:text="${#numbers.formatInteger(klineCount, 1, 'COMMA')}">0</div>
+                <div class="font-heading text-base text-text-main"><span th:text="${#numbers.formatInteger(klineCount, 1, 'COMMA')}">0</span><span class="text-xs text-text-muted ml-1">筆</span></div>
             </div>
             <div class="pixel-card p-3">
                 <div class="text-xs text-text-muted mb-1">&#9876; 歷史交易</div>
@@ -93,7 +93,7 @@
                 <div th:if="${openPosition != null}">
                     <span class="text-[13px] font-heading"
                           th:classappend="${openPosition.direction.name() == 'LONG'} ? 'text-positive' : 'text-negative'"
-                          th:text="${openPosition.direction.name()}">LONG</span>
+                          th:text="${openPosition.direction.name() == 'LONG'} ? '做多' : '做空'">做多</span>
                 </div>
                 <div th:unless="${openPosition != null}" class="font-heading text-base text-text-muted">--</div>
             </div>
@@ -114,10 +114,14 @@
         <div>
             <h2 class="text-sm text-primary font-heading mb-2">&#128176; 交易紀錄</h2>
             <div class="pixel-card overflow-hidden overflow-x-auto scrollbar-thin">
-                <table class="w-full min-w-[400px]" aria-label="交易紀錄">
+                <table class="w-full min-w-[700px]" aria-label="交易紀錄">
                     <thead>
                         <tr class="border-b border-border-main">
                             <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">方向</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">進場時間</th>
+                            <th scope="col" class="px-3 py-2 text-right text-xs text-text-muted">進場價</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">出場時間</th>
+                            <th scope="col" class="px-3 py-2 text-right text-xs text-text-muted">出場價</th>
                             <th scope="col" class="px-3 py-2 text-right text-xs text-text-muted">報酬率</th>
                             <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">原因</th>
                             <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">狀態</th>
@@ -128,16 +132,30 @@
                             <td class="px-3 py-2">
                                 <span class="text-[13px] font-heading"
                                       th:classappend="${pos.direction.name() == 'LONG'} ? 'text-positive' : 'text-negative'"
-                                      th:text="${pos.direction.name()}">LONG</span>
+                                      th:text="${pos.direction.name() == 'LONG'} ? '做多' : '做空'">做多</span>
                             </td>
+                            <td class="px-3 py-2 text-[13px] text-text-muted"
+                                th:text="${T(java.time.LocalDateTime).ofInstant(pos.entryTime, T(java.time.ZoneId).of('Asia/Taipei')).format(T(java.time.format.DateTimeFormatter).ofPattern('MM/dd HH:mm'))}">-</td>
+                            <td class="px-3 py-2 text-right text-[13px] text-text-main"
+                                th:text="'$' + ${#numbers.formatDecimal(pos.entryPrice, 1, 'COMMA', 2, 'POINT')}">-</td>
+                            <td class="px-3 py-2 text-[13px] text-text-muted"
+                                th:text="${pos.exitTime != null ? T(java.time.LocalDateTime).ofInstant(pos.exitTime, T(java.time.ZoneId).of('Asia/Taipei')).format(T(java.time.format.DateTimeFormatter).ofPattern('MM/dd HH:mm')) : '--'}">-</td>
+                            <td class="px-3 py-2 text-right text-[13px] text-text-main"
+                                th:text="${pos.exitPrice != null ? '$' + #numbers.formatDecimal(pos.exitPrice, 1, 'COMMA', 2, 'POINT') : '--'}">-</td>
                             <td class="px-3 py-2 text-right text-[13px]"
                                 th:classappend="${pos.returnPct != null and pos.returnPct > 0} ? 'text-positive' : 'text-negative'"
-                                th:text="${pos.returnPct != null ? (pos.returnPct > 0 ? '+' : '') + pos.returnPct.movePointRight(2) + '%' : '--'}">-</td>
-                            <td class="px-3 py-2 text-[13px] text-text-muted" th:text="${pos.exitReason != null ? pos.exitReason : '--'}">-</td>
+                                th:text="${pos.returnPct != null ? (pos.returnPct > 0 ? '+' : '') + #numbers.formatDecimal(pos.returnPct * 100, 1, 2) + '%' : '--'}">-</td>
+                            <td class="px-3 py-2 text-[13px] text-text-muted"
+                                th:text="${pos.exitReason == null ? '--' :
+                                    pos.exitReason.name() == 'STOP_LOSS' ? '觸發停損' :
+                                    pos.exitReason.name() == 'SIGNAL_REVERSAL' ? '策略反轉' :
+                                    pos.exitReason.name() == 'RSI_EXTREME' ? 'RSI 極端值' :
+                                    pos.exitReason.name() == 'MAX_HOLDING_PERIOD' ? '持倉到期' :
+                                    pos.exitReason.name()}">-</td>
                             <td class="px-3 py-2">
                                 <span class="text-xs"
                                       th:classappend="${pos.status.name() == 'OPEN'} ? 'text-primary' : 'text-text-muted'"
-                                      th:text="${pos.status.name()}">-</span>
+                                      th:text="${pos.status.name() == 'OPEN' ? '持倉中' : '已平倉'}">-</span>
                             </td>
                         </tr>
                     </tbody>
