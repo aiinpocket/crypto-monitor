@@ -265,6 +265,44 @@
             });
         };
 
+        /* 全域像素輸入彈窗（取代 browser prompt） */
+        window.pixelPrompt = function(msg, defaultVal) {
+            return new Promise(resolve => {
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 z-[200] flex items-center justify-center bg-black/60';
+                const card = document.createElement('div');
+                card.className = 'pixel-card p-5 max-w-xs text-center';
+                card.innerHTML = '<div class="text-[14px] mb-3">&#9998;</div>';
+                const msgEl = document.createElement('div');
+                msgEl.className = 'text-text-heading text-[9px] mb-3 leading-relaxed';
+                msgEl.textContent = msg;
+                card.appendChild(msgEl);
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = defaultVal || '';
+                input.className = 'w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none mb-4';
+                card.appendChild(input);
+                const btnRow = document.createElement('div');
+                btnRow.className = 'flex justify-center gap-2';
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'pixel-btn pixel-btn-purple text-[8px] py-1.5 px-4';
+                cancelBtn.textContent = '\u53D6\u6D88';
+                cancelBtn.onclick = () => { overlay.remove(); resolve(null); };
+                const okBtn = document.createElement('button');
+                okBtn.className = 'pixel-btn pixel-btn-gold text-[8px] py-1.5 px-4';
+                okBtn.textContent = '\u78BA\u5B9A';
+                okBtn.onclick = () => { overlay.remove(); resolve(input.value || null); };
+                btnRow.appendChild(cancelBtn);
+                btnRow.appendChild(okBtn);
+                card.appendChild(btnRow);
+                overlay.appendChild(card);
+                overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.remove(); resolve(null); } });
+                input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { overlay.remove(); resolve(input.value || null); } });
+                document.body.appendChild(overlay);
+                input.focus();
+            });
+        };
+
         /* 全域 Toast 通知（像素風格） */
         window.toast = function(msg, type) {
             type = type || 'info';
