@@ -101,8 +101,9 @@
                 <span class="text-base font-heading text-primary" x-text="result?.profitFactor?.toFixed(2) || '--'"></span>
             </div>
             <div class="pixel-card p-3">
-                <span class="text-xs text-text-muted block mb-0.5">最終資金</span>
-                <span class="text-base font-heading text-positive" x-text="result ? '$' + parseFloat(result.finalCapital).toLocaleString(undefined, {minimumFractionDigits: 2}) : '--'"></span>
+                <span class="text-xs text-text-muted block mb-0.5">累計報酬</span>
+                <span class="text-base font-heading" :class="result?.totalReturn >= 0 ? 'text-positive' : 'text-negative'"
+                      x-text="result ? (result.totalReturn * 100).toFixed(2) + '%' : '--'"></span>
             </div>
             <div class="pixel-card p-3">
                 <span class="text-xs text-text-muted block mb-0.5">判定</span>

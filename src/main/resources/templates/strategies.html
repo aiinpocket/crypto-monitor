@@ -38,7 +38,7 @@
                                 class="text-[13px] text-negative hover:text-red-300 cursor-pointer px-1">&#10005;</button>
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-2 text-xs">
+                <div class="grid grid-cols-4 gap-2 text-xs">
                     <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">停損</span>
                         <span class="text-text-main" x-text="(tmpl.stopLossPct * 100).toFixed(1) + '%'"></span>
@@ -46,6 +46,10 @@
                     <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">移動停利</span>
                         <span class="text-text-main" x-text="(tmpl.trailingActivatePct * 100).toFixed(1) + '/' + (tmpl.trailingOffsetPct * 100).toFixed(1) + '%'"></span>
+                    </div>
+                    <div class="bg-bg-input p-1.5 pixel-border-dark">
+                        <span class="text-text-muted block">倉位</span>
+                        <span class="text-text-main" x-text="((tmpl.positionSizePct || 1) * 100).toFixed(0) + '%'"></span>
                     </div>
                     <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">EMA</span>
@@ -212,9 +216,10 @@
             ],
             riskFields: [
                 { key: 'stopLossPct', label: '停損 (%)', step: 0.001 }, { key: 'maxHoldingDays', label: '最大持倉(天)' },
-                { key: 'initialCapital', label: '初始資金', step: 1000 }, { key: 'maxTradesPerDay', label: '每日最大交易' },
+                { key: 'initialCapital', label: '模擬初始資金', step: 1000 }, { key: 'positionSizePct', label: '倉位比例 (0~1)', step: 0.05 },
                 { key: 'trailingActivatePct', label: '停利啟動 (%)', step: 0.001 }, { key: 'trailingOffsetPct', label: '停利偏移 (%)', step: 0.001 },
                 { key: 'timeStopDays', label: '時間止損(天)' }, { key: 'cooldownDays', label: '冷卻天數' },
+                { key: 'maxTradesPerDay', label: '每日最大交易' },
             ],
             rsiFields: [
                 { key: 'rsiLongEntryMin', label: '做多 RSI 下限' }, { key: 'rsiLongEntryMax', label: '做多 RSI 上限' },

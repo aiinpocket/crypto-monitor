@@ -187,7 +187,7 @@ public class BacktestService {
                 if (worstPrice != null) {
                     BigDecimal exitPrice = openPos.stopLossPrice;
                     BigDecimal pnl = calcPnl(openPos, exitPrice);
-                    capital = openPos.capitalUsed.add(pnl);
+                    capital = capital.add(openPos.capitalUsed).add(pnl);
                     tradeNumber++;
                     String reason = pnl.compareTo(BigDecimal.ZERO) >= 0 ? "TRAILING_STOP" : "STOP_LOSS";
                     trades.add(buildTradeDetail(tradeNumber, openPos, exitPrice, barTime, pnl, reason, i));
@@ -204,7 +204,7 @@ public class BacktestService {
                 if (exitReason != null) {
                     BigDecimal exitPrice = snap.closePrice();
                     BigDecimal pnl = calcPnl(openPos, exitPrice);
-                    capital = openPos.capitalUsed.add(pnl);
+                    capital = capital.add(openPos.capitalUsed).add(pnl);
                     tradeNumber++;
                     trades.add(buildTradeDetail(tradeNumber, openPos, exitPrice, barTime, pnl, exitReason, i));
                     openPos = null;
@@ -218,22 +218,27 @@ public class BacktestService {
                     PositionDirection dir = action == TradeAction.LONG_ENTRY
                             ? PositionDirection.LONG : PositionDirection.SHORT;
                     BigDecimal price = snap.closePrice();
-                    BigDecimal qty = capital.divide(price, 8, RoundingMode.HALF_DOWN);
+                    // 按倉位比例計算進場資金（positionSizePct=1.0 為全倉，0.5 為半倉）
+                    double posPct = backtestProps.risk().positionSizePct();
+                    BigDecimal positionCapital = capital.multiply(BigDecimal.valueOf(posPct))
+                            .setScale(2, RoundingMode.HALF_DOWN);
+                    BigDecimal qty = positionCapital.divide(price, 8, RoundingMode.HALF_DOWN);
                     double slPct = backtestProps.risk().stopLossPct();
                     BigDecimal slPrice = dir == PositionDirection.LONG
                             ? price.multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(slPct)))
                             : price.multiply(BigDecimal.ONE.add(BigDecimal.valueOf(slPct)));
 
-                    openPos = new OpenPos(dir, price, barTime, qty, capital,
+                    openPos = new OpenPos(dir, price, barTime, qty, positionCapital,
                             slPrice.setScale(8, RoundingMode.HALF_UP), i);
-                    capital = BigDecimal.ZERO;
+                    capital = capital.subtract(positionCapital);
                 }
             }
 
             // ====== 權益曲線（降採樣）======
+            // equity = 保留資金 + 持倉資金 + 浮動損益
             BigDecimal equity = capital;
             if (openPos != null) {
-                equity = openPos.capitalUsed.add(calcPnl(openPos, bar.close()));
+                equity = equity.add(openPos.capitalUsed).add(calcPnl(openPos, bar.close()));
             }
             int barOffset = i - warmup;
             // 始終保存交易發生的 bar + 按步長取樣 + 最後一根
@@ -252,7 +257,7 @@ public class BacktestService {
             // 標準回測：強制平倉
             BigDecimal lastClose = lastBar.close();
             BigDecimal pnl = calcPnl(openPos, lastClose);
-            capital = openPos.capitalUsed.add(pnl);
+            capital = capital.add(openPos.capitalUsed).add(pnl);
             tradeNumber++;
             trades.add(buildTradeDetail(tradeNumber, openPos, lastClose,
                     lastBar.openTime(), pnl, "END_OF_BACKTEST", series.getBarCount() - 1));
@@ -262,7 +267,7 @@ public class BacktestService {
             BigDecimal pnl = calcPnl(openPos, lastClose);
             unrealizedPnlPct = pnl.divide(openPos.capitalUsed, 6, RoundingMode.HALF_UP);
             unrealizedDirection = openPos.direction.name();
-            // finalCapital = 已回收資金（不含未平倉 PnL）
+            // finalCapital = 保留資金 + 已投入資金（不含未平倉 PnL）
             capital = capital.add(openPos.capitalUsed);
         }
 

@@ -104,6 +104,7 @@ trading:
     trailing-offset-pct: 0.003
     time-stop-days: 1
     cooldown-days: 0
+    position-size-pct: 1.0
   rsi:
     long-entry-min: 30
     long-entry-max: 65

@@ -30,7 +30,8 @@ public record TradingStrategyProperties(
             double trailingActivatePct,
             double trailingOffsetPct,
             int timeStopDays,
-            int cooldownDays
+            int cooldownDays,
+            double positionSizePct
     ) {}
 
     public record RsiParams(

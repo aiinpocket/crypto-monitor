@@ -181,6 +181,7 @@ public class StrategyTemplateService {
         template.setTrailingOffsetPct(updates.getTrailingOffsetPct());
         template.setTimeStopDays(updates.getTimeStopDays());
         template.setCooldownDays(updates.getCooldownDays());
+        template.setPositionSizePct(updates.getPositionSizePct());
 
         // RSI 參數
         template.setRsiLongEntryMin(updates.getRsiLongEntryMin());

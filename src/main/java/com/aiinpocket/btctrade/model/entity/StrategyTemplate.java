@@ -128,6 +128,11 @@ public class StrategyTemplate {
     @Column(nullable = false)
     private int cooldownDays;
 
+    /** 每次進場使用的資金比例（0.0~1.0，例如 0.5 表示 50%） */
+    @Column(nullable = false, columnDefinition = "double precision default 1.0")
+    @Builder.Default
+    private double positionSizePct = 1.0;
+
     // ======== RSI 進出場參數 ========
 
     /** 做多進場 RSI 下限 */
@@ -190,7 +195,7 @@ public class StrategyTemplate {
                         stopLossPct, maxHoldingDays, initialCapital,
                         maxTradesPerDay, leverage,
                         trailingActivatePct, trailingOffsetPct,
-                        timeStopDays, cooldownDays
+                        timeStopDays, cooldownDays, positionSizePct
                 ),
                 new TradingStrategyProperties.RsiParams(
                         rsiLongEntryMin, rsiLongEntryMax,
@@ -222,6 +227,7 @@ public class StrategyTemplate {
                 .leverage(r.leverage())
                 .trailingActivatePct(r.trailingActivatePct()).trailingOffsetPct(r.trailingOffsetPct())
                 .timeStopDays(r.timeStopDays()).cooldownDays(r.cooldownDays())
+                .positionSizePct(r.positionSizePct())
                 .rsiLongEntryMin(rsi.longEntryMin()).rsiLongEntryMax(rsi.longEntryMax())
                 .rsiShortEntryMin(rsi.shortEntryMin()).rsiShortEntryMax(rsi.shortEntryMax())
                 .rsiLongExitExtreme(rsi.longExitExtreme()).rsiShortExitExtreme(rsi.shortExitExtreme());
