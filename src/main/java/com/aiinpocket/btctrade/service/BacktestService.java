@@ -147,7 +147,16 @@ public class BacktestService {
             throw new IllegalStateException("需要至少 " + minBars + " 根 K 線，目前只有 " + klines.size());
         }
 
+        // 提取回測所需的輕量資料，釋放 Kline entity 佔用的記憶體
+        record BarData(Instant openTime, BigDecimal open, BigDecimal high,
+                       BigDecimal low, BigDecimal close, BigDecimal volume) {}
+        List<BarData> bars = klines.stream()
+                .map(k -> new BarData(k.getOpenTime(), k.getOpenPrice(), k.getHighPrice(),
+                        k.getLowPrice(), k.getClosePrice(), k.getVolume()))
+                .toList();
+
         BarSeries series = barSeriesFactory.createFromKlines(klines, "backtest");
+        klines = null; // 允許 GC 回收原始 Kline entities
 
         // ---- 預建立指標集合（迴圈外一次性建立，讓 ta4j 內部快取生效）----
         TechnicalIndicatorService.IndicatorSet indicatorSet = backtestIndicator.createIndicators(series);
@@ -160,17 +169,21 @@ public class BacktestService {
         List<EquityCurvePoint> equityCurve = new ArrayList<>();
         int tradeNumber = 0;
 
+        // 權益曲線降採樣：超過 2000 點時只取樣
+        int totalBarsToProcess = series.getBarCount() - Math.max(backtestProps.strategy().emaLong(), 35);
+        int equitySampleStep = Math.max(1, totalBarsToProcess / 2000);
+
         int warmup = Math.max(backtestProps.strategy().emaLong(), 35);
 
         for (int i = warmup; i < series.getBarCount(); i++) {
-            Kline bar = klines.get(i);
-            Instant barTime = bar.getOpenTime();
+            BarData bar = bars.get(i);
+            Instant barTime = bar.openTime();
 
             // ====== 步驟 1：更新移動停利 + 日內停損檢查 ======
             if (openPos != null) {
-                updateTrailingStop(openPos, bar, backtestProps);
+                updateTrailingStop(openPos, bar.high(), bar.low(), backtestProps);
 
-                BigDecimal worstPrice = intrabarStopCheck(openPos, bar);
+                BigDecimal worstPrice = intrabarStopCheck(openPos, bar.high(), bar.low());
                 if (worstPrice != null) {
                     BigDecimal exitPrice = openPos.stopLossPrice;
                     BigDecimal pnl = calcPnl(openPos, exitPrice);
@@ -217,29 +230,35 @@ public class BacktestService {
                 }
             }
 
-            // ====== 權益曲線 ======
+            // ====== 權益曲線（降採樣）======
             BigDecimal equity = capital;
             if (openPos != null) {
-                equity = openPos.capitalUsed.add(calcPnl(openPos, bar.getClosePrice()));
+                equity = openPos.capitalUsed.add(calcPnl(openPos, bar.close()));
             }
-            equityCurve.add(new EquityCurvePoint(barTime, equity));
+            int barOffset = i - warmup;
+            // 始終保存交易發生的 bar + 按步長取樣 + 最後一根
+            boolean isTradeBoundary = (openPos == null && barOffset > 0) || barOffset == 0;
+            if (barOffset % equitySampleStep == 0 || isTradeBoundary || i == series.getBarCount() - 1) {
+                equityCurve.add(new EquityCurvePoint(barTime, equity));
+            }
         }
 
         // 結束時處理未平倉部位
         BigDecimal unrealizedPnlPct = null;
         String unrealizedDirection = null;
 
+        BarData lastBar = bars.getLast();
         if (openPos != null && forceCloseAtEnd) {
             // 標準回測：強制平倉
-            BigDecimal lastClose = klines.getLast().getClosePrice();
+            BigDecimal lastClose = lastBar.close();
             BigDecimal pnl = calcPnl(openPos, lastClose);
             capital = openPos.capitalUsed.add(pnl);
             tradeNumber++;
             trades.add(buildTradeDetail(tradeNumber, openPos, lastClose,
-                    klines.getLast().getOpenTime(), pnl, "END_OF_BACKTEST", series.getBarCount() - 1));
+                    lastBar.openTime(), pnl, "END_OF_BACKTEST", series.getBarCount() - 1));
         } else if (openPos != null) {
             // 績效計算模式：計算未實現損益，不加入 trades
-            BigDecimal lastClose = klines.getLast().getClosePrice();
+            BigDecimal lastClose = lastBar.close();
             BigDecimal pnl = calcPnl(openPos, lastClose);
             unrealizedPnlPct = pnl.divide(openPos.capitalUsed, 6, RoundingMode.HALF_UP);
             unrealizedDirection = openPos.direction.name();
@@ -258,14 +277,15 @@ public class BacktestService {
      * 將停損價上調至 (entryPrice + offset)，鎖定部分利潤。
      * 持續追蹤最高浮盈，動態上調停損。
      */
-    private void updateTrailingStop(OpenPos pos, Kline bar, TradingStrategyProperties backtestProps) {
+    private void updateTrailingStop(OpenPos pos, BigDecimal highPrice, BigDecimal lowPrice,
+                                    TradingStrategyProperties backtestProps) {
         var risk = backtestProps.risk();
         double activatePct = risk.trailingActivatePct();
         double offsetPct = risk.trailingOffsetPct();
 
         // 計算當根 K 線中的最有利價格
         BigDecimal bestPrice = pos.direction == PositionDirection.LONG
-                ? bar.getHighPrice() : bar.getLowPrice();
+                ? highPrice : lowPrice;
 
         // 計算當前浮盈百分比
         double pnlPct = pos.direction == PositionDirection.LONG
@@ -301,13 +321,13 @@ public class BacktestService {
     }
 
     // ---- 日內停損檢查：用最高/最低價判斷是否觸及停損 ----
-    private BigDecimal intrabarStopCheck(OpenPos pos, Kline bar) {
+    private BigDecimal intrabarStopCheck(OpenPos pos, BigDecimal highPrice, BigDecimal lowPrice) {
         if (pos.direction == PositionDirection.LONG) {
-            if (bar.getLowPrice().compareTo(pos.stopLossPrice) <= 0) {
+            if (lowPrice.compareTo(pos.stopLossPrice) <= 0) {
                 return pos.stopLossPrice;
             }
         } else {
-            if (bar.getHighPrice().compareTo(pos.stopLossPrice) >= 0) {
+            if (highPrice.compareTo(pos.stopLossPrice) >= 0) {
                 return pos.stopLossPrice;
             }
         }

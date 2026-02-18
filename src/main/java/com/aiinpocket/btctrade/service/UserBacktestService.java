@@ -10,7 +10,6 @@ import com.aiinpocket.btctrade.repository.BacktestRunRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -28,14 +27,6 @@ import java.util.List;
  *   <li>每位用戶同時只能有 1 個 RUNNING 回測，防止 CPU 過載</li>
  *   <li>結果以 JSON 序列化儲存到 DB（BacktestRun.resultJson），供前端展示</li>
  * </ul>
- *
- * <p>流程：
- * <ol>
- *   <li>用戶選擇策略模板、幣對和時間範圍</li>
- *   <li>{@link #submitBacktest} 建立 BacktestRun 紀錄（PENDING）並提交非同步任務</li>
- *   <li>{@link #executeBacktest} 在 backtestExecutor 中執行回測計算</li>
- *   <li>完成後更新狀態為 COMPLETED 並儲存 JSON 結果</li>
- * </ol>
  */
 @Service
 @Slf4j
@@ -46,18 +37,21 @@ public class UserBacktestService {
     private final StrategyTemplateService templateService;
     private final ObjectMapper objectMapper;
     private final GamificationService gamificationService;
+    private final TaskExecutor backtestExecutor;
 
     public UserBacktestService(
             BacktestRunRepository runRepo,
             BacktestService backtestService,
             StrategyTemplateService templateService,
             ObjectMapper objectMapper,
-            GamificationService gamificationService) {
+            GamificationService gamificationService,
+            @Qualifier("backtestExecutor") TaskExecutor backtestExecutor) {
         this.runRepo = runRepo;
         this.backtestService = backtestService;
         this.templateService = templateService;
         this.objectMapper = objectMapper;
         this.gamificationService = gamificationService;
+        this.backtestExecutor = backtestExecutor;
     }
 
     /**
@@ -96,8 +90,10 @@ public class UserBacktestService {
         log.info("[用戶回測] 用戶 {} 提交回測: runId={}, template={}, symbol={}, period={} → {}",
                 user.getId(), run.getId(), template.getName(), symbol, startDate, endDate);
 
-        // 提交非同步執行
-        executeBacktest(run.getId(), template.toProperties());
+        // 透過 TaskExecutor 提交非同步執行（避免 @Async 自我呼叫失效問題）
+        final Long runId = run.getId();
+        final TradingStrategyProperties customProps = template.toProperties();
+        backtestExecutor.execute(() -> executeBacktest(runId, customProps));
         return run;
     }
 
@@ -109,8 +105,8 @@ public class UserBacktestService {
      * @param runId         回測紀錄 ID
      * @param customProps   策略模板轉換後的參數
      */
-    @Async("backtestExecutor")
-    public void executeBacktest(Long runId, TradingStrategyProperties customProps) {
+    /** 在 backtestExecutor 執行緒池中執行回測（由 submitBacktest 透過 executor 提交） */
+    void executeBacktest(Long runId, TradingStrategyProperties customProps) {
         BacktestRun run = runRepo.findById(runId).orElse(null);
         if (run == null) {
             log.error("[用戶回測] 找不到回測紀錄: runId={}", runId);
