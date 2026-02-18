@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
@@ -168,14 +169,16 @@ public class UserBacktestService {
         }
     }
 
-    /** 查詢用戶的回測歷史（最近 10 筆） */
+    /** 查詢用戶的回測歷史（最近 10 筆，JOIN FETCH 避免 LazyInitializationException） */
+    @Transactional(readOnly = true)
     public List<BacktestRun> getRecentRuns(Long userId) {
-        return runRepo.findTop10ByUserIdOrderByCreatedAtDesc(userId);
+        return runRepo.findRecentByUserIdWithRelations(userId);
     }
 
-    /** 查詢單筆回測紀錄（驗證用戶權限） */
+    /** 查詢單筆回測紀錄（驗證用戶權限，JOIN FETCH 避免 LazyInitializationException） */
+    @Transactional(readOnly = true)
     public BacktestRun getRun(Long runId, Long userId) {
-        BacktestRun run = runRepo.findById(runId)
+        BacktestRun run = runRepo.findByIdWithRelations(runId)
                 .orElseThrow(() -> new IllegalArgumentException("回測紀錄不存在: id=" + runId));
         if (!run.getUser().getId().equals(userId)) {
             throw new IllegalArgumentException("無權存取此回測紀錄");

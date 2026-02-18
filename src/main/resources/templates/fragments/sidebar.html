@@ -186,7 +186,7 @@
             if (resp.ok) location.reload();
         }
         async function removeFromWatchlist(symbol) {
-            if (!confirm('確定要從觀察清單移除 ' + symbol + '？')) return;
+            if (!await pixelConfirm('\u78BA\u5B9A\u8981\u5F9E\u89C0\u5BDF\u6E05\u55AE\u79FB\u9664 ' + symbol + '\uFF1F')) return;
             await fetch('/api/user/watchlist/' + symbol, { method: 'DELETE' }); location.reload();
         }
         async function reenableSymbol(symbol) {

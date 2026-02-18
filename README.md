@@ -116,6 +116,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 - **OAuth2 認證**：所有 API 端點強制 Google OAuth2 登入
 - **資源授權檢查**：通知管道、策略模板等操作均驗證用戶所有權
 - **輸入驗證**：回測參數範圍限制（年數 1~10、symbol 長度限制）
+- **全域異常處理**：`@RestControllerAdvice` 統一攔截異常，回傳一致的 JSON 錯誤格式
 - **錯誤訊息保護**：API 僅回傳使用者友善錯誤，不暴露內部實作細節
 - **XSS 防護**：WebSocket 訊號使用 DOM API 建構（非 `innerHTML`），前端一律 `x-text`
 - **WebSocket 安全**：原子化 session 清理（`computeIfPresent`）+ 指數退避重連
@@ -128,6 +129,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 - **表格水平滾動**：交易紀錄、績效對比表支援手機端橫向捲動
 - **彈窗自適應**：策略編輯/幣對搜尋彈窗加入 `max-w-[90vw]` 防止手機溢出
 - **Toast 通知系統**：取代 `alert()`，使用非阻塞式浮動通知
+- **像素確認彈窗**：`pixelConfirm()` 取代原生 `confirm()`，維持一致的 RPG 風格
 
 ### 無障礙性 (Accessibility)
 

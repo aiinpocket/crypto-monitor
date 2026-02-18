@@ -354,7 +354,7 @@
             },
             async deleteChannel(type) {
                 const cid = type==='DISCORD'?this.discord.id:type==='GMAIL'?this.gmail.id:this.telegram.id;
-                if (!cid || !confirm('確定刪除此通知管道？')) return;
+                if (!cid || !await pixelConfirm('\u78BA\u5B9A\u522A\u9664\u6B64\u901A\u77E5\u7BA1\u9053\uFF1F')) return;
                 try {
                     const r = await fetch(`/api/user/notifications/${cid}`, { method: 'DELETE' });
                     if (r.ok) {

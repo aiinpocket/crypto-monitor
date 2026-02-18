@@ -2,8 +2,6 @@ package com.aiinpocket.btctrade.controller;
 
 import com.aiinpocket.btctrade.model.entity.AppUser;
 import com.aiinpocket.btctrade.security.AppUserPrincipal;
-import com.aiinpocket.btctrade.service.StrategyTemplateService;
-import com.aiinpocket.btctrade.service.UserBacktestService;
 import com.aiinpocket.btctrade.service.UserWatchlistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +19,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Slf4j
 public class StrategiesPageController {
 
-    private final StrategyTemplateService templateService;
-    private final UserBacktestService backtestService;
     private final UserWatchlistService watchlistService;
 
     /**
@@ -39,8 +35,6 @@ public class StrategiesPageController {
         log.debug("[策略頁面] 使用者 {} 載入策略管理頁面", user.getEmail());
 
         model.addAttribute("user", user);
-        model.addAttribute("templates", templateService.getTemplatesForUser(user.getId()));
-        model.addAttribute("watchlistSymbols", watchlistService.getWatchlistSymbols(user.getId()));
         return "strategies";
     }
 
@@ -57,8 +51,6 @@ public class StrategiesPageController {
         log.debug("[回測頁面] 使用者 {} 載入回測頁面", user.getEmail());
 
         model.addAttribute("user", user);
-        model.addAttribute("templates", templateService.getTemplatesForUser(user.getId()));
-        model.addAttribute("recentRuns", backtestService.getRecentRuns(user.getId()));
         model.addAttribute("watchlistSymbols", watchlistService.getWatchlistSymbols(user.getId()));
         return "backtest";
     }
