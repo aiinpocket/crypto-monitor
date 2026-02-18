@@ -1,75 +1,85 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<nav th:fragment="navbar(user)" class="fixed top-0 left-0 right-0 z-50 bg-bg-card/95 backdrop-blur border-b border-border-main px-4 md:px-6 py-3"
+<nav th:fragment="navbar(user)" class="fixed top-0 left-0 right-0 z-50 bg-bg-card/95 backdrop-blur pixel-border-dark px-3 md:px-5 py-2"
      x-data="{ mobileOpen: false }">
     <div class="flex items-center justify-between max-w-screen-2xl mx-auto">
-        <!-- Logo -->
-        <div class="flex items-center gap-3">
-            <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                <path d="M2 17l10 5 10-5"/>
-                <path d="M2 12l10 5 10-5"/>
-            </svg>
-            <span class="font-heading text-xl font-bold text-primary glow-gold">BtcTrade</span>
-        </div>
+        <!-- Logo 像素風格 -->
+        <a href="/" class="flex items-center gap-2 no-underline">
+            <div class="text-[16px]">&#9876;</div>
+            <span class="font-heading text-[12px] text-primary glow-gold">BtcTrade</span>
+        </a>
 
-        <!-- Mobile menu button -->
-        <button @click="mobileOpen = !mobileOpen" class="md:hidden text-text-muted hover:text-text-main transition-colors cursor-pointer">
-            <svg x-show="!mobileOpen" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            <svg x-show="mobileOpen" x-cloak class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <!-- 手機選單按鈕 -->
+        <button @click="mobileOpen = !mobileOpen" class="md:hidden text-text-muted hover:text-primary cursor-pointer">
+            <span x-show="!mobileOpen" class="text-[14px]">&#9776;</span>
+            <span x-show="mobileOpen" x-cloak class="text-[14px]">&#10005;</span>
         </button>
 
-        <!-- Nav Links (desktop) -->
-        <div class="hidden md:flex items-center gap-6">
-            <a href="/" class="text-text-muted hover:text-text-main transition-colors duration-200 text-sm font-medium cursor-pointer">
-                <svg class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                Dashboard
+        <!-- 桌面導航 -->
+        <div class="hidden md:flex items-center gap-1">
+            <a href="/" class="pixel-btn pixel-btn-gold text-[7px] py-1 px-2">
+                &#127968; 主控台
             </a>
-            <a href="/strategies" class="text-text-muted hover:text-text-main transition-colors duration-200 text-sm font-medium cursor-pointer">
-                <svg class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
-                Strategies
+            <a href="/strategies" class="pixel-btn pixel-btn-purple text-[7px] py-1 px-2">
+                &#128214; 策略
             </a>
-            <a href="/backtest" class="text-text-muted hover:text-text-main transition-colors duration-200 text-sm font-medium cursor-pointer">
-                <svg class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                Backtest
+            <a href="/backtest" class="pixel-btn pixel-btn-gold text-[7px] py-1 px-2">
+                &#9889; 回測
             </a>
-            <a href="/settings" class="text-text-muted hover:text-text-main transition-colors duration-200 text-sm font-medium cursor-pointer">
-                <svg class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                Settings
+            <a href="/settings" class="pixel-btn pixel-btn-purple text-[7px] py-1 px-2">
+                &#9881; 設定
             </a>
         </div>
 
-        <!-- User (desktop) -->
-        <div class="hidden md:flex items-center gap-3">
-            <div class="text-right">
-                <div class="text-sm font-medium text-text-main" th:text="${user.displayName}">User</div>
-                <div class="text-xs text-text-muted" th:text="${user.email}">email</div>
-            </div>
-            <img th:if="${user.avatarUrl != null}" th:src="${user.avatarUrl}"
-                 class="w-9 h-9 rounded-full border-2 border-primary/50" alt="avatar">
-            <div th:unless="${user.avatarUrl != null}"
-                 class="w-9 h-9 rounded-full bg-cta flex items-center justify-center text-white font-bold text-sm"
-                 th:text="${user.displayName != null ? user.displayName.substring(0,1) : '?'}">U</div>
-            <a href="/logout" class="ml-2 text-text-muted hover:text-negative transition-colors duration-200 cursor-pointer" title="登出">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </a>
-        </div>
-    </div>
-
-    <!-- Mobile dropdown menu -->
-    <div x-show="mobileOpen" x-cloak x-transition
-         class="md:hidden mt-3 pb-3 border-t border-border-main pt-3 space-y-2">
-        <a href="/" class="block px-3 py-2 text-text-muted hover:text-text-main hover:bg-white/5 rounded-lg text-sm font-medium">Dashboard</a>
-        <a href="/strategies" class="block px-3 py-2 text-text-muted hover:text-text-main hover:bg-white/5 rounded-lg text-sm font-medium">Strategies</a>
-        <a href="/backtest" class="block px-3 py-2 text-text-muted hover:text-text-main hover:bg-white/5 rounded-lg text-sm font-medium">Backtest</a>
-        <a href="/settings" class="block px-3 py-2 text-text-muted hover:text-text-main hover:bg-white/5 rounded-lg text-sm font-medium">Settings</a>
-        <div class="flex items-center justify-between px-3 py-2 border-t border-border-main mt-2 pt-3">
+        <!-- 用戶區域（桌面） -->
+        <div class="hidden md:flex items-center gap-3" x-data="navProfile()" x-init="load()">
+            <!-- EXP 條 -->
             <div class="flex items-center gap-2">
-                <img th:if="${user.avatarUrl != null}" th:src="${user.avatarUrl}" class="w-7 h-7 rounded-full" alt="avatar">
-                <span class="text-sm text-text-main" th:text="${user.displayName}">User</span>
+                <span class="text-primary text-[8px] font-heading" x-text="'Lv.' + level"></span>
+                <div class="pixel-exp-bar w-24">
+                    <div class="pixel-exp-fill" :style="'width:' + expPct + '%'"></div>
+                </div>
             </div>
-            <a href="/logout" class="text-sm text-negative hover:underline">登出</a>
+            <!-- 用戶名 -->
+            <div class="text-[8px] text-text-main" th:text="${user.displayName}">User</div>
+            <!-- 頭像 -->
+            <img th:if="${user.avatarUrl != null}" th:src="${user.avatarUrl}"
+                 class="w-7 h-7 border-2 border-primary" style="image-rendering: pixelated;" alt="avatar">
+            <div th:unless="${user.avatarUrl != null}"
+                 class="w-7 h-7 bg-primary flex items-center justify-center text-pixel-dark text-[8px] font-heading border-2 border-primary-hover"
+                 th:text="${user.displayName != null ? user.displayName.substring(0,1) : '?'}">U</div>
+            <a href="/logout" class="text-text-muted hover:text-negative text-[10px] cursor-pointer" title="登出">&#10140;</a>
         </div>
     </div>
+
+    <!-- 手機下拉選單 -->
+    <div x-show="mobileOpen" x-cloak x-transition
+         class="md:hidden mt-2 pb-2 border-t border-border-main pt-2 space-y-1">
+        <a href="/" class="block px-3 py-2 text-text-muted hover:text-primary text-[8px]">&#127968; 主控台</a>
+        <a href="/strategies" class="block px-3 py-2 text-text-muted hover:text-primary text-[8px]">&#128214; 策略</a>
+        <a href="/backtest" class="block px-3 py-2 text-text-muted hover:text-primary text-[8px]">&#9889; 回測</a>
+        <a href="/settings" class="block px-3 py-2 text-text-muted hover:text-primary text-[8px]">&#9881; 設定</a>
+        <div class="flex items-center justify-between px-3 py-2 border-t border-border-main mt-1 pt-2">
+            <span class="text-[8px] text-text-main" th:text="${user.displayName}">User</span>
+            <a href="/logout" class="text-[8px] text-negative">登出</a>
+        </div>
+    </div>
+
+    <script>
+        function navProfile() {
+            return {
+                level: 1, expPct: 0,
+                async load() {
+                    try {
+                        const resp = await fetch('/api/user/gamification/profile');
+                        if (!resp.ok) return;
+                        const p = await resp.json();
+                        this.level = p.level;
+                        this.expPct = Math.min(100, p.expProgressPct);
+                    } catch (e) { /* 靜默失敗 */ }
+                }
+            };
+        }
+    </script>
 </nav>
 </html>

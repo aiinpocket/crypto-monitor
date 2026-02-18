@@ -1,45 +1,66 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="zh-TW">
-<head th:replace="~{fragments/head :: head('BtcTrade - Login')}"></head>
-<body class="bg-bg-dark text-text-main font-body min-h-screen flex items-center justify-center">
-    <div class="w-full max-w-md px-6">
-        <!-- Logo -->
-        <div class="text-center mb-10">
-            <div class="flex items-center justify-center gap-3 mb-4">
-                <svg class="w-12 h-12 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                    <path d="M2 17l10 5 10-5"/>
-                    <path d="M2 12l10 5 10-5"/>
-                </svg>
-            </div>
-            <h1 class="font-heading text-3xl font-bold text-primary glow-gold">BtcTrade</h1>
-            <p class="text-text-muted mt-2 text-sm">BTC 合約交易策略監控系統</p>
+<head th:replace="~{fragments/head :: head('BtcTrade - 冒險開始')}"></head>
+<body class="bg-bg-dark text-text-main min-h-screen flex items-center justify-center relative overflow-hidden">
+
+    <!-- 像素星空背景 -->
+    <div class="absolute inset-0 opacity-30"
+         style="background: radial-gradient(1px 1px at 10% 20%, #e2b714 1px, transparent 0),
+                            radial-gradient(1px 1px at 30% 50%, #a855f7 1px, transparent 0),
+                            radial-gradient(1px 1px at 50% 10%, #e2b714 1px, transparent 0),
+                            radial-gradient(1px 1px at 70% 40%, #38bdf8 1px, transparent 0),
+                            radial-gradient(1px 1px at 90% 70%, #e2b714 1px, transparent 0),
+                            radial-gradient(1px 1px at 15% 80%, #a855f7 1px, transparent 0),
+                            radial-gradient(1px 1px at 45% 65%, #38bdf8 1px, transparent 0),
+                            radial-gradient(1px 1px at 80% 15%, #e2b714 1px, transparent 0),
+                            radial-gradient(1px 1px at 60% 85%, #a855f7 1px, transparent 0),
+                            radial-gradient(1px 1px at 25% 35%, #4ade80 1px, transparent 0);"></div>
+
+    <!-- 像素山脈剪影 -->
+    <div class="absolute bottom-0 left-0 right-0 h-32 opacity-20"
+         style="background:
+            linear-gradient(135deg, transparent 33%, #2a2a4a 33% 34%, transparent 34%),
+            linear-gradient(225deg, transparent 33%, #2a2a4a 33% 34%, transparent 34%),
+            linear-gradient(135deg, transparent 50%, #1a1a2e 50% 51%, transparent 51%),
+            linear-gradient(225deg, transparent 50%, #1a1a2e 50% 51%, transparent 51%);
+            background-size: 64px 64px;
+            background-position: bottom;
+            background-repeat: repeat-x;">
+    </div>
+
+    <div class="w-full max-w-sm px-6 relative z-10">
+        <!-- Logo 像素城堡 -->
+        <div class="text-center mb-8">
+            <div class="text-[32px] mb-3 anim-sparkle inline-block">&#9876;</div>
+            <h1 class="font-heading text-[16px] text-primary glow-gold">BtcTrade</h1>
+            <p class="text-text-muted mt-3 text-[8px] leading-relaxed">加密貨幣交易冒險<br>策略監控 RPG</p>
         </div>
 
-        <!-- Login Card -->
-        <div class="bg-bg-card border border-border-main rounded-2xl p-8 shadow-2xl">
-            <h2 class="text-center text-lg font-semibold text-text-heading mb-6">登入您的帳戶</h2>
+        <!-- 登入卡片 -->
+        <div class="pixel-card p-6">
+            <h2 class="text-center text-[10px] text-text-heading mb-5">&#128100; 選擇你的冒險入口</h2>
 
-            <!-- Google Login Button -->
+            <!-- Google 登入按鈕 -->
             <a href="/oauth2/authorization/google"
-               class="flex items-center justify-center gap-3 w-full px-6 py-3 bg-white text-gray-800 rounded-xl font-semibold text-sm hover:bg-gray-100 transition-colors duration-200 cursor-pointer shadow-lg">
-                <svg class="w-5 h-5" viewBox="0 0 24 24">
+               class="pixel-btn pixel-btn-gold w-full flex items-center justify-center gap-2 text-[8px] py-3 no-underline">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" style="image-rendering: auto;">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
-                使用 Google 帳戶登入
+                以 Google 勇者身份進入
             </a>
 
-            <div class="mt-6 text-center text-xs text-text-muted">
-                登入即表示您同意使用本系統的交易資訊監控功能
+            <div class="mt-5 text-center text-[7px] text-text-muted leading-relaxed">
+                登入即展開你的交易冒險之旅
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="text-center mt-8 text-xs text-text-muted">
+        <!-- 底部資訊 -->
+        <div class="text-center mt-6 text-[7px] text-text-muted">
             <p>Powered by Spring Boot 4 + ta4j</p>
+            <p class="mt-1 text-primary/50">&#9733; 升級你的策略，征服市場 &#9733;</p>
         </div>
     </div>
 </body>

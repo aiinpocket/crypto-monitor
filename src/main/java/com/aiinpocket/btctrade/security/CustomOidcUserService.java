@@ -2,6 +2,7 @@ package com.aiinpocket.btctrade.security;
 
 import com.aiinpocket.btctrade.model.entity.AppUser;
 import com.aiinpocket.btctrade.repository.AppUserRepository;
+import com.aiinpocket.btctrade.service.GamificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
@@ -25,6 +26,7 @@ import java.time.Instant;
 public class CustomOidcUserService extends OidcUserService {
 
     private final AppUserRepository appUserRepo;
+    private final GamificationService gamificationService;
 
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
@@ -53,9 +55,19 @@ public class CustomOidcUserService extends OidcUserService {
         appUser.setLastLoginAt(Instant.now());
         appUser.setDisplayName(name);
         appUser.setAvatarUrl(avatar);
+        appUser.setTotalLogins(appUser.getTotalLogins() + 1);
         appUserRepo.save(appUser);
 
-        log.info("[認證] 使用者登入成功: id={}, email={}", appUser.getId(), email);
+        // 遊戲化：登入經驗 + 每日獎勵 + 成就檢查
+        try {
+            gamificationService.awardExp(appUser, 5, "LOGIN");
+            gamificationService.claimDailyReward(appUser);
+            gamificationService.checkAndUnlockAchievements(appUser, "LOGIN");
+        } catch (Exception e) {
+            log.warn("[遊戲化] 登入獎勵處理失敗: userId={}, error={}", appUser.getId(), e.getMessage());
+        }
+
+        log.info("[認證] 使用者登入成功: id={}, email={}, level={}", appUser.getId(), email, appUser.getLevel());
 
         return new AppUserPrincipal(oidcUser, appUser);
     }

@@ -34,6 +34,7 @@ public class StrategyTemplateService {
     private final StrategyPerformanceRepository perfRepo;
     private final TradingStrategyProperties defaultProps;
     private final StrategyPerformanceService performanceService;
+    private final GamificationService gamificationService;
 
     /** 每位用戶最大自訂模板數量 */
     private static final int MAX_USER_TEMPLATES = 10;
@@ -123,6 +124,14 @@ public class StrategyTemplateService {
 
         // 非同步計算新模板的績效
         performanceService.computePerformanceAsync(clone.getId());
+
+        // 遊戲化：克隆策略獎勵
+        try {
+            gamificationService.awardExp(user, 15, "STRATEGY_CLONE");
+            gamificationService.checkAndUnlockAchievements(user, "STRATEGY");
+        } catch (Exception e) {
+            log.warn("[遊戲化] 策略克隆獎勵失敗: userId={}", user.getId());
+        }
 
         return clone;
     }

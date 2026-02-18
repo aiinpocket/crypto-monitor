@@ -10,25 +10,30 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#F59E0B',
-                        'primary-hover': '#D97706',
+                        primary: '#e2b714',
+                        'primary-hover': '#c9a012',
                         secondary: '#FBBF24',
-                        cta: '#8B5CF6',
-                        'cta-hover': '#7C3AED',
-                        'bg-dark': '#0F172A',
-                        'bg-card': '#1E293B',
-                        'bg-input': '#0F172A',
-                        'border-main': '#334155',
-                        'text-main': '#F8FAFC',
-                        'text-muted': '#94A3B8',
-                        'text-heading': '#E2E8F0',
-                        positive: '#22C55E',
-                        negative: '#EF4444',
-                        warning: '#F59E0B',
+                        cta: '#a855f7',
+                        'cta-hover': '#9333ea',
+                        'bg-dark': '#1a1a2e',
+                        'bg-card': '#16213e',
+                        'bg-input': '#0f0f23',
+                        'border-main': '#2a2a4a',
+                        'text-main': '#e8e8f0',
+                        'text-muted': '#7a7a9a',
+                        'text-heading': '#d0d0e8',
+                        positive: '#4ade80',
+                        negative: '#ef4444',
+                        warning: '#e2b714',
+                        'pixel-gold': '#e2b714',
+                        'pixel-purple': '#a855f7',
+                        'pixel-blue': '#38bdf8',
+                        'pixel-dark': '#0f0f23',
                     },
                     fontFamily: {
-                        heading: ['Orbitron', 'sans-serif'],
-                        body: ['Exo 2', 'sans-serif'],
+                        heading: ['"Press Start 2P"', 'monospace'],
+                        body: ['"Press Start 2P"', 'monospace'],
+                        mono: ['"Press Start 2P"', 'monospace'],
                     }
                 }
             }
@@ -36,23 +41,199 @@
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Exo 2', sans-serif; }
-        .font-heading { font-family: 'Orbitron', sans-serif; }
-        .glow-gold { text-shadow: 0 0 10px rgba(245,158,11,0.3); }
-        .glow-purple { box-shadow: 0 0 15px rgba(139,92,246,0.2); }
-        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
-        .scrollbar-thin::-webkit-scrollbar-track { background: #1E293B; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
-        /* Toast 動畫 */
-        .toast-enter { animation: toastIn 0.3s ease-out; }
-        .toast-exit { animation: toastOut 0.3s ease-in forwards; }
-        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        body { font-family: 'Press Start 2P', monospace; font-size: 10px; image-rendering: pixelated; }
+        * { image-rendering: pixelated; }
+
+        /* ===== 像素邊框系統 ===== */
+        .pixel-border {
+            border: 3px solid #e2b714;
+            border-image: none;
+            box-shadow:
+                inset -2px -2px 0 0 #8a6d0a,
+                inset 2px 2px 0 0 #ffd642;
+        }
+        .pixel-border-purple {
+            border: 3px solid #a855f7;
+            box-shadow:
+                inset -2px -2px 0 0 #6b21a8,
+                inset 2px 2px 0 0 #c084fc;
+        }
+        .pixel-border-dark {
+            border: 3px solid #2a2a4a;
+            box-shadow:
+                inset -2px -2px 0 0 #1a1a2e,
+                inset 2px 2px 0 0 #3a3a5a;
+        }
+
+        /* ===== 像素按鈕 ===== */
+        .pixel-btn {
+            border: 3px solid;
+            position: relative;
+            padding: 8px 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.05s;
+        }
+        .pixel-btn:active {
+            transform: translateY(2px);
+        }
+        .pixel-btn-gold {
+            border-color: #e2b714;
+            background: linear-gradient(180deg, #ffd642 0%, #e2b714 50%, #8a6d0a 100%);
+            color: #1a1a2e;
+            box-shadow: 0 4px 0 0 #5a4408, inset 0 1px 0 0 #ffe680;
+        }
+        .pixel-btn-gold:active { box-shadow: 0 1px 0 0 #5a4408; }
+        .pixel-btn-purple {
+            border-color: #a855f7;
+            background: linear-gradient(180deg, #c084fc 0%, #a855f7 50%, #6b21a8 100%);
+            color: #fff;
+            box-shadow: 0 4px 0 0 #4a1580, inset 0 1px 0 0 #d8b4fe;
+        }
+        .pixel-btn-purple:active { box-shadow: 0 1px 0 0 #4a1580; }
+
+        /* ===== 像素卡片 ===== */
+        .pixel-card {
+            background: #16213e;
+            border: 3px solid #2a2a4a;
+            box-shadow:
+                inset -2px -2px 0 0 #0f0f23,
+                inset 2px 2px 0 0 #2a3a5e,
+                6px 6px 0 0 rgba(0,0,0,0.4);
+        }
+
+        /* ===== 像素 EXP 進度條 ===== */
+        .pixel-exp-bar {
+            height: 14px;
+            border: 2px solid #2a2a4a;
+            background: #0f0f23;
+            position: relative;
+            overflow: hidden;
+        }
+        .pixel-exp-fill {
+            height: 100%;
+            background: linear-gradient(180deg, #4ade80 0%, #22c55e 60%, #16a34a 100%);
+            box-shadow: inset 0 -2px 0 0 #15803d, inset 0 2px 0 0 #86efac;
+            transition: width 0.5s steps(20);
+        }
+        .pixel-hp-fill {
+            height: 100%;
+            background: linear-gradient(180deg, #ef4444 0%, #dc2626 60%, #b91c1c 100%);
+            box-shadow: inset 0 -2px 0 0 #991b1b, inset 0 2px 0 0 #fca5a5;
+        }
+
+        /* ===== 像素心形（同步狀態） ===== */
+        .pixel-heart { display: inline-block; width: 10px; height: 10px; position: relative; }
+        .pixel-heart::before {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            background:
+                linear-gradient(90deg,
+                    transparent 10%, #22c55e 10% 30%, transparent 30% 40%,
+                    #22c55e 40% 60%, transparent 60% 70%,
+                    #22c55e 70% 90%, transparent 90%);
+        }
+        .pixel-heart-error::before { background: linear-gradient(90deg, transparent 30%, #ef4444 30% 70%, transparent 70%); }
+
+        /* ===== 遊戲化動畫 ===== */
+        @keyframes pixelLevelUp {
+            0% { transform: scale(1) translateY(0); opacity: 1; }
+            30% { transform: scale(1.5) translateY(-10px); opacity: 1; }
+            60% { transform: scale(1.2) translateY(-20px); opacity: 0.8; }
+            100% { transform: scale(1) translateY(-40px); opacity: 0; }
+        }
+        @keyframes pixelBounce {
+            0% { transform: translateY(-80px); }
+            40% { transform: translateY(0); }
+            55% { transform: translateY(-20px); }
+            70% { transform: translateY(0); }
+            85% { transform: translateY(-8px); }
+            100% { transform: translateY(0); }
+        }
+        @keyframes pixelSlideIn {
+            from { transform: translateX(120%); }
+            to { transform: translateX(0); }
+        }
+        @keyframes pixelFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        @keyframes pixelSparkle {
+            0%, 100% { box-shadow: 0 0 4px #e2b714; }
+            50% { box-shadow: 0 0 12px #e2b714, 0 0 24px #ffd642; }
+        }
+        .anim-level-up { animation: pixelLevelUp 1.5s steps(8) forwards; }
+        .anim-bounce { animation: pixelBounce 0.8s steps(6) forwards; }
+        .anim-slide-in { animation: pixelSlideIn 0.4s steps(4) forwards; }
+        .anim-flash { animation: pixelFlash 0.5s steps(2) 3; }
+        .anim-sparkle { animation: pixelSparkle 1.5s ease-in-out infinite; }
+
+        /* ===== 像素捲軸 ===== */
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #0f0f23; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #2a2a4a; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #3a3a5a; }
+
+        /* ===== Toast 動畫（像素化） ===== */
+        .toast-enter { animation: pixelSlideIn 0.3s steps(4); }
+        .toast-exit { animation: pixelSlideIn 0.3s steps(4) reverse forwards; }
+
+        /* ===== 金光文字 ===== */
+        .glow-gold { text-shadow: 0 0 6px rgba(226,183,20,0.5), 2px 2px 0 #8a6d0a; }
+        .glow-purple { text-shadow: 0 0 6px rgba(168,85,247,0.5), 2px 2px 0 #6b21a8; }
+
+        /* ===== 像素角色基礎 ===== */
+        .pixel-character {
+            width: 48px; height: 48px;
+            image-rendering: pixelated;
+        }
+        /* 戰士 - 金色系 */
+        .pixel-char-warrior {
+            background: #e2b714;
+            box-shadow:
+                12px 0 0 #e2b714, 24px 0 0 #e2b714,
+                0 12px 0 #ffd642, 12px 12px 0 #e2b714, 24px 12px 0 #ffd642, 36px 12px 0 #e2b714,
+                0 24px 0 #8a6d0a, 12px 24px 0 #e2b714, 24px 24px 0 #e2b714, 36px 24px 0 #8a6d0a,
+                12px 36px 0 #e2b714, 24px 36px 0 #e2b714;
+            width: 12px; height: 12px;
+        }
+        /* 法師 - 紫色系 */
+        .pixel-char-mage {
+            background: #a855f7;
+            box-shadow:
+                12px 0 0 #c084fc, 24px 0 0 #a855f7,
+                0 12px 0 #c084fc, 12px 12px 0 #a855f7, 24px 12px 0 #c084fc, 36px 12px 0 #a855f7,
+                0 24px 0 #6b21a8, 12px 24px 0 #a855f7, 24px 24px 0 #a855f7, 36px 24px 0 #6b21a8,
+                12px 36px 0 #a855f7, 24px 36px 0 #a855f7;
+            width: 12px; height: 12px;
+        }
+        /* 遊俠 - 綠色系 */
+        .pixel-char-ranger {
+            background: #4ade80;
+            box-shadow:
+                12px 0 0 #4ade80, 24px 0 0 #22c55e,
+                0 12px 0 #86efac, 12px 12px 0 #4ade80, 24px 12px 0 #86efac, 36px 12px 0 #22c55e,
+                0 24px 0 #16a34a, 12px 24px 0 #4ade80, 24px 24px 0 #4ade80, 36px 24px 0 #16a34a,
+                12px 36px 0 #22c55e, 24px 36px 0 #22c55e;
+            width: 12px; height: 12px;
+        }
+        /* 刺客 - 紅色系 */
+        .pixel-char-assassin {
+            background: #ef4444;
+            box-shadow:
+                12px 0 0 #ef4444, 24px 0 0 #dc2626,
+                0 12px 0 #fca5a5, 12px 12px 0 #ef4444, 24px 12px 0 #fca5a5, 36px 12px 0 #dc2626,
+                0 24px 0 #b91c1c, 12px 24px 0 #ef4444, 24px 24px 0 #ef4444, 36px 24px 0 #b91c1c,
+                12px 36px 0 #dc2626, 24px 36px 0 #dc2626;
+            width: 12px; height: 12px;
+        }
     </style>
     <script>
-        /* 全域 Toast 通知（取代 alert） */
+        /* 全域 Toast 通知（像素風格） */
         window.toast = function(msg, type) {
             type = type || 'info';
             let container = document.getElementById('toast-container');
@@ -62,12 +243,16 @@
                 container.className = 'fixed top-20 right-4 z-[100] flex flex-col gap-2 max-w-sm';
                 document.body.appendChild(container);
             }
-            const colors = { success: 'bg-positive/90 text-white', error: 'bg-negative/90 text-white', info: 'bg-bg-card border border-border-main text-text-main' };
+            const colors = {
+                success: 'bg-positive/90 text-pixel-dark pixel-border',
+                error: 'bg-negative/90 text-white pixel-border',
+                info: 'bg-bg-card text-text-main pixel-border-dark'
+            };
             const el = document.createElement('div');
-            el.className = `px-4 py-3 rounded-lg text-sm shadow-lg backdrop-blur toast-enter ${colors[type] || colors.info}`;
+            el.className = `px-4 py-3 text-[10px] shadow-lg toast-enter ${colors[type] || colors.info}`;
             el.textContent = msg;
             container.appendChild(el);
-            setTimeout(() => { el.classList.remove('toast-enter'); el.classList.add('toast-exit'); setTimeout(() => el.remove(), 300); }, 3000);
+            setTimeout(() => { el.classList.add('toast-exit'); setTimeout(() => el.remove(), 300); }, 3000);
         };
     </script>
 </head>

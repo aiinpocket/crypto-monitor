@@ -44,20 +44,19 @@ public class UserBacktestService {
     private final BacktestService backtestService;
     private final StrategyTemplateService templateService;
     private final ObjectMapper objectMapper;
+    private final GamificationService gamificationService;
 
-    /**
-     * 建構子注入。ObjectMapper 由 Spring Boot 自動配置提供，
-     * 確保序列化行為與全域設定一致。
-     */
     public UserBacktestService(
             BacktestRunRepository runRepo,
             BacktestService backtestService,
             StrategyTemplateService templateService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            GamificationService gamificationService) {
         this.runRepo = runRepo;
         this.backtestService = backtestService;
         this.templateService = templateService;
         this.objectMapper = objectMapper;
+        this.gamificationService = gamificationService;
     }
 
     /**
@@ -138,6 +137,22 @@ public class UserBacktestService {
                     runId, report.totalTrades(),
                     report.annualizedReturn().multiply(java.math.BigDecimal.valueOf(100)),
                     report.passed());
+
+            // 遊戲化：回測獎勵
+            try {
+                if (report.passed()) {
+                    gamificationService.awardExp(run.getUser(), 40, "BACKTEST_PROFIT");
+                } else {
+                    gamificationService.awardExp(run.getUser(), 10, "BACKTEST_COMPLETE");
+                }
+                gamificationService.checkAndUnlockAchievements(run.getUser(), "BACKTEST");
+                gamificationService.checkBacktestMetricAchievements(
+                        run.getUser(),
+                        report.sharpeRatio().doubleValue(),
+                        report.annualizedReturn().doubleValue());
+            } catch (Exception gamEx) {
+                log.warn("[遊戲化] 回測獎勵處理失敗: runId={}, error={}", runId, gamEx.getMessage());
+            }
         } catch (Exception e) {
             // 回測失敗：記錄錯誤訊息
             // 使用巢狀 try-catch 確保狀態更新不會因為 DB 異常而遺失錯誤日誌

@@ -14,7 +14,8 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 | 即時 WebSocket | 價格跳動、交易訊號、同步進度即時推送 |
 | 多管道通知 | Discord Bot / Gmail SMTP / Telegram Bot 交易訊號通知 |
 | 非同步回測 | 獨立執行緒池背景運算，不影響即時交易 |
-| 暗色操盤介面 | Tailwind CSS + Alpine.js，操盤手風格 UI |
+| RPG 像素風格介面 | 像素字體 + CSS 像素藝術 + 角色養成 + 成就系統 |
+| 遊戲化引擎 | 經驗值、等級、每日獎勵、16 種成就、4 種角色職業 |
 
 ## 策略概述
 
@@ -55,7 +56,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 | 技術分析 | ta4j 0.17+ |
 | 排程 | Quartz Scheduler (RAM JobStore) |
 | 即時通訊 | WebSocket (`/ws/trades`) |
-| 前端 | Thymeleaf + Tailwind CSS (CDN) + Alpine.js |
+| 前端 | Thymeleaf + Tailwind CSS (CDN) + Alpine.js + Press Start 2P |
 | 序列化 | Jackson 3 (`tools.jackson`) |
 | 圖表 | Chart.js (CDN) |
 | 容器 | Docker Compose (開發) / Kubernetes (生產) |
@@ -95,6 +96,10 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 │ │ HistoricalSync   │  │ Discord / Gmail /  │         │
 │ │ BinanceWebSocket │  │ Telegram Sender    │         │
 │ └─────────────────┘  └──────────────────┘           │
+│ ┌─────────────────┐                                  │
+│ │ 遊戲化引擎       │                                  │
+│ │ GamificationService (EXP/Level/Achievement)        │
+│ └─────────────────┘                                  │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────┴──────────────────────────────────┐
@@ -102,6 +107,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 │ Kline / TradePosition / TradeSignal / TrackedSymbol  │
 │ AppUser / UserWatchlist / NotificationChannel         │
 │ StrategyTemplate / BacktestRun                       │
+│ UserAchievement / GameEventLog                       │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -137,6 +143,51 @@ Binance WebSocket → KlineTick 事件 → 儲存 K 線
         ├→ WebSocket 廣播（即時推送到前端）
         └→ NotificationDispatcher（@Async 多管道通知）
 ```
+
+## 遊戲化系統
+
+BtcTrade 採用 RPG 像素遊戲風格，透過角色養成與成就機制吸引用戶每日登入。
+
+### 角色職業
+
+| 職業 | 風格 | CSS 像素色系 |
+|------|------|-------------|
+| 戰士 (WARRIOR) | 攻守兼備的全能型 | 金色 |
+| 法師 (MAGE) | 高風險高報酬策略 | 紫色 |
+| 遊俠 (RANGER) | 穩健的長線操作 | 綠色 |
+| 刺客 (ASSASSIN) | 快進快出短線高手 | 紅色 |
+
+### 經驗值與升級
+
+- 升級公式：`level * level * 50` EXP
+- 每日登入：+5 EXP
+- 每日獎勵（首次）：+15 EXP
+- 完成回測：+10 EXP（獲利回測 +40 EXP）
+- 克隆策略：+15 EXP
+- 成就解鎖：+10~200 EXP
+
+### 成就系統（16 種）
+
+涵蓋登入里程碑、回測績效、策略管理、等級達成等類別。
+解鎖時觸發像素動畫通知。
+
+### 像素風格設計
+
+- **字體**：Press Start 2P（Google Fonts 像素字體）
+- **角色**：純 CSS `box-shadow` 像素藝術（無外部圖片）
+- **動畫**：`steps()` CSS timing function 呈現像素跳動感
+- **配色**：RPG 暗色主題（深紫黑 #1a1a2e + 金幣 #e2b714 + 魔法紫 #a855f7）
+
+### 遊戲化 API
+
+| Method | Path | 說明 |
+|--------|------|------|
+| GET | `/api/user/gamification/profile` | 角色檔案（等級/EXP/成就） |
+| POST | `/api/user/gamification/daily` | 領取每日獎勵 |
+| GET | `/api/user/gamification/events` | 未讀事件（升級/成就通知） |
+| POST | `/api/user/gamification/events/seen` | 標記事件已讀 |
+| GET | `/api/user/gamification/leaderboard` | 排行榜 Top 10 |
+| POST | `/api/user/gamification/character-class` | 更換角色職業 |
 
 ## 快速開始
 

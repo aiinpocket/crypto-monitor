@@ -1,174 +1,124 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
-<head th:replace="~{fragments/head :: head('BtcTrade - 回測')}"></head>
-<!-- Chart.js CDN -->
+<head th:replace="~{fragments/head :: head('BtcTrade - 副本挑戰')}"></head>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <body class="bg-bg-dark text-text-main min-h-screen">
 
-<!-- 頂部導航列 -->
 <div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+<div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
 
-<!-- 主內容區 -->
-<main class="pt-[72px] px-6 pb-12 max-w-6xl mx-auto"
-      x-data="backtestApp()">
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-6xl mx-auto" x-data="backtestApp()">
 
-    <!-- 頁面標題 -->
-    <div class="mb-8">
-        <h1 class="font-heading text-2xl font-bold text-primary glow-gold">策略回測</h1>
-        <p class="text-text-muted text-sm mt-1">選擇策略模板和交易對，執行歷史回測驗證</p>
+    <div class="mb-6">
+        <h1 class="font-heading text-[12px] text-primary glow-gold">&#9889; 副本挑戰</h1>
+        <p class="text-text-muted text-[8px] mt-1">選擇策略，挑戰歷史市場</p>
     </div>
 
-    <!-- 回測控制面板 -->
-    <div class="bg-bg-card border border-border-main rounded-xl p-6 mb-6">
-        <h2 class="text-base font-semibold text-text-heading mb-4">發起回測</h2>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <!-- 策略模板選擇 -->
+    <!-- 挑戰面板 -->
+    <div class="pixel-card p-4 mb-4">
+        <h2 class="text-[9px] text-text-heading mb-3">&#127919; 發起挑戰</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
-                <label class="block text-xs font-medium text-text-muted mb-1.5">策略模板</label>
-                <select x-model="form.templateId"
-                        class="w-full px-3 py-2.5 bg-bg-input border border-border-main rounded-lg text-text-main text-sm
-                               focus:outline-none focus:border-primary transition-colors duration-200 cursor-pointer">
+                <label class="block text-[7px] text-text-muted mb-1">策略模板</label>
+                <select x-model="form.templateId" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] cursor-pointer focus:outline-none">
                     <option value="">請選擇...</option>
                     <template x-for="t in allTemplates" :key="t.id">
-                        <option :value="t.id" x-text="t.name + (t.systemDefault ? ' (預設)' : '')"></option>
+                        <option :value="t.id" x-text="t.name + (t.systemDefault ? ' &#9733;' : '')"></option>
                     </template>
                 </select>
             </div>
-
-            <!-- 交易對選擇 -->
             <div>
-                <label class="block text-xs font-medium text-text-muted mb-1.5">交易對</label>
-                <select x-model="form.symbol"
-                        class="w-full px-3 py-2.5 bg-bg-input border border-border-main rounded-lg text-text-main text-sm
-                               focus:outline-none focus:border-primary transition-colors duration-200 cursor-pointer">
-                    <template x-for="s in symbols" :key="s">
-                        <option :value="s" x-text="s"></option>
-                    </template>
+                <label class="block text-[7px] text-text-muted mb-1">交易對</label>
+                <select x-model="form.symbol" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] cursor-pointer focus:outline-none">
+                    <template x-for="s in symbols" :key="s"><option :value="s" x-text="s"></option></template>
                 </select>
             </div>
-
-            <!-- 回測年數 -->
             <div>
-                <label class="block text-xs font-medium text-text-muted mb-1.5">回測年數</label>
-                <select x-model.number="form.years"
-                        class="w-full px-3 py-2.5 bg-bg-input border border-border-main rounded-lg text-text-main text-sm
-                               focus:outline-none focus:border-primary transition-colors duration-200 cursor-pointer">
-                    <option value="1">1 年</option>
-                    <option value="2">2 年</option>
-                    <option value="3">3 年</option>
-                    <option value="5">5 年</option>
+                <label class="block text-[7px] text-text-muted mb-1">回測年數</label>
+                <select x-model.number="form.years" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] cursor-pointer focus:outline-none">
+                    <option value="1">1 年</option><option value="2">2 年</option><option value="3">3 年</option><option value="5">5 年</option>
                 </select>
             </div>
-
-            <!-- 執行按鈕 -->
             <div class="flex items-end">
-                <button @click="submitBacktest()"
-                        :disabled="running || !form.templateId"
-                        class="w-full px-6 py-2.5 text-sm text-white bg-cta hover:bg-cta-hover rounded-lg
-                               transition-colors duration-200 cursor-pointer glow-purple disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!running">執行回測</span>
-                    <span x-show="running" class="flex items-center justify-center gap-2">
-                        <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" class="opacity-75"/></svg>
-                        計算中...
-                    </span>
+                <button @click="submitBacktest()" :disabled="running || !form.templateId"
+                        class="w-full pixel-btn pixel-btn-gold text-[8px] py-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!running">&#9876; 開始挑戰！</span>
+                    <span x-show="running" class="anim-flash">&#9876; 挑戰中...</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 回測結果區域 -->
+    <!-- 結果區域 -->
     <div x-show="result" x-cloak>
-        <!-- 績效指標卡片 -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-bg-card border border-border-main rounded-xl p-4">
-                <span class="text-xs text-text-muted block mb-1">年化報酬</span>
-                <span class="text-xl font-mono font-bold"
-                      :class="result?.annualizedReturn >= 0 ? 'text-positive' : 'text-negative'"
+        <!-- 戰報卡片 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div class="pixel-card p-3">
+                <span class="text-[7px] text-text-muted block mb-0.5">年化報酬</span>
+                <span class="text-[10px] font-heading" :class="result?.annualizedReturn >= 0 ? 'text-positive' : 'text-negative'"
                       x-text="result ? (result.annualizedReturn * 100).toFixed(2) + '%' : '--'"></span>
             </div>
-            <div class="bg-bg-card border border-border-main rounded-xl p-4">
-                <span class="text-xs text-text-muted block mb-1">最大回撤</span>
-                <span class="text-xl font-mono font-bold text-negative"
-                      x-text="result ? (result.maxDrawdown * 100).toFixed(2) + '%' : '--'"></span>
+            <div class="pixel-card p-3">
+                <span class="text-[7px] text-text-muted block mb-0.5">最大回撤</span>
+                <span class="text-[10px] font-heading text-negative" x-text="result ? (result.maxDrawdown * 100).toFixed(2) + '%' : '--'"></span>
             </div>
-            <div class="bg-bg-card border border-border-main rounded-xl p-4">
-                <span class="text-xs text-text-muted block mb-1">Sharpe Ratio</span>
-                <span class="text-xl font-mono font-bold text-primary"
-                      x-text="result?.sharpeRatio?.toFixed(2) || '--'"></span>
+            <div class="pixel-card p-3">
+                <span class="text-[7px] text-text-muted block mb-0.5">Sharpe</span>
+                <span class="text-[10px] font-heading text-primary" x-text="result?.sharpeRatio?.toFixed(2) || '--'"></span>
             </div>
-            <div class="bg-bg-card border border-border-main rounded-xl p-4">
-                <span class="text-xs text-text-muted block mb-1">勝率</span>
-                <span class="text-xl font-mono font-bold text-text-heading"
-                      x-text="result ? (result.winRate * 100).toFixed(1) + '%' : '--'"></span>
+            <div class="pixel-card p-3">
+                <span class="text-[7px] text-text-muted block mb-0.5">勝率</span>
+                <span class="text-[10px] font-heading text-text-heading" x-text="result ? (result.winRate * 100).toFixed(1) + '%' : '--'"></span>
             </div>
-            <div class="bg-bg-card border border-border-main rounded-xl p-4">
-                <span class="text-xs text-text-muted block mb-1">總交易數</span>
-                <span class="text-xl font-mono font-bold text-text-heading"
-                      x-text="result?.totalTrades || '--'"></span>
+            <div class="pixel-card p-3">
+                <span class="text-[7px] text-text-muted block mb-0.5">總交易數</span>
+                <span class="text-[10px] font-heading text-text-heading" x-text="result?.totalTrades || '--'"></span>
             </div>
-            <div class="bg-bg-card border border-border-main rounded-xl p-4">
-                <span class="text-xs text-text-muted block mb-1">Profit Factor</span>
-                <span class="text-xl font-mono font-bold text-primary"
-                      x-text="result?.profitFactor?.toFixed(2) || '--'"></span>
+            <div class="pixel-card p-3">
+                <span class="text-[7px] text-text-muted block mb-0.5">Profit Factor</span>
+                <span class="text-[10px] font-heading text-primary" x-text="result?.profitFactor?.toFixed(2) || '--'"></span>
             </div>
-            <div class="bg-bg-card border border-border-main rounded-xl p-4">
-                <span class="text-xs text-text-muted block mb-1">最終資金</span>
-                <span class="text-xl font-mono font-bold text-positive"
-                      x-text="result ? '$' + parseFloat(result.finalCapital).toLocaleString(undefined, {minimumFractionDigits: 2}) : '--'"></span>
+            <div class="pixel-card p-3">
+                <span class="text-[7px] text-text-muted block mb-0.5">最終資金</span>
+                <span class="text-[10px] font-heading text-positive" x-text="result ? '$' + parseFloat(result.finalCapital).toLocaleString(undefined, {minimumFractionDigits: 2}) : '--'"></span>
             </div>
-            <div class="bg-bg-card border border-border-main rounded-xl p-4">
-                <span class="text-xs text-text-muted block mb-1">策略判定</span>
-                <span class="text-xl font-bold"
-                      :class="result?.passed ? 'text-positive' : 'text-negative'"
-                      x-text="result?.passed ? 'PASSED' : 'FAILED'"></span>
+            <div class="pixel-card p-3">
+                <span class="text-[7px] text-text-muted block mb-0.5">判定</span>
+                <span class="text-[10px] font-heading" :class="result?.passed ? 'text-positive' : 'text-negative'"
+                      x-text="result?.passed ? '&#127942; PASSED' : '&#128128; FAILED'"></span>
             </div>
         </div>
 
-        <!-- 權益曲線圖 -->
-        <div class="bg-bg-card border border-border-main rounded-xl p-6 mb-6">
-            <h3 class="text-base font-semibold text-text-heading mb-4">權益曲線</h3>
-            <div class="h-80">
-                <canvas id="equityChart"></canvas>
-            </div>
+        <!-- 權益曲線 -->
+        <div class="pixel-card p-4 mb-4">
+            <h3 class="text-[9px] text-text-heading mb-3">&#128200; 權益曲線</h3>
+            <div class="h-64"><canvas id="equityChart"></canvas></div>
         </div>
 
-        <!-- 交易明細表 -->
-        <div class="bg-bg-card border border-border-main rounded-xl p-6">
-            <h3 class="text-base font-semibold text-text-heading mb-4">交易明細</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-xs">
+        <!-- 交易明細 -->
+        <div class="pixel-card p-4">
+            <h3 class="text-[9px] text-text-heading mb-3">&#128220; 交易明細</h3>
+            <div class="overflow-x-auto scrollbar-thin">
+                <table class="w-full text-[7px]">
                     <thead>
                     <tr class="text-text-muted border-b border-border-main">
-                        <th class="py-2 px-3 text-left">#</th>
-                        <th class="py-2 px-3 text-left">方向</th>
-                        <th class="py-2 px-3 text-left">進場時間</th>
-                        <th class="py-2 px-3 text-right">進場價</th>
-                        <th class="py-2 px-3 text-right">出場價</th>
-                        <th class="py-2 px-3 text-right">損益</th>
-                        <th class="py-2 px-3 text-right">報酬率</th>
-                        <th class="py-2 px-3 text-left">出場原因</th>
-                        <th class="py-2 px-3 text-right">持倉(bars)</th>
+                        <th class="py-1.5 px-2 text-left">#</th><th class="py-1.5 px-2 text-left">方向</th>
+                        <th class="py-1.5 px-2 text-left">進場</th><th class="py-1.5 px-2 text-right">進場價</th>
+                        <th class="py-1.5 px-2 text-right">出場價</th><th class="py-1.5 px-2 text-right">損益</th>
+                        <th class="py-1.5 px-2 text-right">報酬率</th><th class="py-1.5 px-2 text-left">原因</th>
                     </tr>
                     </thead>
                     <tbody>
                     <template x-for="trade in result?.trades || []" :key="trade.tradeNumber">
-                        <tr class="border-b border-border-main/50 hover:bg-white/5 transition-colors duration-150">
-                            <td class="py-2 px-3 text-text-muted" x-text="trade.tradeNumber"></td>
-                            <td class="py-2 px-3">
-                                <span :class="trade.direction === 'LONG' ? 'text-positive' : 'text-negative'"
-                                      x-text="trade.direction === 'LONG' ? '做多' : '做空'"></span>
-                            </td>
-                            <td class="py-2 px-3 font-mono text-text-muted" x-text="new Date(trade.entryTime).toLocaleDateString()"></td>
-                            <td class="py-2 px-3 font-mono text-right" x-text="'$' + parseFloat(trade.entryPrice).toLocaleString()"></td>
-                            <td class="py-2 px-3 font-mono text-right" x-text="'$' + parseFloat(trade.exitPrice).toLocaleString()"></td>
-                            <td class="py-2 px-3 font-mono text-right font-semibold"
-                                :class="parseFloat(trade.pnl) >= 0 ? 'text-positive' : 'text-negative'"
-                                x-text="'$' + parseFloat(trade.pnl).toFixed(2)"></td>
-                            <td class="py-2 px-3 font-mono text-right"
-                                :class="parseFloat(trade.returnPct) >= 0 ? 'text-positive' : 'text-negative'"
-                                x-text="(parseFloat(trade.returnPct) * 100).toFixed(2) + '%'"></td>
-                            <td class="py-2 px-3 text-text-muted" x-text="trade.exitReason"></td>
-                            <td class="py-2 px-3 font-mono text-right text-text-muted" x-text="trade.holdingBars"></td>
+                        <tr class="border-b border-border-main/50 hover:bg-white/5">
+                            <td class="py-1.5 px-2 text-text-muted" x-text="trade.tradeNumber"></td>
+                            <td class="py-1.5 px-2" :class="trade.direction === 'LONG' ? 'text-positive' : 'text-negative'" x-text="trade.direction === 'LONG' ? '做多' : '做空'"></td>
+                            <td class="py-1.5 px-2 text-text-muted" x-text="new Date(trade.entryTime).toLocaleDateString()"></td>
+                            <td class="py-1.5 px-2 text-right" x-text="'$' + parseFloat(trade.entryPrice).toLocaleString()"></td>
+                            <td class="py-1.5 px-2 text-right" x-text="'$' + parseFloat(trade.exitPrice).toLocaleString()"></td>
+                            <td class="py-1.5 px-2 text-right" :class="parseFloat(trade.pnl) >= 0 ? 'text-positive' : 'text-negative'" x-text="'$' + parseFloat(trade.pnl).toFixed(2)"></td>
+                            <td class="py-1.5 px-2 text-right" :class="parseFloat(trade.returnPct) >= 0 ? 'text-positive' : 'text-negative'" x-text="(parseFloat(trade.returnPct) * 100).toFixed(2) + '%'"></td>
+                            <td class="py-1.5 px-2 text-text-muted" x-text="trade.exitReason"></td>
                         </tr>
                     </template>
                     </tbody>
@@ -178,41 +128,28 @@
     </div>
 
     <!-- 回測歷史 -->
-    <div class="mt-8" x-show="history.length > 0">
-        <h2 class="text-base font-semibold text-text-heading mb-4">回測歷史</h2>
-        <div class="bg-bg-card border border-border-main rounded-xl overflow-hidden">
-            <table class="w-full text-sm">
+    <div class="mt-6" x-show="history.length > 0">
+        <h2 class="text-[9px] text-text-heading mb-3">&#128218; 歷史紀錄</h2>
+        <div class="pixel-card overflow-hidden">
+            <table class="w-full text-[8px]">
                 <thead>
-                <tr class="text-text-muted text-xs border-b border-border-main">
-                    <th class="py-3 px-4 text-left">交易對</th>
-                    <th class="py-3 px-4 text-left">策略</th>
-                    <th class="py-3 px-4 text-left">狀態</th>
-                    <th class="py-3 px-4 text-left">時間</th>
-                    <th class="py-3 px-4 text-right">操作</th>
+                <tr class="text-text-muted text-[7px] border-b border-border-main">
+                    <th class="py-2 px-3 text-left">交易對</th><th class="py-2 px-3 text-left">策略</th>
+                    <th class="py-2 px-3 text-left">狀態</th><th class="py-2 px-3 text-left">時間</th>
+                    <th class="py-2 px-3 text-right">操作</th>
                 </tr>
                 </thead>
                 <tbody>
                 <template x-for="run in history" :key="run.id">
-                    <tr class="border-b border-border-main/50 hover:bg-white/5 transition-colors duration-150">
-                        <td class="py-3 px-4 font-mono font-semibold" x-text="run.symbol"></td>
-                        <td class="py-3 px-4 text-text-muted" x-text="run.templateName"></td>
-                        <td class="py-3 px-4">
-                            <span class="text-xs px-2 py-0.5 rounded-full"
-                                  :class="{
-                                      'bg-positive/20 text-positive': run.status === 'COMPLETED',
-                                      'bg-warning/20 text-warning': run.status === 'RUNNING',
-                                      'bg-negative/20 text-negative': run.status === 'FAILED',
-                                      'bg-text-muted/20 text-text-muted': run.status === 'PENDING'
-                                  }"
-                                  x-text="run.status"></span>
+                    <tr class="border-b border-border-main/50 hover:bg-white/5">
+                        <td class="py-2 px-3 font-heading text-primary" x-text="run.symbol"></td>
+                        <td class="py-2 px-3 text-text-muted" x-text="run.templateName"></td>
+                        <td class="py-2 px-3">
+                            <span class="text-[7px]" :class="{'text-positive': run.status==='COMPLETED','text-warning anim-flash': run.status==='RUNNING','text-negative': run.status==='FAILED','text-text-muted': run.status==='PENDING'}" x-text="run.status"></span>
                         </td>
-                        <td class="py-3 px-4 text-xs text-text-muted" x-text="new Date(run.createdAt).toLocaleString()"></td>
-                        <td class="py-3 px-4 text-right">
-                            <button x-show="run.status === 'COMPLETED'"
-                                    @click="loadResult(run.id)"
-                                    class="text-xs text-cta hover:text-cta-hover cursor-pointer transition-colors duration-200">
-                                查看結果
-                            </button>
+                        <td class="py-2 px-3 text-[7px] text-text-muted" x-text="new Date(run.createdAt).toLocaleString()"></td>
+                        <td class="py-2 px-3 text-right">
+                            <button x-show="run.status==='COMPLETED'" @click="loadResult(run.id)" class="text-[7px] text-cta hover:text-cta-hover cursor-pointer">查看</button>
                         </td>
                     </tr>
                 </template>
@@ -221,193 +158,50 @@
         </div>
     </div>
 
-    <!-- 操作結果提示 -->
-    <div x-show="message" x-cloak
-         x-transition class="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium shadow-lg z-50"
-         :class="messageType === 'success' ? 'bg-positive/20 text-positive border border-positive/30' : 'bg-negative/20 text-negative border border-negative/30'"
-         x-text="message"></div>
+    <div x-show="message" x-cloak x-transition class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[8px] z-50"
+         :class="messageType === 'success' ? 'text-positive' : 'text-negative'" x-text="message"></div>
 </main>
 
 <script th:inline="javascript">
     function backtestApp() {
-        /* 從 Thymeleaf 注入的伺服器端資料 */
         const serverSymbols = /*[[${watchlistSymbols}]]*/ ['BTCUSDT'];
-
         return {
             form: { templateId: '', symbol: serverSymbols[0] || 'BTCUSDT', years: 5 },
-            allTemplates: [],
-            symbols: serverSymbols,
-            running: false,
-            result: null,
-            history: [],
-            equityChart: null,
-            message: '', messageType: 'success',
-
-            async init() {
-                await Promise.all([this.loadTemplates(), this.loadHistory()]);
-            },
-
-            async loadTemplates() {
-                try {
-                    const resp = await fetch('/api/user/strategies');
-                    if (resp.ok) this.allTemplates = await resp.json();
-                } catch (e) { console.error('[回測] 載入模板失敗:', e); }
-            },
-
-            async loadHistory() {
-                try {
-                    const resp = await fetch('/api/user/backtest/history');
-                    if (resp.ok) this.history = await resp.json();
-                } catch (e) { console.error('[回測] 載入歷史失敗:', e); }
-            },
-
+            allTemplates: [], symbols: serverSymbols, running: false, result: null, history: [],
+            equityChart: null, message: '', messageType: 'success',
+            async init() { await Promise.all([this.loadTemplates(), this.loadHistory()]); },
+            async loadTemplates() { try { const r=await fetch('/api/user/strategies'); if(r.ok) this.allTemplates=await r.json(); } catch(e){} },
+            async loadHistory() { try { const r=await fetch('/api/user/backtest/history'); if(r.ok) this.history=await r.json(); } catch(e){} },
             async submitBacktest() {
-                if (!this.form.templateId) return;
-                this.running = true;
-                this.result = null;
-
+                if(!this.form.templateId) return; this.running=true; this.result=null;
                 try {
-                    const resp = await fetch('/api/user/backtest/run', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(this.form)
-                    });
-
-                    if (!resp.ok) {
-                        const err = await resp.json();
-                        this.showMsg(err.error || '提交失敗', 'error');
-                        this.running = false;
-                        return;
-                    }
-
-                    const { id } = await resp.json();
-                    this.showMsg('回測已提交，正在計算中...', 'success');
-
-                    /* 輪詢結果（每 2 秒查詢一次） */
-                    await this.pollResult(id);
-                } catch (e) {
-                    this.showMsg('網路錯誤', 'error');
-                    this.running = false;
-                }
+                    const r=await fetch('/api/user/backtest/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(this.form)});
+                    if(!r.ok){const e=await r.json();this.showMsg(e.error||'提交失敗','error');this.running=false;return;}
+                    const{id}=await r.json(); this.showMsg('挑戰已開始...','success'); await this.pollResult(id);
+                } catch(e){this.showMsg('網路錯誤','error');this.running=false;}
             },
-
             async pollResult(runId) {
-                const maxAttempts = 120; /* 最多等 4 分鐘 */
-                for (let i = 0; i < maxAttempts; i++) {
-                    await new Promise(r => setTimeout(r, 2000));
-                    try {
-                        const resp = await fetch(`/api/user/backtest/${runId}`);
-                        if (!resp.ok) continue;
-                        const data = await resp.json();
-
-                        if (data.status === 'COMPLETED') {
-                            this.result = JSON.parse(data.resultJson);
-                            this.running = false;
-                            this.showMsg('回測完成！', 'success');
-                            await this.loadHistory();
-                            this.$nextTick(() => this.renderChart());
-                            return;
-                        } else if (data.status === 'FAILED') {
-                            this.running = false;
-                            this.showMsg('回測失敗: ' + (data.resultJson || '未知錯誤'), 'error');
-                            await this.loadHistory();
-                            return;
-                        }
-                    } catch (e) { /* 繼續輪詢 */ }
-                }
-                this.running = false;
-                this.showMsg('回測超時，請稍後查看歷史', 'error');
+                for(let i=0;i<120;i++){await new Promise(r=>setTimeout(r,2000));
+                    try{const r=await fetch(`/api/user/backtest/${runId}`);if(!r.ok)continue;const d=await r.json();
+                        if(d.status==='COMPLETED'){this.result=JSON.parse(d.resultJson);this.running=false;
+                            this.showMsg(this.result.passed?'&#127942; 挑戰成功！':'&#128128; 挑戰失敗','success');
+                            await this.loadHistory();this.$nextTick(()=>this.renderChart());return;}
+                        else if(d.status==='FAILED'){this.running=false;this.showMsg('回測失敗','error');await this.loadHistory();return;}
+                    }catch(e){}}
+                this.running=false;this.showMsg('超時','error');
             },
-
-            async loadResult(runId) {
-                try {
-                    const resp = await fetch(`/api/user/backtest/${runId}`);
-                    if (!resp.ok) return;
-                    const data = await resp.json();
-                    if (data.status === 'COMPLETED' && data.resultJson) {
-                        this.result = JSON.parse(data.resultJson);
-                        this.$nextTick(() => this.renderChart());
-                    }
-                } catch (e) {
-                    this.showMsg('載入結果失敗', 'error');
-                }
-            },
-
-            /**
-             * 使用 Chart.js 繪製權益曲線折線圖。
-             * 每 N 個資料點取一個樣本，避免瀏覽器渲染過多資料點。
-             */
+            async loadResult(runId) { try{const r=await fetch(`/api/user/backtest/${runId}`);if(!r.ok)return;const d=await r.json();if(d.status==='COMPLETED'&&d.resultJson){this.result=JSON.parse(d.resultJson);this.$nextTick(()=>this.renderChart());}}catch(e){this.showMsg('載入失敗','error');} },
             renderChart() {
-                const canvas = document.getElementById('equityChart');
-                if (!canvas || !this.result?.equityCurve) return;
-
-                /* 銷毀舊圖表 */
-                if (this.equityChart) {
-                    this.equityChart.destroy();
-                }
-
-                const curve = this.result.equityCurve;
-                /* 取樣：最多顯示 500 個資料點 */
-                const step = Math.max(1, Math.floor(curve.length / 500));
-                const sampled = curve.filter((_, i) => i % step === 0);
-
-                const labels = sampled.map(p => new Date(p.time).toLocaleDateString());
-                const data = sampled.map(p => parseFloat(p.equity));
-
-                this.equityChart = new Chart(canvas.getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: '權益 (USD)',
-                            data: data,
-                            borderColor: '#8B5CF6',
-                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                            borderWidth: 1.5,
-                            fill: true,
-                            tension: 0.1,
-                            pointRadius: 0,
-                            pointHoverRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: '#1E293B',
-                                titleColor: '#F8FAFC',
-                                bodyColor: '#94A3B8',
-                                borderColor: '#334155',
-                                borderWidth: 1
-                            }
-                        },
-                        scales: {
-                            x: {
-                                display: true,
-                                ticks: { color: '#64748B', maxTicksLimit: 8, font: { size: 10 } },
-                                grid: { color: 'rgba(51, 65, 85, 0.3)' }
-                            },
-                            y: {
-                                display: true,
-                                ticks: {
-                                    color: '#64748B',
-                                    font: { size: 10 },
-                                    callback: v => '$' + v.toLocaleString()
-                                },
-                                grid: { color: 'rgba(51, 65, 85, 0.3)' }
-                            }
-                        }
-                    }
-                });
+                const canvas=document.getElementById('equityChart');if(!canvas||!this.result?.equityCurve)return;
+                if(this.equityChart)this.equityChart.destroy();
+                const curve=this.result.equityCurve;const step=Math.max(1,Math.floor(curve.length/500));
+                const sampled=curve.filter((_,i)=>i%step===0);
+                this.equityChart=new Chart(canvas.getContext('2d'),{type:'line',data:{labels:sampled.map(p=>new Date(p.time).toLocaleDateString()),
+                    datasets:[{label:'權益',data:sampled.map(p=>parseFloat(p.equity)),borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.1)',borderWidth:2,fill:true,tension:0,pointRadius:0,stepped:'before'}]},
+                    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#16213e',titleColor:'#e8e8f0',bodyColor:'#7a7a9a',borderColor:'#2a2a4a',borderWidth:2,titleFont:{family:'"Press Start 2P"',size:8},bodyFont:{family:'"Press Start 2P"',size:7}}},
+                        scales:{x:{display:true,ticks:{color:'#7a7a9a',maxTicksLimit:6,font:{family:'"Press Start 2P"',size:6}},grid:{color:'rgba(42,42,74,0.3)'}},y:{display:true,ticks:{color:'#7a7a9a',font:{family:'"Press Start 2P"',size:6},callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(42,42,74,0.3)'}}}}});
             },
-
-            showMsg(msg, type) {
-                this.message = msg;
-                this.messageType = type;
-                setTimeout(() => { this.message = ''; }, 4000);
-            }
+            showMsg(m,t) { this.message=m; this.messageType=t; setTimeout(()=>{this.message='';},4000); }
         };
     }
 </script>

@@ -1,470 +1,378 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
-<head th:replace="~{fragments/head :: head('BtcTrade - 設定')}"></head>
+<head th:replace="~{fragments/head :: head('BtcTrade - 冒險設定')}"></head>
 <body class="bg-bg-dark text-text-main min-h-screen">
 
-<!-- 頂部導航列 -->
 <div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+<div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
 
-<!-- 主內容區（不含側邊欄，設定頁面使用全寬佈局） -->
-<main class="pt-[72px] px-6 pb-12 max-w-4xl mx-auto"
-      x-data="settingsApp()">
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-4xl mx-auto" x-data="settingsApp()">
 
-    <!-- 頁面標題 -->
-    <div class="mb-8">
-        <h1 class="font-heading text-2xl font-bold text-primary glow-gold">通知設定</h1>
-        <p class="text-text-muted text-sm mt-1">管理您的交易訊號通知管道 — Discord、Gmail、Telegram</p>
+    <div class="mb-6">
+        <h1 class="font-heading text-[12px] text-primary glow-gold">&#9881; 冒險設定</h1>
+        <p class="text-text-muted text-[8px] mt-1">管理通知管道與角色職業</p>
     </div>
 
-    <!-- Tab 導航 -->
-    <div class="flex border-b border-border-main mb-6">
+    <!-- 像素 Tab 導航 -->
+    <div class="flex gap-1 mb-4">
+        <button @click="activeTab = 'character'"
+                :class="activeTab === 'character' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
+                class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#128100; 角色</button>
         <button @click="activeTab = 'discord'"
-                :class="activeTab === 'discord' ? 'text-primary border-primary' : 'text-text-muted border-transparent hover:text-text-main'"
-                class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200 cursor-pointer flex items-center gap-2">
-            <!-- Discord SVG Icon -->
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
-            </svg>
-            Discord
-        </button>
+                :class="activeTab === 'discord' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
+                class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#128172; Discord</button>
         <button @click="activeTab = 'gmail'"
-                :class="activeTab === 'gmail' ? 'text-primary border-primary' : 'text-text-muted border-transparent hover:text-text-main'"
-                class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200 cursor-pointer flex items-center gap-2">
-            <!-- Mail SVG Icon -->
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-            </svg>
-            Gmail
-        </button>
+                :class="activeTab === 'gmail' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
+                class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#9993; Gmail</button>
         <button @click="activeTab = 'telegram'"
-                :class="activeTab === 'telegram' ? 'text-primary border-primary' : 'text-text-muted border-transparent hover:text-text-main'"
-                class="px-6 py-3 text-sm font-semibold border-b-2 transition-colors duration-200 cursor-pointer flex items-center gap-2">
-            <!-- Telegram SVG Icon -->
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-            </svg>
-            Telegram
-        </button>
+                :class="activeTab === 'telegram' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
+                class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#9992; Telegram</button>
     </div>
 
-    <!-- Discord 設定表單 -->
+    <!-- 角色設定 -->
+    <div x-show="activeTab === 'character'" x-cloak>
+        <div class="pixel-card p-4">
+            <h2 class="text-[9px] text-text-heading mb-4">&#128100; 選擇職業</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <template x-for="cls in classes" :key="cls.key">
+                    <button @click="selectClass(cls.key)"
+                            class="pixel-card p-3 text-center cursor-pointer transition-all duration-100"
+                            :class="selectedClass === cls.key ? 'pixel-border ring-2 ring-primary' : 'hover:bg-white/5'">
+                        <div class="flex justify-center mb-2">
+                            <div class="relative w-12 h-12 flex items-center justify-center">
+                                <div :class="'pixel-char-' + cls.key.toLowerCase()"></div>
+                            </div>
+                        </div>
+                        <div class="text-[8px] font-heading" :class="selectedClass === cls.key ? 'text-primary' : 'text-text-heading'" x-text="cls.name"></div>
+                        <div class="text-[7px] text-text-muted mt-1" x-text="cls.desc"></div>
+                    </button>
+                </template>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button @click="saveClass()" :disabled="savingClass"
+                        class="pixel-btn pixel-btn-gold text-[8px] py-1.5 px-4 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                    <span x-show="!savingClass">&#10003; 確認職業</span>
+                    <span x-show="savingClass" class="anim-flash">儲存中...</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 成就列表 -->
+        <div class="pixel-card p-4 mt-4">
+            <h2 class="text-[9px] text-text-heading mb-3">&#127942; 成就列表</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <template x-for="a in achievements" :key="a.key">
+                    <div class="flex items-center gap-2 px-2 py-1.5 text-[7px]"
+                         :class="a.unlocked ? 'text-text-main' : 'text-text-muted opacity-50'">
+                        <span x-text="a.unlocked ? '&#9733;' : '&#9734;'" :class="a.unlocked ? 'text-primary' : ''"></span>
+                        <div>
+                            <span class="font-heading" x-text="a.name"></span>
+                            <span class="text-text-muted ml-1" x-text="'— ' + a.desc"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discord 設定 -->
     <div x-show="activeTab === 'discord'" x-cloak>
-        <div class="bg-bg-card border border-border-main rounded-xl p-6">
-            <div class="flex items-center justify-between mb-6">
+        <div class="pixel-card p-4">
+            <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-lg font-semibold text-text-heading">Discord 通知</h2>
-                    <p class="text-text-muted text-sm mt-1">使用 Discord Bot 將交易訊號發送到指定頻道或個人 DM</p>
+                    <h2 class="text-[9px] text-text-heading">&#128172; Discord 通知</h2>
+                    <p class="text-text-muted text-[7px] mt-0.5">使用 Discord Bot 發送交易訊號</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" x-model="discord.enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-border-main rounded-full peer peer-checked:bg-cta transition-colors duration-200
-                                after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full
-                                after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                    <div class="w-10 h-5 bg-border-main pixel-border-dark peer peer-checked:bg-cta
+                                after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-text-main
+                                after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-[18px]"
+                         style="image-rendering: pixelated;"></div>
                 </label>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-medium text-text-muted mb-1.5">Bot Token</label>
-                    <input type="password" x-model="discord.botToken" placeholder="輸入 Discord Bot Token"
-                           class="w-full px-4 py-2.5 bg-bg-input border border-border-main rounded-lg text-text-main text-sm
-                                  focus:outline-none focus:border-primary transition-colors duration-200">
-                    <p class="text-xs text-text-muted mt-1">從 Discord Developer Portal 取得 Bot Token</p>
+                    <label class="block text-[7px] text-text-muted mb-1">Bot Token</label>
+                    <input type="password" x-model="discord.botToken" placeholder="Discord Bot Token"
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
+                    <p class="text-[7px] text-text-muted mt-0.5">Discord Developer Portal 取得</p>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-text-muted mb-1.5">Channel ID</label>
-                    <input type="text" x-model="discord.channelId" placeholder="輸入頻道 ID"
-                           class="w-full px-4 py-2.5 bg-bg-input border border-border-main rounded-lg text-text-main text-sm
-                                  focus:outline-none focus:border-primary transition-colors duration-200">
-                    <p class="text-xs text-text-muted mt-1">在 Discord 開啟開發者模式後，右鍵頻道即可複製 ID</p>
+                    <label class="block text-[7px] text-text-muted mb-1">Channel ID</label>
+                    <input type="text" x-model="discord.channelId" placeholder="頻道 ID"
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
                 </div>
-
-                <!-- 通知類型勾選 -->
-                <div class="flex gap-6 pt-2">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" x-model="discord.notifyOnEntry"
-                               class="w-4 h-4 rounded border-border-main bg-bg-input text-cta focus:ring-cta">
-                        <span class="text-sm text-text-main">進場訊號通知</span>
+                <div class="flex gap-4 pt-1">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                        <input type="checkbox" x-model="discord.notifyOnEntry" class="w-3 h-3 accent-cta">
+                        <span>進場通知</span>
                     </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" x-model="discord.notifyOnExit"
-                               class="w-4 h-4 rounded border-border-main bg-bg-input text-cta focus:ring-cta">
-                        <span class="text-sm text-text-main">出場訊號通知</span>
+                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                        <input type="checkbox" x-model="discord.notifyOnExit" class="w-3 h-3 accent-cta">
+                        <span>出場通知</span>
                     </label>
                 </div>
             </div>
 
-            <!-- 操作按鈕 -->
-            <div class="flex items-center justify-between mt-6 pt-4 border-t border-border-main">
-                <button @click="testChannel('DISCORD')"
-                        :disabled="testing"
-                        class="px-4 py-2 text-sm text-text-muted bg-white/5 rounded-lg hover:bg-white/10
-                               transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!testing">測試連線</span>
-                    <span x-show="testing" class="flex items-center gap-2">
-                        <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" class="opacity-75"/></svg>
-                        測試中...
-                    </span>
+            <div class="flex items-center justify-between mt-4 pt-3 border-t border-border-main">
+                <button @click="testChannel('DISCORD')" :disabled="testing"
+                        class="pixel-btn pixel-btn-purple text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                    <span x-show="!testing">&#128225; 測試</span>
+                    <span x-show="testing" class="anim-flash">測試中...</span>
                 </button>
-                <div class="flex gap-3">
-                    <button @click="deleteChannel('DISCORD')"
-                            x-show="discord.id"
-                            class="px-4 py-2 text-sm text-negative bg-negative/10 rounded-lg hover:bg-negative/20
-                                   transition-colors duration-200 cursor-pointer">
-                        刪除
-                    </button>
-                    <button @click="saveChannel('DISCORD')"
-                            :disabled="saving"
-                            class="px-6 py-2 text-sm text-white bg-cta hover:bg-cta-hover rounded-lg
-                                   transition-colors duration-200 cursor-pointer glow-purple disabled:opacity-50">
-                        <span x-show="!saving">儲存設定</span>
-                        <span x-show="saving">儲存中...</span>
+                <div class="flex gap-2">
+                    <button x-show="discord.id" @click="deleteChannel('DISCORD')"
+                            class="pixel-btn text-[7px] py-1 px-3 text-negative cursor-pointer" style="box-shadow: -2px 0 0 0 #ef4444, 2px 0 0 0 #ef4444, 0 -2px 0 0 #ef4444, 0 2px 0 0 #ef4444;">&#10005; 刪除</button>
+                    <button @click="saveChannel('DISCORD')" :disabled="saving"
+                            class="pixel-btn pixel-btn-gold text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                        <span x-show="!saving">&#128190; 儲存</span>
+                        <span x-show="saving" class="anim-flash">儲存中...</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Gmail 設定表單 -->
+    <!-- Gmail 設定 -->
     <div x-show="activeTab === 'gmail'" x-cloak>
-        <div class="bg-bg-card border border-border-main rounded-xl p-6">
-            <div class="flex items-center justify-between mb-6">
+        <div class="pixel-card p-4">
+            <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-lg font-semibold text-text-heading">Gmail 通知</h2>
-                    <p class="text-text-muted text-sm mt-1">系統將使用預設 SMTP 發送郵件到您指定的信箱</p>
+                    <h2 class="text-[9px] text-text-heading">&#9993; Gmail 通知</h2>
+                    <p class="text-text-muted text-[7px] mt-0.5">系統 SMTP 發送郵件到指定信箱</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" x-model="gmail.enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-border-main rounded-full peer peer-checked:bg-cta transition-colors duration-200
-                                after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full
-                                after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                    <div class="w-10 h-5 bg-border-main pixel-border-dark peer peer-checked:bg-cta
+                                after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-text-main
+                                after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-[18px]"
+                         style="image-rendering: pixelated;"></div>
                 </label>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-medium text-text-muted mb-1.5">收件人 Email</label>
+                    <label class="block text-[7px] text-text-muted mb-1">收件人 Email</label>
                     <input type="email" x-model="gmail.recipientEmail" placeholder="your-email@gmail.com"
-                           class="w-full px-4 py-2.5 bg-bg-input border border-border-main rounded-lg text-text-main text-sm
-                                  focus:outline-none focus:border-primary transition-colors duration-200">
-                    <p class="text-xs text-text-muted mt-1">交易訊號郵件將發送到此地址</p>
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
                 </div>
-
-                <div class="flex gap-6 pt-2">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" x-model="gmail.notifyOnEntry"
-                               class="w-4 h-4 rounded border-border-main bg-bg-input text-cta focus:ring-cta">
-                        <span class="text-sm text-text-main">進場訊號通知</span>
+                <div class="flex gap-4 pt-1">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                        <input type="checkbox" x-model="gmail.notifyOnEntry" class="w-3 h-3 accent-cta">
+                        <span>進場通知</span>
                     </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" x-model="gmail.notifyOnExit"
-                               class="w-4 h-4 rounded border-border-main bg-bg-input text-cta focus:ring-cta">
-                        <span class="text-sm text-text-main">出場訊號通知</span>
+                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                        <input type="checkbox" x-model="gmail.notifyOnExit" class="w-3 h-3 accent-cta">
+                        <span>出場通知</span>
                     </label>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between mt-6 pt-4 border-t border-border-main">
-                <button @click="testChannel('GMAIL')"
-                        :disabled="testing"
-                        class="px-4 py-2 text-sm text-text-muted bg-white/5 rounded-lg hover:bg-white/10
-                               transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!testing">測試連線</span>
-                    <span x-show="testing" class="flex items-center gap-2">
-                        <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" class="opacity-75"/></svg>
-                        測試中...
-                    </span>
+            <div class="flex items-center justify-between mt-4 pt-3 border-t border-border-main">
+                <button @click="testChannel('GMAIL')" :disabled="testing"
+                        class="pixel-btn pixel-btn-purple text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                    <span x-show="!testing">&#128225; 測試</span>
+                    <span x-show="testing" class="anim-flash">測試中...</span>
                 </button>
-                <div class="flex gap-3">
-                    <button @click="deleteChannel('GMAIL')"
-                            x-show="gmail.id"
-                            class="px-4 py-2 text-sm text-negative bg-negative/10 rounded-lg hover:bg-negative/20
-                                   transition-colors duration-200 cursor-pointer">
-                        刪除
-                    </button>
-                    <button @click="saveChannel('GMAIL')"
-                            :disabled="saving"
-                            class="px-6 py-2 text-sm text-white bg-cta hover:bg-cta-hover rounded-lg
-                                   transition-colors duration-200 cursor-pointer glow-purple disabled:opacity-50">
-                        <span x-show="!saving">儲存設定</span>
-                        <span x-show="saving">儲存中...</span>
+                <div class="flex gap-2">
+                    <button x-show="gmail.id" @click="deleteChannel('GMAIL')"
+                            class="pixel-btn text-[7px] py-1 px-3 text-negative cursor-pointer" style="box-shadow: -2px 0 0 0 #ef4444, 2px 0 0 0 #ef4444, 0 -2px 0 0 #ef4444, 0 2px 0 0 #ef4444;">&#10005; 刪除</button>
+                    <button @click="saveChannel('GMAIL')" :disabled="saving"
+                            class="pixel-btn pixel-btn-gold text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                        <span x-show="!saving">&#128190; 儲存</span>
+                        <span x-show="saving" class="anim-flash">儲存中...</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Telegram 設定表單 -->
+    <!-- Telegram 設定 -->
     <div x-show="activeTab === 'telegram'" x-cloak>
-        <div class="bg-bg-card border border-border-main rounded-xl p-6">
-            <div class="flex items-center justify-between mb-6">
+        <div class="pixel-card p-4">
+            <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-lg font-semibold text-text-heading">Telegram 通知</h2>
-                    <p class="text-text-muted text-sm mt-1">使用 Telegram Bot 發送個人化交易訊號通知</p>
+                    <h2 class="text-[9px] text-text-heading">&#9992; Telegram 通知</h2>
+                    <p class="text-text-muted text-[7px] mt-0.5">使用 Telegram Bot 發送訊號通知</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" x-model="telegram.enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-border-main rounded-full peer peer-checked:bg-cta transition-colors duration-200
-                                after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full
-                                after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                    <div class="w-10 h-5 bg-border-main pixel-border-dark peer peer-checked:bg-cta
+                                after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-text-main
+                                after:h-3.5 after:w-3.5 after:transition-all peer-checked:after:translate-x-[18px]"
+                         style="image-rendering: pixelated;"></div>
                 </label>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-medium text-text-muted mb-1.5">Bot Token</label>
-                    <input type="password" x-model="telegram.botToken" placeholder="輸入 Telegram Bot Token"
-                           class="w-full px-4 py-2.5 bg-bg-input border border-border-main rounded-lg text-text-main text-sm
-                                  focus:outline-none focus:border-primary transition-colors duration-200">
-                    <p class="text-xs text-text-muted mt-1">透過 @BotFather 建立 Bot 後取得 Token（格式：123456:ABC-DEF...）</p>
+                    <label class="block text-[7px] text-text-muted mb-1">Bot Token</label>
+                    <input type="password" x-model="telegram.botToken" placeholder="Telegram Bot Token"
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
+                    <p class="text-[7px] text-text-muted mt-0.5">@BotFather 取得</p>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-text-muted mb-1.5">Chat ID</label>
-                    <input type="text" x-model="telegram.chatId" placeholder="輸入 Chat ID"
-                           class="w-full px-4 py-2.5 bg-bg-input border border-border-main rounded-lg text-text-main text-sm
-                                  focus:outline-none focus:border-primary transition-colors duration-200">
-                    <p class="text-xs text-text-muted mt-1">傳訊息給 @userinfobot 即可取得您的 Chat ID</p>
+                    <label class="block text-[7px] text-text-muted mb-1">Chat ID</label>
+                    <input type="text" x-model="telegram.chatId" placeholder="Chat ID"
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
+                    <p class="text-[7px] text-text-muted mt-0.5">@userinfobot 取得</p>
                 </div>
-
-                <div class="flex gap-6 pt-2">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" x-model="telegram.notifyOnEntry"
-                               class="w-4 h-4 rounded border-border-main bg-bg-input text-cta focus:ring-cta">
-                        <span class="text-sm text-text-main">進場訊號通知</span>
+                <div class="flex gap-4 pt-1">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                        <input type="checkbox" x-model="telegram.notifyOnEntry" class="w-3 h-3 accent-cta">
+                        <span>進場通知</span>
                     </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" x-model="telegram.notifyOnExit"
-                               class="w-4 h-4 rounded border-border-main bg-bg-input text-cta focus:ring-cta">
-                        <span class="text-sm text-text-main">出場訊號通知</span>
+                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                        <input type="checkbox" x-model="telegram.notifyOnExit" class="w-3 h-3 accent-cta">
+                        <span>出場通知</span>
                     </label>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between mt-6 pt-4 border-t border-border-main">
-                <button @click="testChannel('TELEGRAM')"
-                        :disabled="testing"
-                        class="px-4 py-2 text-sm text-text-muted bg-white/5 rounded-lg hover:bg-white/10
-                               transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!testing">測試連線</span>
-                    <span x-show="testing" class="flex items-center gap-2">
-                        <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" class="opacity-75"/></svg>
-                        測試中...
-                    </span>
+            <div class="flex items-center justify-between mt-4 pt-3 border-t border-border-main">
+                <button @click="testChannel('TELEGRAM')" :disabled="testing"
+                        class="pixel-btn pixel-btn-purple text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                    <span x-show="!testing">&#128225; 測試</span>
+                    <span x-show="testing" class="anim-flash">測試中...</span>
                 </button>
-                <div class="flex gap-3">
-                    <button @click="deleteChannel('TELEGRAM')"
-                            x-show="telegram.id"
-                            class="px-4 py-2 text-sm text-negative bg-negative/10 rounded-lg hover:bg-negative/20
-                                   transition-colors duration-200 cursor-pointer">
-                        刪除
-                    </button>
-                    <button @click="saveChannel('TELEGRAM')"
-                            :disabled="saving"
-                            class="px-6 py-2 text-sm text-white bg-cta hover:bg-cta-hover rounded-lg
-                                   transition-colors duration-200 cursor-pointer glow-purple disabled:opacity-50">
-                        <span x-show="!saving">儲存設定</span>
-                        <span x-show="saving">儲存中...</span>
+                <div class="flex gap-2">
+                    <button x-show="telegram.id" @click="deleteChannel('TELEGRAM')"
+                            class="pixel-btn text-[7px] py-1 px-3 text-negative cursor-pointer" style="box-shadow: -2px 0 0 0 #ef4444, 2px 0 0 0 #ef4444, 0 -2px 0 0 #ef4444, 0 2px 0 0 #ef4444;">&#10005; 刪除</button>
+                    <button @click="saveChannel('TELEGRAM')" :disabled="saving"
+                            class="pixel-btn pixel-btn-gold text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                        <span x-show="!saving">&#128190; 儲存</span>
+                        <span x-show="saving" class="anim-flash">儲存中...</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 操作結果提示 -->
-    <div x-show="message" x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-transition:leave="transition ease-in duration-200"
-         class="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium shadow-lg z-50"
-         :class="messageType === 'success' ? 'bg-positive/20 text-positive border border-positive/30' : 'bg-negative/20 text-negative border border-negative/30'"
-         x-text="message">
-    </div>
+    <div x-show="message" x-cloak x-transition class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[8px] z-50"
+         :class="messageType === 'success' ? 'text-positive' : 'text-negative'" x-text="message"></div>
 </main>
 
 <script>
-    /**
-     * 設定頁面的 Alpine.js 應用邏輯。
-     * 管理 Discord / Gmail / Telegram 三種通知管道的 CRUD 操作。
-     */
     function settingsApp() {
         return {
-            activeTab: 'discord',
-            saving: false,
-            testing: false,
-            message: '',
-            messageType: 'success',
-
-            /* === 三種管道的表單資料 === */
+            activeTab: 'character',
+            saving: false, savingClass: false, testing: false,
+            message: '', messageType: 'success',
+            selectedClass: 'WARRIOR',
+            classes: [
+                { key: 'WARRIOR', name: '戰士', desc: '攻守兼備的全能型' },
+                { key: 'MAGE', name: '法師', desc: '高風險高報酬策略' },
+                { key: 'RANGER', name: '遊俠', desc: '穩健的長線操作' },
+                { key: 'ASSASSIN', name: '刺客', desc: '快進快出短線高手' }
+            ],
+            achievements: [],
             discord: { id: null, enabled: true, botToken: '', channelId: '', notifyOnEntry: true, notifyOnExit: true },
             gmail: { id: null, enabled: true, recipientEmail: '', notifyOnEntry: true, notifyOnExit: true },
             telegram: { id: null, enabled: true, botToken: '', chatId: '', notifyOnEntry: true, notifyOnExit: true },
 
-            /**
-             * 頁面載入時，從 API 取得使用者已設定的通知管道並填入表單。
-             */
             async init() {
-                try {
-                    const resp = await fetch('/api/user/notifications');
-                    if (!resp.ok) return;
-                    const channels = await resp.json();
-
-                    channels.forEach(ch => {
-                        const config = JSON.parse(ch.configJson || '{}');
-                        if (ch.channelType === 'DISCORD') {
-                            this.discord = {
-                                id: ch.id, enabled: ch.enabled,
-                                botToken: config.botToken || '', channelId: config.channelId || '',
-                                notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit
-                            };
-                        } else if (ch.channelType === 'GMAIL') {
-                            this.gmail = {
-                                id: ch.id, enabled: ch.enabled,
-                                recipientEmail: config.recipientEmail || '',
-                                notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit
-                            };
-                        } else if (ch.channelType === 'TELEGRAM') {
-                            this.telegram = {
-                                id: ch.id, enabled: ch.enabled,
-                                botToken: config.botToken || '', chatId: config.chatId || '',
-                                notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit
-                            };
-                        }
-                    });
-                } catch (e) {
-                    console.error('[設定頁面] 載入通知管道失敗:', e);
-                }
+                await Promise.all([this.loadProfile(), this.loadChannels()]);
             },
-
-            /**
-             * 儲存指定類型的通知管道設定。
-             * 將表單資料組裝成 API 需要的格式後 POST 到後端。
-             */
+            async loadProfile() {
+                try {
+                    const r = await fetch('/api/user/gamification/profile');
+                    if (!r.ok) return;
+                    const p = await r.json();
+                    this.selectedClass = p.characterClass || 'WARRIOR';
+                    const unlocked = new Set((p.achievements || []).map(a => a.key));
+                    this.achievements = [
+                        { key: 'FIRST_LOGIN', name: '初次冒險', desc: '首次登入', unlocked: unlocked.has('FIRST_LOGIN') },
+                        { key: 'LOGIN_7D', name: '七日連續', desc: '累計7天登入', unlocked: unlocked.has('LOGIN_7D') },
+                        { key: 'LOGIN_30D', name: '月光旅人', desc: '累計30天登入', unlocked: unlocked.has('LOGIN_30D') },
+                        { key: 'LOGIN_100D', name: '百日征途', desc: '累計100天登入', unlocked: unlocked.has('LOGIN_100D') },
+                        { key: 'FIRST_BACKTEST', name: '初次回測', desc: '完成首次回測', unlocked: unlocked.has('FIRST_BACKTEST') },
+                        { key: 'PROFITABLE_1', name: '初嚐勝果', desc: '首次獲利回測', unlocked: unlocked.has('PROFITABLE_1') },
+                        { key: 'PROFITABLE_10', name: '連戰連勝', desc: '10次獲利回測', unlocked: unlocked.has('PROFITABLE_10') },
+                        { key: 'STRATEGY_CLONE', name: '策略複製師', desc: '首次克隆策略', unlocked: unlocked.has('STRATEGY_CLONE') },
+                        { key: 'STRATEGY_5', name: '策略大師', desc: '擁有5個策略', unlocked: unlocked.has('STRATEGY_5') },
+                        { key: 'WATCHLIST_5', name: '觀察者', desc: '觀察5個幣對', unlocked: unlocked.has('WATCHLIST_5') },
+                        { key: 'LEVEL_5', name: '銅級交易員', desc: '達到 Lv.5', unlocked: unlocked.has('LEVEL_5') },
+                        { key: 'LEVEL_10', name: '銀級交易員', desc: '達到 Lv.10', unlocked: unlocked.has('LEVEL_10') },
+                        { key: 'LEVEL_25', name: '金級交易員', desc: '達到 Lv.25', unlocked: unlocked.has('LEVEL_25') },
+                        { key: 'LEVEL_50', name: '傳說交易員', desc: '達到 Lv.50', unlocked: unlocked.has('LEVEL_50') },
+                        { key: 'SHARPE_1', name: '風險大師', desc: 'Sharpe > 1.0', unlocked: unlocked.has('SHARPE_1') },
+                        { key: 'ANNUAL_30', name: '年化30%+', desc: '年化報酬 > 30%', unlocked: unlocked.has('ANNUAL_30') }
+                    ];
+                } catch (e) {}
+            },
+            async loadChannels() {
+                try {
+                    const r = await fetch('/api/user/notifications');
+                    if (!r.ok) return;
+                    (await r.json()).forEach(ch => {
+                        const cfg = JSON.parse(ch.configJson || '{}');
+                        if (ch.channelType === 'DISCORD') this.discord = { id: ch.id, enabled: ch.enabled, botToken: cfg.botToken||'', channelId: cfg.channelId||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };
+                        else if (ch.channelType === 'GMAIL') this.gmail = { id: ch.id, enabled: ch.enabled, recipientEmail: cfg.recipientEmail||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };
+                        else if (ch.channelType === 'TELEGRAM') this.telegram = { id: ch.id, enabled: ch.enabled, botToken: cfg.botToken||'', chatId: cfg.chatId||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };
+                    });
+                } catch (e) {}
+            },
+            selectClass(key) { this.selectedClass = key; },
+            async saveClass() {
+                this.savingClass = true;
+                try {
+                    const r = await fetch('/api/user/gamification/character-class', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({characterClass: this.selectedClass}) });
+                    if (r.ok) this.showMsg('職業已更新', 'success');
+                    else { const e = await r.json(); this.showMsg(e.error||'更新失敗', 'error'); }
+                } catch (e) { this.showMsg('網路錯誤', 'error'); }
+                finally { this.savingClass = false; }
+            },
             async saveChannel(type) {
                 this.saving = true;
                 try {
                     const data = this.buildPayload(type);
                     if (!data) return;
-
-                    const resp = await fetch('/api/user/notifications', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
-
-                    if (resp.ok) {
-                        const result = await resp.json();
-                        // 更新本地 ID（新建時後端會回傳）
-                        if (type === 'DISCORD') this.discord.id = result.id;
-                        else if (type === 'GMAIL') this.gmail.id = result.id;
-                        else if (type === 'TELEGRAM') this.telegram.id = result.id;
-                        this.showMessage('設定已儲存', 'success');
-                    } else {
-                        const err = await resp.json();
-                        this.showMessage(err.error || '儲存失敗', 'error');
-                    }
-                } catch (e) {
-                    this.showMessage('網路錯誤，請稍後再試', 'error');
-                } finally {
-                    this.saving = false;
-                }
+                    const r = await fetch('/api/user/notifications', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                    if (r.ok) {
+                        const res = await r.json();
+                        if (type==='DISCORD') this.discord.id=res.id;
+                        else if (type==='GMAIL') this.gmail.id=res.id;
+                        else if (type==='TELEGRAM') this.telegram.id=res.id;
+                        this.showMsg('設定已儲存', 'success');
+                    } else { const e = await r.json(); this.showMsg(e.error||'儲存失敗', 'error'); }
+                } catch (e) { this.showMsg('網路錯誤', 'error'); }
+                finally { this.saving = false; }
             },
-
-            /**
-             * 測試指定類型的通知管道連線。
-             * 會先儲存再測試，確保使用最新的設定值。
-             */
             async testChannel(type) {
-                // 確保有已儲存的管道
-                const channelId = type === 'DISCORD' ? this.discord.id
-                    : type === 'GMAIL' ? this.gmail.id
-                    : this.telegram.id;
-
-                if (!channelId) {
-                    this.showMessage('請先儲存設定後再測試', 'error');
-                    return;
-                }
-
+                const cid = type==='DISCORD'?this.discord.id:type==='GMAIL'?this.gmail.id:this.telegram.id;
+                if (!cid) { this.showMsg('請先儲存設定', 'error'); return; }
                 this.testing = true;
                 try {
-                    const resp = await fetch(`/api/user/notifications/${channelId}/test`, { method: 'POST' });
-                    if (resp.ok) {
-                        const result = await resp.json();
-                        this.showMessage(result.success ? '測試訊息已發送！' : '連線測試失敗，請檢查設定',
-                            result.success ? 'success' : 'error');
-                    } else {
-                        this.showMessage('測試失敗', 'error');
-                    }
-                } catch (e) {
-                    this.showMessage('網路錯誤', 'error');
-                } finally {
-                    this.testing = false;
-                }
+                    const r = await fetch(`/api/user/notifications/${cid}/test`, { method: 'POST' });
+                    if (r.ok) { const res = await r.json(); this.showMsg(res.success?'測試訊息已發送':'測試失敗', res.success?'success':'error'); }
+                    else this.showMsg('測試失敗', 'error');
+                } catch (e) { this.showMsg('網路錯誤', 'error'); }
+                finally { this.testing = false; }
             },
-
-            /**
-             * 刪除指定類型的通知管道。
-             */
             async deleteChannel(type) {
-                const channelId = type === 'DISCORD' ? this.discord.id
-                    : type === 'GMAIL' ? this.gmail.id
-                    : this.telegram.id;
-
-                if (!channelId) return;
-
-                if (!confirm('確定要刪除此通知管道嗎？')) return;
-
+                const cid = type==='DISCORD'?this.discord.id:type==='GMAIL'?this.gmail.id:this.telegram.id;
+                if (!cid || !confirm('確定刪除此通知管道？')) return;
                 try {
-                    const resp = await fetch(`/api/user/notifications/${channelId}`, { method: 'DELETE' });
-                    if (resp.ok) {
-                        // 重置對應管道的表單資料
-                        if (type === 'DISCORD') this.discord = { id: null, enabled: true, botToken: '', channelId: '', notifyOnEntry: true, notifyOnExit: true };
-                        else if (type === 'GMAIL') this.gmail = { id: null, enabled: true, recipientEmail: '', notifyOnEntry: true, notifyOnExit: true };
-                        else if (type === 'TELEGRAM') this.telegram = { id: null, enabled: true, botToken: '', chatId: '', notifyOnEntry: true, notifyOnExit: true };
-                        this.showMessage('通知管道已刪除', 'success');
+                    const r = await fetch(`/api/user/notifications/${cid}`, { method: 'DELETE' });
+                    if (r.ok) {
+                        if (type==='DISCORD') this.discord={id:null,enabled:true,botToken:'',channelId:'',notifyOnEntry:true,notifyOnExit:true};
+                        else if (type==='GMAIL') this.gmail={id:null,enabled:true,recipientEmail:'',notifyOnEntry:true,notifyOnExit:true};
+                        else this.telegram={id:null,enabled:true,botToken:'',chatId:'',notifyOnEntry:true,notifyOnExit:true};
+                        this.showMsg('已刪除', 'success');
                     }
-                } catch (e) {
-                    this.showMessage('刪除失敗', 'error');
-                }
+                } catch (e) { this.showMsg('刪除失敗', 'error'); }
             },
-
-            /**
-             * 根據管道類型組裝 API 請求的 payload。
-             * 將前端表單欄位轉換為後端期望的 configJson 格式。
-             */
             buildPayload(type) {
-                let configJson, form;
-                if (type === 'DISCORD') {
-                    form = this.discord;
-                    configJson = JSON.stringify({ botToken: form.botToken, channelId: form.channelId });
-                } else if (type === 'GMAIL') {
-                    form = this.gmail;
-                    configJson = JSON.stringify({ recipientEmail: form.recipientEmail });
-                } else if (type === 'TELEGRAM') {
-                    form = this.telegram;
-                    configJson = JSON.stringify({ botToken: form.botToken, chatId: form.chatId });
-                } else {
-                    return null;
-                }
-
-                return {
-                    channelType: type,
-                    configJson: configJson,
-                    enabled: form.enabled,
-                    notifyOnEntry: form.notifyOnEntry,
-                    notifyOnExit: form.notifyOnExit
-                };
+                let cfg, form;
+                if (type==='DISCORD') { form=this.discord; cfg=JSON.stringify({botToken:form.botToken,channelId:form.channelId}); }
+                else if (type==='GMAIL') { form=this.gmail; cfg=JSON.stringify({recipientEmail:form.recipientEmail}); }
+                else if (type==='TELEGRAM') { form=this.telegram; cfg=JSON.stringify({botToken:form.botToken,chatId:form.chatId}); }
+                else return null;
+                return { channelType:type, configJson:cfg, enabled:form.enabled, notifyOnEntry:form.notifyOnEntry, notifyOnExit:form.notifyOnExit };
             },
-
-            /**
-             * 顯示操作結果訊息（自動在 3 秒後消失）。
-             */
-            showMessage(msg, type) {
-                this.message = msg;
-                this.messageType = type;
-                setTimeout(() => { this.message = ''; }, 3000);
-            }
+            showMsg(m,t) { this.message=m; this.messageType=t; setTimeout(()=>{this.message='';},3000); }
         };
     }
 </script>

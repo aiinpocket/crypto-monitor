@@ -1,155 +1,111 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
-<head th:replace="~{fragments/head :: head('BtcTrade - 策略管理')}"></head>
+<head th:replace="~{fragments/head :: head('BtcTrade - 技能書')}"></head>
 <body class="bg-bg-dark text-text-main min-h-screen">
 
-<!-- 頂部導航列 -->
 <div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+<div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
 
-<!-- 主內容區 -->
-<main class="pt-[72px] px-6 pb-12 max-w-7xl mx-auto"
-      x-data="strategiesApp()">
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-7xl mx-auto" x-data="strategiesApp()">
 
     <!-- 頁面標題 -->
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="font-heading text-2xl font-bold text-primary glow-gold">策略管理</h1>
-            <p class="text-text-muted text-sm mt-1">管理您的交易策略模板 — 克隆、調參、回測</p>
+            <h1 class="font-heading text-[12px] text-primary glow-gold">&#128214; 技能書</h1>
+            <p class="text-text-muted text-[8px] mt-1">管理你的交易策略 — 克隆、調參、回測</p>
         </div>
     </div>
 
-    <!-- 策略模板卡片列表 -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <!-- 策略模板卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         <template x-for="tmpl in templates" :key="tmpl.id">
-            <div class="bg-bg-card border border-border-main rounded-xl p-5 hover:border-primary/30 transition-all duration-200"
-                 :class="tmpl.systemDefault ? 'border-l-4 border-l-primary' : ''">
-                <!-- 標題列 -->
-                <div class="flex items-center justify-between mb-3">
+            <div class="pixel-card p-4" :class="tmpl.systemDefault ? 'border-l-4 border-l-primary' : ''">
+                <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-2">
-                        <h3 class="font-semibold text-text-heading text-base" x-text="tmpl.name"></h3>
-                        <span x-show="tmpl.systemDefault"
-                              class="text-[10px] px-2 py-0.5 bg-primary/20 text-primary rounded-full font-medium">系統預設</span>
+                        <span class="text-[10px]" x-text="tmpl.systemDefault ? '&#9733;' : '&#128220;'"></span>
+                        <h3 class="text-[9px] text-text-heading" x-text="tmpl.name"></h3>
+                        <span x-show="tmpl.systemDefault" class="text-[7px] px-1.5 py-0.5 bg-primary/20 text-primary pixel-border">傳說</span>
                     </div>
-                    <div class="flex gap-2">
-                        <button @click="cloneTemplate(tmpl.id)"
-                                class="text-xs px-3 py-1.5 bg-cta/10 text-cta rounded-lg hover:bg-cta/20 transition-colors duration-200 cursor-pointer">
-                            克隆
-                        </button>
-                        <button x-show="!tmpl.systemDefault" @click="openEditor(tmpl)"
-                                class="text-xs px-3 py-1.5 bg-white/5 text-text-muted rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer">
-                            編輯
-                        </button>
+                    <div class="flex gap-1">
+                        <button @click="cloneTemplate(tmpl.id)" class="pixel-btn pixel-btn-purple text-[7px] py-0.5 px-2">複製卷軸</button>
+                        <button x-show="!tmpl.systemDefault" @click="openEditor(tmpl)" class="pixel-btn pixel-btn-gold text-[7px] py-0.5 px-2">&#9998;</button>
                         <button x-show="!tmpl.systemDefault" @click="deleteTemplate(tmpl.id)"
-                                class="text-xs px-3 py-1.5 bg-negative/10 text-negative rounded-lg hover:bg-negative/20 transition-colors duration-200 cursor-pointer">
-                            刪除
-                        </button>
+                                class="text-[8px] text-negative hover:text-red-300 cursor-pointer px-1">&#10005;</button>
                     </div>
                 </div>
-
-                <!-- 參數概覽 -->
-                <div class="grid grid-cols-3 gap-3 text-xs">
-                    <div class="bg-bg-input rounded-lg p-2">
+                <div class="grid grid-cols-3 gap-2 text-[7px]">
+                    <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">停損</span>
-                        <span class="text-text-main font-mono font-semibold" x-text="(tmpl.stopLossPct * 100).toFixed(1) + '%'"></span>
+                        <span class="text-text-main" x-text="(tmpl.stopLossPct * 100).toFixed(1) + '%'"></span>
                     </div>
-                    <div class="bg-bg-input rounded-lg p-2">
+                    <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">移動停利</span>
-                        <span class="text-text-main font-mono font-semibold"
-                              x-text="(tmpl.trailingActivatePct * 100).toFixed(1) + '% / ' + (tmpl.trailingOffsetPct * 100).toFixed(1) + '%'"></span>
+                        <span class="text-text-main" x-text="(tmpl.trailingActivatePct * 100).toFixed(1) + '/' + (tmpl.trailingOffsetPct * 100).toFixed(1) + '%'"></span>
                     </div>
-                    <div class="bg-bg-input rounded-lg p-2">
-                        <span class="text-text-muted block">最大持倉</span>
-                        <span class="text-text-main font-mono font-semibold" x-text="tmpl.maxHoldingDays + '天'"></span>
-                    </div>
-                    <div class="bg-bg-input rounded-lg p-2">
+                    <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">EMA</span>
-                        <span class="text-text-main font-mono font-semibold" x-text="tmpl.emaShort + '/' + tmpl.emaLong"></span>
-                    </div>
-                    <div class="bg-bg-input rounded-lg p-2">
-                        <span class="text-text-muted block">RSI</span>
-                        <span class="text-text-main font-mono font-semibold" x-text="tmpl.rsiPeriod"></span>
-                    </div>
-                    <div class="bg-bg-input rounded-lg p-2">
-                        <span class="text-text-muted block">初始資金</span>
-                        <span class="text-text-main font-mono font-semibold" x-text="'$' + tmpl.initialCapital.toLocaleString()"></span>
+                        <span class="text-text-main" x-text="tmpl.emaShort + '/' + tmpl.emaLong"></span>
                     </div>
                 </div>
             </div>
         </template>
     </div>
 
-    <!-- 空狀態 -->
-    <div x-show="templates.length === 0" class="text-center py-16 text-text-muted">
-        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>
-        </svg>
-        <p>尚無策略模板</p>
+    <div x-show="templates.length === 0" class="text-center py-12 text-text-muted text-[8px]">
+        <div class="text-[24px] mb-2 opacity-50">&#128214;</div>
+        尚無策略模板
     </div>
 
-    <!-- ===== 績效對比表格 ===== -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between mb-4">
+    <!-- 績效對比 -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-3">
             <div>
-                <h2 class="font-heading text-xl font-bold text-text-heading">績效對比</h2>
-                <p class="text-text-muted text-xs mt-1">基準: BTCUSDT | 每 4 小時自動更新</p>
+                <h2 class="font-heading text-[10px] text-text-heading">&#128200; 績效對比</h2>
+                <p class="text-text-muted text-[7px] mt-0.5">基準: BTCUSDT | 每 4 小時更新</p>
             </div>
-            <div class="flex items-center gap-3">
-                <span x-show="perfLoading" class="text-xs text-text-muted animate-pulse">計算中...</span>
-                <button @click="refreshAllPerformance()"
-                        :disabled="perfLoading"
-                        class="text-xs px-4 py-2 bg-cta/10 text-cta rounded-lg hover:bg-cta/20 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                    重新計算
-                </button>
+            <div class="flex items-center gap-2">
+                <span x-show="perfLoading" class="text-[7px] text-text-muted anim-flash">計算中...</span>
+                <button @click="refreshAllPerformance()" :disabled="perfLoading"
+                        class="pixel-btn pixel-btn-purple text-[7px] py-1 px-2 disabled:opacity-50">&#9889; 重新計算</button>
             </div>
         </div>
 
-        <!-- 績效指標選擇 -->
-        <div class="flex gap-2 mb-3">
+        <div class="flex gap-1 mb-2 flex-wrap">
             <template x-for="m in metricOptions" :key="m.key">
                 <button @click="selectedMetric = m.key"
-                        class="text-xs px-3 py-1.5 rounded-lg transition-colors duration-200 cursor-pointer"
-                        :class="selectedMetric === m.key
-                            ? 'bg-primary/20 text-primary border border-primary/30'
-                            : 'bg-white/5 text-text-muted hover:bg-white/10 border border-transparent'"
+                        class="text-[7px] px-2 py-1 cursor-pointer transition-colors"
+                        :class="selectedMetric === m.key ? 'pixel-border text-primary bg-primary/10' : 'pixel-border-dark text-text-muted hover:text-text-main'"
                         x-text="m.label"></button>
             </template>
         </div>
 
-        <!-- 表格容器 (水平滾動) -->
-        <div class="bg-bg-card border border-border-main rounded-xl overflow-hidden"
-             x-show="perfSummaries.length > 0">
+        <div class="pixel-card overflow-hidden" x-show="perfSummaries.length > 0">
             <div class="overflow-x-auto scrollbar-thin">
-                <table class="w-full text-xs">
+                <table class="w-full text-[7px]">
                     <thead>
                         <tr class="border-b border-border-main">
-                            <th class="sticky left-0 z-10 bg-bg-card px-4 py-3 text-left text-text-muted font-medium min-w-[160px]">策略</th>
+                            <th class="sticky left-0 z-10 bg-bg-card px-3 py-2 text-left text-text-muted min-w-[120px]">策略</th>
                             <template x-for="col in periodColumns" :key="col.key">
-                                <th class="px-3 py-3 text-right text-text-muted font-medium min-w-[90px] whitespace-nowrap" x-text="col.label"></th>
+                                <th class="px-2 py-2 text-right text-text-muted min-w-[70px] whitespace-nowrap" x-text="col.label"></th>
                             </template>
-                            <th class="px-3 py-3 text-right text-text-muted font-medium min-w-[100px]">未實現 P&amp;L</th>
+                            <th class="px-2 py-2 text-right text-text-muted min-w-[80px]">未實現</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template x-for="s in perfSummaries" :key="s.templateId">
-                            <tr class="border-b border-border-main/50 hover:bg-white/[0.02] transition-colors">
-                                <!-- 策略名 (sticky) -->
-                                <td class="sticky left-0 z-10 bg-bg-card px-4 py-3">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-medium text-text-heading truncate max-w-[140px]" x-text="s.templateName"></span>
-                                        <span x-show="s.systemDefault"
-                                              class="text-[9px] px-1.5 py-0.5 bg-primary/15 text-primary rounded-full shrink-0">預設</span>
+                            <tr class="border-b border-border-main/50 hover:bg-white/[0.02]">
+                                <td class="sticky left-0 z-10 bg-bg-card px-3 py-2">
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-text-heading truncate max-w-[100px]" x-text="s.templateName"></span>
+                                        <span x-show="s.systemDefault" class="text-[6px] text-primary">&#9733;</span>
                                     </div>
                                 </td>
-                                <!-- 各時段指標 -->
                                 <template x-for="col in periodColumns" :key="col.key">
-                                    <td class="px-3 py-3 text-right font-mono"
-                                        :class="getCellColor(getMetricValue(s, col.key, selectedMetric))">
+                                    <td class="px-2 py-2 text-right" :class="getCellColor(getMetricValue(s, col.key, selectedMetric))">
                                         <span x-text="formatMetric(getMetricValue(s, col.key, selectedMetric), selectedMetric)"></span>
                                     </td>
                                 </template>
-                                <!-- 未實現 P&L -->
-                                <td class="px-3 py-3 text-right font-mono"
-                                    :class="getUnrealizedColor(s)">
+                                <td class="px-2 py-2 text-right" :class="getUnrealizedColor(s)">
                                     <span x-text="formatUnrealized(s)"></span>
                                 </td>
                             </tr>
@@ -157,358 +113,127 @@
                     </tbody>
                 </table>
             </div>
-            <!-- 最後更新時間 -->
-            <div class="px-4 py-2 border-t border-border-main/50 text-[10px] text-text-muted">
+            <div class="px-3 py-1.5 border-t border-border-main/50 text-[6px] text-text-muted">
                 <span x-show="lastComputedTime">最後更新: <span x-text="lastComputedTime"></span></span>
-                <span x-show="!lastComputedTime">尚未計算 — 請點擊「重新計算」</span>
+                <span x-show="!lastComputedTime">尚未計算</span>
             </div>
         </div>
 
-        <!-- 績效表空狀態 -->
-        <div x-show="perfSummaries.length === 0 && !perfLoading"
-             class="bg-bg-card border border-border-main rounded-xl p-8 text-center text-text-muted">
-            <p class="text-sm mb-2">尚無績效數據</p>
-            <p class="text-xs">點擊「重新計算」開始計算策略績效</p>
+        <div x-show="perfSummaries.length === 0 && !perfLoading" class="pixel-card p-6 text-center text-text-muted text-[8px]">
+            點擊「重新計算」開始
         </div>
     </div>
 
-    <!-- 策略編輯彈窗 -->
-    <div x-show="showEditor" x-cloak
-         class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60"
-         @click.self="showEditor = false">
-        <div class="bg-bg-card border border-border-main rounded-xl p-6 w-[640px] max-h-[85vh] overflow-y-auto shadow-2xl scrollbar-thin">
-            <h3 class="font-heading text-lg font-bold text-text-main mb-6" x-text="'編輯：' + editing.name"></h3>
-
-            <!-- 模板名稱 -->
-            <div class="mb-4">
-                <label class="block text-xs font-medium text-text-muted mb-1">模板名稱</label>
-                <input type="text" x-model="editing.name"
-                       class="w-full px-3 py-2 bg-bg-input border border-border-main rounded-lg text-text-main text-sm focus:outline-none focus:border-primary transition-colors duration-200">
+    <!-- 編輯彈窗 -->
+    <div x-show="showEditor" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" @click.self="showEditor = false">
+        <div class="pixel-card p-5 w-[560px] max-h-[85vh] overflow-y-auto scrollbar-thin">
+            <h3 class="font-heading text-[10px] text-primary mb-4" x-text="'&#9998; 編輯：' + editing.name"></h3>
+            <div class="mb-3">
+                <label class="block text-[7px] text-text-muted mb-1">模板名稱</label>
+                <input type="text" x-model="editing.name" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
             </div>
-
-            <!-- 技術指標參數 -->
-            <h4 class="text-sm font-semibold text-text-heading mt-6 mb-3 border-b border-border-main pb-2">技術指標</h4>
-            <div class="grid grid-cols-2 gap-4">
+            <h4 class="text-[8px] text-text-heading mt-4 mb-2 border-b border-border-main pb-1">&#128295; 技術指標</h4>
+            <div class="grid grid-cols-2 gap-2">
                 <template x-for="field in indicatorFields" :key="field.key">
                     <div>
-                        <label class="block text-xs text-text-muted mb-1" x-text="field.label"></label>
+                        <label class="block text-[7px] text-text-muted mb-0.5" x-text="field.label"></label>
                         <input type="number" x-model.number="editing[field.key]" :step="field.step || 1"
-                               class="w-full px-3 py-2 bg-bg-input border border-border-main rounded-lg text-text-main text-sm focus:outline-none focus:border-primary transition-colors duration-200">
+                               class="w-full px-2 py-1 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
                     </div>
                 </template>
             </div>
-
-            <!-- 風控參數 -->
-            <h4 class="text-sm font-semibold text-text-heading mt-6 mb-3 border-b border-border-main pb-2">風險控制</h4>
-            <div class="grid grid-cols-2 gap-4">
+            <h4 class="text-[8px] text-text-heading mt-4 mb-2 border-b border-border-main pb-1">&#128737; 風險控制</h4>
+            <div class="grid grid-cols-2 gap-2">
                 <template x-for="field in riskFields" :key="field.key">
                     <div>
-                        <label class="block text-xs text-text-muted mb-1" x-text="field.label"></label>
-                        <input type="number" x-model.number="editing[field.key]" :step="field.step || 1" :min="field.min || 0"
-                               class="w-full px-3 py-2 bg-bg-input border border-border-main rounded-lg text-text-main text-sm focus:outline-none focus:border-primary transition-colors duration-200">
+                        <label class="block text-[7px] text-text-muted mb-0.5" x-text="field.label"></label>
+                        <input type="number" x-model.number="editing[field.key]" :step="field.step || 1"
+                               class="w-full px-2 py-1 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
                     </div>
                 </template>
             </div>
-
-            <!-- RSI 參數 -->
-            <h4 class="text-sm font-semibold text-text-heading mt-6 mb-3 border-b border-border-main pb-2">RSI 進出場</h4>
-            <div class="grid grid-cols-2 gap-4">
+            <h4 class="text-[8px] text-text-heading mt-4 mb-2 border-b border-border-main pb-1">RSI 進出場</h4>
+            <div class="grid grid-cols-2 gap-2">
                 <template x-for="field in rsiFields" :key="field.key">
                     <div>
-                        <label class="block text-xs text-text-muted mb-1" x-text="field.label"></label>
-                        <input type="number" x-model.number="editing[field.key]" :step="field.step || 1" min="0" max="100"
-                               class="w-full px-3 py-2 bg-bg-input border border-border-main rounded-lg text-text-main text-sm focus:outline-none focus:border-primary transition-colors duration-200">
+                        <label class="block text-[7px] text-text-muted mb-0.5" x-text="field.label"></label>
+                        <input type="number" x-model.number="editing[field.key]" :step="field.step || 1"
+                               class="w-full px-2 py-1 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
                     </div>
                 </template>
             </div>
-
-            <!-- 儲存按鈕 -->
-            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-border-main">
-                <button @click="showEditor = false"
-                        class="px-4 py-2 text-sm text-text-muted bg-white/5 rounded-lg hover:bg-white/10 transition-colors duration-200 cursor-pointer">
-                    取消
-                </button>
-                <button @click="saveTemplate()"
-                        class="px-6 py-2 text-sm text-white bg-cta hover:bg-cta-hover rounded-lg transition-colors duration-200 cursor-pointer glow-purple">
-                    儲存變更
-                </button>
+            <div class="flex justify-end gap-2 mt-4 pt-3 border-t border-border-main">
+                <button @click="showEditor = false" class="pixel-btn pixel-btn-purple text-[8px]">取消</button>
+                <button @click="saveTemplate()" class="pixel-btn pixel-btn-gold text-[8px]">&#10003; 儲存</button>
             </div>
         </div>
     </div>
 
-    <!-- 操作結果提示 -->
-    <div x-show="message" x-cloak
-         x-transition class="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-sm font-medium shadow-lg z-50"
-         :class="messageType === 'success' ? 'bg-positive/20 text-positive border border-positive/30' : 'bg-negative/20 text-negative border border-negative/30'"
+    <div x-show="message" x-cloak x-transition
+         class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[8px] z-50"
+         :class="messageType === 'success' ? 'text-positive' : 'text-negative'"
          x-text="message"></div>
 </main>
 
 <script>
     function strategiesApp() {
         return {
-            templates: [],
-            showEditor: false,
-            editing: {},
-            message: '', messageType: 'success',
-
-            // 績效對比相關
-            perfSummaries: [],
-            perfLoading: false,
-            selectedMetric: 'totalReturn',
-            lastComputedTime: '',
-
-            /* 績效指標選項 */
+            templates: [], showEditor: false, editing: {}, message: '', messageType: 'success',
+            perfSummaries: [], perfLoading: false, selectedMetric: 'totalReturn', lastComputedTime: '',
             metricOptions: [
-                { key: 'totalReturn', label: '累計報酬' },
-                { key: 'annualizedReturn', label: '年化報酬' },
-                { key: 'winRate', label: '勝率' },
-                { key: 'maxDrawdown', label: '最大回撤' },
-                { key: 'sharpeRatio', label: 'Sharpe' },
-                { key: 'totalTrades', label: '交易數' },
+                { key: 'totalReturn', label: '累計報酬' }, { key: 'annualizedReturn', label: '年化報酬' },
+                { key: 'winRate', label: '勝率' }, { key: 'maxDrawdown', label: '最大回撤' },
+                { key: 'sharpeRatio', label: 'Sharpe' }, { key: 'totalTrades', label: '交易數' },
             ],
-
-            /* 時段欄位 — 與後端 PerformancePeriod enum 順序對應 */
             periodColumns: [
-                { key: 'SINCE_2021', label: '2021至今' },
-                { key: 'RECENT_5Y', label: '近5年' },
-                { key: 'RECENT_3Y', label: '近3年' },
-                { key: 'RECENT_1Y', label: '近1年' },
-                { key: 'RECENT_6M', label: '近6月' },
-                { key: 'RECENT_3M', label: '近3月' },
+                { key: 'SINCE_2021', label: '2021至今' }, { key: 'RECENT_5Y', label: '近5年' },
+                { key: 'RECENT_3Y', label: '近3年' }, { key: 'RECENT_1Y', label: '近1年' },
+                { key: 'RECENT_6M', label: '近6月' }, { key: 'RECENT_3M', label: '近3月' },
                 { key: 'RECENT_1M', label: '近1月' },
             ],
-
-            /* 技術指標欄位定義 */
             indicatorFields: [
-                { key: 'emaShort', label: 'EMA 短期', step: 1 },
-                { key: 'emaLong', label: 'EMA 長期', step: 1 },
-                { key: 'rsiPeriod', label: 'RSI 週期', step: 1 },
-                { key: 'macdShort', label: 'MACD 快線', step: 1 },
-                { key: 'macdLong', label: 'MACD 慢線', step: 1 },
-                { key: 'macdSignal', label: 'MACD 信號線', step: 1 },
-                { key: 'donchianEntry', label: '唐奇安進場', step: 1 },
-                { key: 'donchianExit', label: '唐奇安出場', step: 1 },
+                { key: 'emaShort', label: 'EMA 短期' }, { key: 'emaLong', label: 'EMA 長期' },
+                { key: 'rsiPeriod', label: 'RSI 週期' }, { key: 'macdShort', label: 'MACD 快線' },
+                { key: 'macdLong', label: 'MACD 慢線' }, { key: 'macdSignal', label: 'MACD 信號線' },
+                { key: 'donchianEntry', label: '唐奇安進場' }, { key: 'donchianExit', label: '唐奇安出場' },
             ],
-
-            /* 風控欄位定義 */
             riskFields: [
-                { key: 'stopLossPct', label: '停損 (%)', step: 0.001 },
-                { key: 'maxHoldingDays', label: '最大持倉(天)', step: 1 },
-                { key: 'initialCapital', label: '初始資金 (USD)', step: 1000 },
-                { key: 'maxTradesPerDay', label: '每日最大交易', step: 1 },
-                { key: 'trailingActivatePct', label: '移動停利啟動 (%)', step: 0.001 },
-                { key: 'trailingOffsetPct', label: '移動停利偏移 (%)', step: 0.001 },
-                { key: 'timeStopDays', label: '時間止損(天)', step: 1 },
-                { key: 'cooldownDays', label: '冷卻天數', step: 1 },
+                { key: 'stopLossPct', label: '停損 (%)', step: 0.001 }, { key: 'maxHoldingDays', label: '最大持倉(天)' },
+                { key: 'initialCapital', label: '初始資金', step: 1000 }, { key: 'maxTradesPerDay', label: '每日最大交易' },
+                { key: 'trailingActivatePct', label: '停利啟動 (%)', step: 0.001 }, { key: 'trailingOffsetPct', label: '停利偏移 (%)', step: 0.001 },
+                { key: 'timeStopDays', label: '時間止損(天)' }, { key: 'cooldownDays', label: '冷卻天數' },
             ],
-
-            /* RSI 欄位定義 */
             rsiFields: [
-                { key: 'rsiLongEntryMin', label: '做多進場 RSI 下限', step: 1 },
-                { key: 'rsiLongEntryMax', label: '做多進場 RSI 上限', step: 1 },
-                { key: 'rsiShortEntryMin', label: '做空進場 RSI 下限', step: 1 },
-                { key: 'rsiShortEntryMax', label: '做空進場 RSI 上限', step: 1 },
-                { key: 'rsiLongExitExtreme', label: '做多出場極端值', step: 1 },
-                { key: 'rsiShortExitExtreme', label: '做空出場極端值', step: 1 },
+                { key: 'rsiLongEntryMin', label: '做多 RSI 下限' }, { key: 'rsiLongEntryMax', label: '做多 RSI 上限' },
+                { key: 'rsiShortEntryMin', label: '做空 RSI 下限' }, { key: 'rsiShortEntryMax', label: '做空 RSI 上限' },
+                { key: 'rsiLongExitExtreme', label: '做多出場極端' }, { key: 'rsiShortExitExtreme', label: '做空出場極端' },
             ],
-
-            async init() {
-                await this.loadTemplates();
-                await this.loadPerformance();
-            },
-
-            async loadTemplates() {
-                try {
-                    const resp = await fetch('/api/user/strategies');
-                    if (resp.ok) this.templates = await resp.json();
-                } catch (e) {
-                    console.error('[策略管理] 載入模板失敗:', e);
-                }
-            },
-
+            async init() { await this.loadTemplates(); await this.loadPerformance(); },
+            async loadTemplates() { try { const r = await fetch('/api/user/strategies'); if (r.ok) this.templates = await r.json(); } catch(e){} },
             async loadPerformance() {
-                try {
-                    const resp = await fetch('/api/user/strategies/performance');
-                    if (resp.ok) {
-                        this.perfSummaries = await resp.json();
-                        // 計算最後更新時間
-                        const times = this.perfSummaries
-                            .filter(s => s.lastComputedAt)
-                            .map(s => new Date(s.lastComputedAt));
-                        if (times.length > 0) {
-                            const latest = new Date(Math.max(...times));
-                            this.lastComputedTime = latest.toLocaleString('zh-TW', {
-                                year: 'numeric', month: '2-digit', day: '2-digit',
-                                hour: '2-digit', minute: '2-digit'
-                            });
-                        }
-                    }
-                } catch (e) {
-                    console.error('[策略管理] 載入績效失敗:', e);
-                }
+                try { const r = await fetch('/api/user/strategies/performance'); if (r.ok) { this.perfSummaries = await r.json();
+                    const times = this.perfSummaries.filter(s=>s.lastComputedAt).map(s=>new Date(s.lastComputedAt));
+                    if(times.length>0) this.lastComputedTime = new Date(Math.max(...times)).toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+                }} catch(e){}
             },
-
-            /** 從績效摘要中取得指定時段的指定指標值 */
-            getMetricValue(summary, periodKey, metricKey) {
-                const period = summary.periods?.find(p => p.periodKey === periodKey);
-                if (!period) return null;
-                return period[metricKey];
+            getMetricValue(s,pk,mk) { const p=s.periods?.find(p=>p.periodKey===pk); return p?p[mk]:null; },
+            formatMetric(v,mk) { if(v===null||v===undefined)return'-'; const n=Number(v); if(isNaN(n))return'-';
+                if(['totalReturn','annualizedReturn','maxDrawdown','winRate'].includes(mk))return(n*100).toFixed(1)+'%';
+                if(mk==='sharpeRatio')return n.toFixed(2); if(mk==='totalTrades')return Math.round(n).toString(); return n.toFixed(2);
             },
-
-            /** 格式化指標值 */
-            formatMetric(value, metricKey) {
-                if (value === null || value === undefined) return '-';
-                const num = Number(value);
-                if (isNaN(num)) return '-';
-
-                switch (metricKey) {
-                    case 'totalReturn':
-                    case 'annualizedReturn':
-                    case 'maxDrawdown':
-                        return (num * 100).toFixed(1) + '%';
-                    case 'winRate':
-                        return (num * 100).toFixed(1) + '%';
-                    case 'sharpeRatio':
-                        return num.toFixed(2);
-                    case 'totalTrades':
-                        return Math.round(num).toString();
-                    default:
-                        return num.toFixed(2);
-                }
+            getCellColor(v) { if(v===null||v===undefined)return'text-text-muted'; const n=Number(v); if(isNaN(n))return'text-text-muted';
+                if(this.selectedMetric==='maxDrawdown'){const a=Math.abs(n);if(a>0.25)return'text-red-400';if(a>0.15)return'text-yellow-400';return'text-green-400';}
+                if(this.selectedMetric==='totalTrades')return'text-text-main'; return n>0?'text-green-400':n<0?'text-red-400':'text-text-muted';
             },
-
-            /** 根據數值正負返回顏色 class */
-            getCellColor(value) {
-                if (value === null || value === undefined) return 'text-text-muted';
-                const num = Number(value);
-                if (isNaN(num)) return 'text-text-muted';
-
-                // maxDrawdown 本身是負數，用絕對值比較
-                if (this.selectedMetric === 'maxDrawdown') {
-                    const abs = Math.abs(num);
-                    if (abs > 0.25) return 'text-red-400';
-                    if (abs > 0.15) return 'text-yellow-400';
-                    return 'text-green-400';
-                }
-
-                if (this.selectedMetric === 'totalTrades') return 'text-text-main';
-
-                if (num > 0) return 'text-green-400';
-                if (num < 0) return 'text-red-400';
-                return 'text-text-muted';
-            },
-
-            /** 取得未實現 P&L 的顏色 class */
-            getUnrealizedColor(summary) {
-                const period = summary.periods?.find(p => p.periodKey === 'RECENT_1M');
-                if (!period || period.unrealizedPnlPct === null || period.unrealizedPnlPct === undefined) {
-                    return 'text-text-muted';
-                }
-                return Number(period.unrealizedPnlPct) >= 0 ? 'text-green-400' : 'text-red-400';
-            },
-
-            /** 格式化未實現 P&L 欄位（純文字） */
-            formatUnrealized(summary) {
-                const period = summary.periods?.find(p => p.periodKey === 'RECENT_1M');
-                if (!period || period.unrealizedPnlPct === null || period.unrealizedPnlPct === undefined) {
-                    return '-';
-                }
-                const pct = (Number(period.unrealizedPnlPct) * 100).toFixed(2);
-                const dir = period.unrealizedDirection === 'LONG' ? 'L' : 'S';
-                const sign = Number(period.unrealizedPnlPct) >= 0 ? '+' : '';
-                return `${dir} ${sign}${pct}%`;
-            },
-
-            /** 觸發所有模板績效重算 */
-            async refreshAllPerformance() {
-                this.perfLoading = true;
-                try {
-                    const resp = await fetch('/api/user/strategies/refresh-all-performance', { method: 'POST' });
-                    if (resp.ok) {
-                        this.showMsg('績效計算已排入佇列，請稍後重新整理', 'success');
-                        // 延遲重新載入績效
-                        setTimeout(async () => {
-                            await this.loadPerformance();
-                            this.perfLoading = false;
-                        }, 5000);
-                    } else {
-                        this.perfLoading = false;
-                        this.showMsg('觸發績效計算失敗', 'error');
-                    }
-                } catch (e) {
-                    this.perfLoading = false;
-                    this.showMsg('網路錯誤', 'error');
-                }
-            },
-
-            async cloneTemplate(id) {
-                const name = prompt('請輸入新模板名稱:');
-                if (!name) return;
-                try {
-                    const resp = await fetch('/api/user/strategies/clone', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sourceId: id, name })
-                    });
-                    if (resp.ok) {
-                        this.showMsg('模板已克隆', 'success');
-                        await this.loadTemplates();
-                    } else {
-                        const err = await resp.json();
-                        this.showMsg(err.error || '克隆失敗', 'error');
-                    }
-                } catch (e) {
-                    this.showMsg('網路錯誤', 'error');
-                }
-            },
-
-            openEditor(tmpl) {
-                this.editing = JSON.parse(JSON.stringify(tmpl));
-                this.showEditor = true;
-            },
-
-            async saveTemplate() {
-                try {
-                    const resp = await fetch(`/api/user/strategies/${this.editing.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(this.editing)
-                    });
-                    if (resp.ok) {
-                        this.showEditor = false;
-                        this.showMsg('模板已更新，績效將自動重算', 'success');
-                        await this.loadTemplates();
-                    } else {
-                        const err = await resp.json();
-                        this.showMsg(err.error || '更新失敗', 'error');
-                    }
-                } catch (e) {
-                    this.showMsg('網路錯誤', 'error');
-                }
-            },
-
-            async deleteTemplate(id) {
-                if (!confirm('確定要刪除此策略模板嗎？此操作無法復原。')) return;
-                try {
-                    const resp = await fetch(`/api/user/strategies/${id}`, { method: 'DELETE' });
-                    if (resp.ok) {
-                        this.showMsg('模板已刪除', 'success');
-                        await this.loadTemplates();
-                        await this.loadPerformance();
-                    } else {
-                        const err = await resp.json();
-                        this.showMsg(err.error || '刪除失敗', 'error');
-                    }
-                } catch (e) {
-                    this.showMsg('網路錯誤', 'error');
-                }
-            },
-
-            showMsg(msg, type) {
-                this.message = msg;
-                this.messageType = type;
-                setTimeout(() => { this.message = ''; }, 3000);
-            }
+            getUnrealizedColor(s) { const p=s.periods?.find(p=>p.periodKey==='RECENT_1M'); if(!p||p.unrealizedPnlPct==null)return'text-text-muted'; return Number(p.unrealizedPnlPct)>=0?'text-green-400':'text-red-400'; },
+            formatUnrealized(s) { const p=s.periods?.find(p=>p.periodKey==='RECENT_1M'); if(!p||p.unrealizedPnlPct==null)return'-';
+                const pct=(Number(p.unrealizedPnlPct)*100).toFixed(2); const dir=p.unrealizedDirection==='LONG'?'L':'S'; const sign=Number(p.unrealizedPnlPct)>=0?'+':''; return `${dir} ${sign}${pct}%`; },
+            async refreshAllPerformance() { this.perfLoading=true; try { const r=await fetch('/api/user/strategies/refresh-all-performance',{method:'POST'}); if(r.ok){this.showMsg('績效計算已排入佇列','success'); setTimeout(async()=>{await this.loadPerformance();this.perfLoading=false;},5000);} else{this.perfLoading=false;this.showMsg('觸發失敗','error');}} catch(e){this.perfLoading=false;this.showMsg('網路錯誤','error');} },
+            async cloneTemplate(id) { const name=prompt('請輸入新模板名稱:'); if(!name)return; try { const r=await fetch('/api/user/strategies/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sourceId:id,name})}); if(r.ok){this.showMsg('已複製卷軸！','success');await this.loadTemplates();}else{const e=await r.json();this.showMsg(e.error||'克隆失敗','error');}} catch(e){this.showMsg('網路錯誤','error');} },
+            openEditor(t) { this.editing=JSON.parse(JSON.stringify(t)); this.showEditor=true; },
+            async saveTemplate() { try { const r=await fetch(`/api/user/strategies/${this.editing.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(this.editing)}); if(r.ok){this.showEditor=false;this.showMsg('模板已更新','success');await this.loadTemplates();}else{const e=await r.json();this.showMsg(e.error||'更新失敗','error');}} catch(e){this.showMsg('網路錯誤','error');} },
+            async deleteTemplate(id) { if(!confirm('確定要刪除此策略模板嗎？'))return; try { const r=await fetch(`/api/user/strategies/${id}`,{method:'DELETE'}); if(r.ok){this.showMsg('模板已刪除','success');await this.loadTemplates();await this.loadPerformance();}else{const e=await r.json();this.showMsg(e.error||'刪除失敗','error');}} catch(e){this.showMsg('網路錯誤','error');} },
+            showMsg(m,t) { this.message=m; this.messageType=t; setTimeout(()=>{this.message='';},3000); }
         };
     }
 </script>

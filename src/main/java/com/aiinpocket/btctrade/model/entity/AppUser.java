@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * 應用程式使用者 Entity。
@@ -57,6 +58,32 @@ public class AppUser {
     /** 最後一次登入時間（每次 OAuth 登入時更新） */
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
+
+    // ===== 遊戲化欄位 =====
+
+    /** 角色等級（從 1 開始） */
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer level = 1;
+
+    /** 累計經驗值 */
+    @Column(nullable = false)
+    @Builder.Default
+    private Long experience = 0L;
+
+    /** 累計登入天數 */
+    @Column(name = "total_logins", nullable = false)
+    @Builder.Default
+    private Integer totalLogins = 0;
+
+    /** 每日獎勵最後領取日期（防止同日重複領取） */
+    @Column(name = "last_daily_reward_date")
+    private LocalDate lastDailyRewardDate;
+
+    /** 角色職業：WARRIOR / MAGE / RANGER / ASSASSIN */
+    @Column(name = "character_class", nullable = false, length = 20)
+    @Builder.Default
+    private String characterClass = "WARRIOR";
 
     @PrePersist
     protected void onCreate() {
