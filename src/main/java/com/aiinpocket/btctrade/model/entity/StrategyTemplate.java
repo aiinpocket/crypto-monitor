@@ -3,6 +3,7 @@ package com.aiinpocket.btctrade.model.entity;
 import com.aiinpocket.btctrade.config.TradingStrategyProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.time.Instant;
 
@@ -40,6 +41,7 @@ public class StrategyTemplate {
     private Long id;
 
     /** 所屬用戶（null 表示系統預設模板） */
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private AppUser user;
