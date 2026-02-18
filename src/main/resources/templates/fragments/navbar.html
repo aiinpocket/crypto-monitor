@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<nav th:fragment="navbar(user)" class="fixed top-0 left-0 right-0 z-50 bg-bg-card/95 backdrop-blur border-b border-border-main px-6 py-3">
+<nav th:fragment="navbar(user)" class="fixed top-0 left-0 right-0 z-50 bg-bg-card/95 backdrop-blur border-b border-border-main px-4 md:px-6 py-3"
+     x-data="{ mobileOpen: false }">
     <div class="flex items-center justify-between max-w-screen-2xl mx-auto">
         <!-- Logo -->
         <div class="flex items-center gap-3">
@@ -12,8 +13,14 @@
             <span class="font-heading text-xl font-bold text-primary glow-gold">BtcTrade</span>
         </div>
 
-        <!-- Nav Links -->
-        <div class="flex items-center gap-6">
+        <!-- Mobile menu button -->
+        <button @click="mobileOpen = !mobileOpen" class="md:hidden text-text-muted hover:text-text-main transition-colors cursor-pointer">
+            <svg x-show="!mobileOpen" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <svg x-show="mobileOpen" x-cloak class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+
+        <!-- Nav Links (desktop) -->
+        <div class="hidden md:flex items-center gap-6">
             <a href="/" class="text-text-muted hover:text-text-main transition-colors duration-200 text-sm font-medium cursor-pointer">
                 <svg class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                 Dashboard
@@ -32,8 +39,8 @@
             </a>
         </div>
 
-        <!-- User -->
-        <div class="flex items-center gap-3">
+        <!-- User (desktop) -->
+        <div class="hidden md:flex items-center gap-3">
             <div class="text-right">
                 <div class="text-sm font-medium text-text-main" th:text="${user.displayName}">User</div>
                 <div class="text-xs text-text-muted" th:text="${user.email}">email</div>
@@ -46,6 +53,22 @@
             <a href="/logout" class="ml-2 text-text-muted hover:text-negative transition-colors duration-200 cursor-pointer" title="登出">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </a>
+        </div>
+    </div>
+
+    <!-- Mobile dropdown menu -->
+    <div x-show="mobileOpen" x-cloak x-transition
+         class="md:hidden mt-3 pb-3 border-t border-border-main pt-3 space-y-2">
+        <a href="/" class="block px-3 py-2 text-text-muted hover:text-text-main hover:bg-white/5 rounded-lg text-sm font-medium">Dashboard</a>
+        <a href="/strategies" class="block px-3 py-2 text-text-muted hover:text-text-main hover:bg-white/5 rounded-lg text-sm font-medium">Strategies</a>
+        <a href="/backtest" class="block px-3 py-2 text-text-muted hover:text-text-main hover:bg-white/5 rounded-lg text-sm font-medium">Backtest</a>
+        <a href="/settings" class="block px-3 py-2 text-text-muted hover:text-text-main hover:bg-white/5 rounded-lg text-sm font-medium">Settings</a>
+        <div class="flex items-center justify-between px-3 py-2 border-t border-border-main mt-2 pt-3">
+            <div class="flex items-center gap-2">
+                <img th:if="${user.avatarUrl != null}" th:src="${user.avatarUrl}" class="w-7 h-7 rounded-full" alt="avatar">
+                <span class="text-sm text-text-main" th:text="${user.displayName}">User</span>
+            </div>
+            <a href="/logout" class="text-sm text-negative hover:underline">登出</a>
         </div>
     </div>
 </nav>

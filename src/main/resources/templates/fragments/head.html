@@ -45,6 +45,30 @@
         .scrollbar-thin::-webkit-scrollbar { width: 4px; }
         .scrollbar-thin::-webkit-scrollbar-track { background: #1E293B; }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+        /* Toast 動畫 */
+        .toast-enter { animation: toastIn 0.3s ease-out; }
+        .toast-exit { animation: toastOut 0.3s ease-in forwards; }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
     </style>
+    <script>
+        /* 全域 Toast 通知（取代 alert） */
+        window.toast = function(msg, type) {
+            type = type || 'info';
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'fixed top-20 right-4 z-[100] flex flex-col gap-2 max-w-sm';
+                document.body.appendChild(container);
+            }
+            const colors = { success: 'bg-positive/90 text-white', error: 'bg-negative/90 text-white', info: 'bg-bg-card border border-border-main text-text-main' };
+            const el = document.createElement('div');
+            el.className = `px-4 py-3 rounded-lg text-sm shadow-lg backdrop-blur toast-enter ${colors[type] || colors.info}`;
+            el.textContent = msg;
+            container.appendChild(el);
+            setTimeout(() => { el.classList.remove('toast-enter'); el.classList.add('toast-exit'); setTimeout(() => el.remove(), 300); }, 3000);
+        };
+    </script>
 </head>
 </html>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <aside th:fragment="sidebar(symbols, allSymbols, userSymbols, activeSymbol)"
-       class="fixed left-0 top-[57px] bottom-0 w-64 bg-bg-card border-r border-border-main overflow-y-auto scrollbar-thin"
+       class="hidden md:block fixed left-0 top-[57px] bottom-0 w-64 bg-bg-card border-r border-border-main overflow-y-auto scrollbar-thin"
        x-data="sidebarData()">
 
     <!-- 觀察清單 -->
@@ -260,6 +260,7 @@
         }
 
         async function removeFromWatchlist(symbol) {
+            if (!confirm('確定要從觀察清單移除 ' + symbol + '？')) return;
             await fetch('/api/user/watchlist/' + symbol, { method: 'DELETE' });
             location.reload();
         }
@@ -271,10 +272,10 @@
                     location.reload();
                 } else {
                     const err = await resp.json();
-                    alert(err.error || '重新啟用失敗');
+                    toast(err.error || '重新啟用失敗', 'error');
                 }
             } catch (e) {
-                alert('網路錯誤');
+                toast('網路連線異常，請稍後再試', 'error');
             }
         }
     </script>
