@@ -40,6 +40,6 @@ public class DashboardService {
     }
 
     public List<TradeSignal> getRecentSignals(String symbol) {
-        return signalRepo.findBySymbolAndBacktestOrderBySignalTimeAsc(symbol, false);
+        return signalRepo.findTop100BySymbolAndBacktestOrderBySignalTimeDesc(symbol, false);
     }
 }

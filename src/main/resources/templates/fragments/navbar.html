@@ -57,6 +57,7 @@
     <div x-show="mobileOpen" x-cloak x-transition
          class="md:hidden mt-2 pb-2 border-t border-border-main pt-2 space-y-1">
         <a href="/" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#127968; 主控台</a>
+        <a @click="mobileOpen = false; $dispatch('sidebar-toggle')" class="block px-3 py-2 text-text-muted hover:text-primary text-sm cursor-pointer">&#128065; 觀察清單</a>
         <a href="/strategies" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#128214; 策略</a>
         <a href="/backtest" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#9889; 回測</a>
         <a href="/settings" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#9881; 設定</a>

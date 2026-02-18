@@ -25,9 +25,71 @@ public class TechnicalIndicatorService {
 
     private final TradingStrategyProperties props;
 
+    /**
+     * 預建立的指標集合，持有 ta4j 指標實例的內部快取。
+     * 在回測迴圈中重複使用同一個 IndicatorSet，讓 ta4j 的
+     * 內建快取生效，避免 O(n²) 重複計算。
+     */
+    public record IndicatorSet(
+            ClosePriceIndicator closePrice,
+            EMAIndicator emaShort,
+            EMAIndicator emaLong,
+            RSIIndicator rsi,
+            MACDIndicator macd,
+            EMAIndicator macdSignal,
+            ADXIndicator adx,
+            HighestValueIndicator highestEntry,
+            LowestValueIndicator lowestEntry,
+            HighestValueIndicator highestExit,
+            LowestValueIndicator lowestExit
+    ) {}
+
+    /**
+     * 針對給定的 BarSeries 一次性建立所有指標計算器。
+     * 回測時在迴圈外呼叫一次，之後在迴圈內用 {@link #computeFromSet} 取值。
+     */
+    public IndicatorSet createIndicators(BarSeries series) {
+        var sp = props.strategy();
+        var closePrice = new ClosePriceIndicator(series);
+        var highPrice = new HighPriceIndicator(series);
+        var lowPrice = new LowPriceIndicator(series);
+
+        return new IndicatorSet(
+                closePrice,
+                new EMAIndicator(closePrice, sp.emaShort()),
+                new EMAIndicator(closePrice, sp.emaLong()),
+                new RSIIndicator(closePrice, sp.rsiPeriod()),
+                new MACDIndicator(closePrice, sp.macdShort(), sp.macdLong()),
+                new EMAIndicator(new MACDIndicator(closePrice, sp.macdShort(), sp.macdLong()), sp.macdSignal()),
+                new ADXIndicator(series, sp.rsiPeriod()),
+                new HighestValueIndicator(highPrice, sp.donchianEntry()),
+                new LowestValueIndicator(lowPrice, sp.donchianEntry()),
+                new HighestValueIndicator(highPrice, sp.donchianExit()),
+                new LowestValueIndicator(lowPrice, sp.donchianExit())
+        );
+    }
+
+    /**
+     * 使用預建立的指標集合計算指定 index 的快照。
+     * ta4j 指標內部有快取，連續遞增的 index 呼叫效率為 O(1)。
+     */
+    public IndicatorSnapshot computeFromSet(IndicatorSet set, BarSeries series, int index) {
+        return buildSnapshot(
+                set.closePrice, set.emaShort, set.emaLong, set.rsi,
+                set.macd, set.macdSignal, set.adx,
+                set.highestEntry, set.lowestEntry, set.highestExit, set.lowestExit,
+                series, index);
+    }
+
+    /**
+     * 即時用途（KlineClosedEventHandler）：每次呼叫建立新的指標實例。
+     * 僅用於單次計算，不適合迴圈內使用。
+     */
     public IndicatorSnapshot computeAt(BarSeries series, int index) {
         var sp = props.strategy();
         var closePrice = new ClosePriceIndicator(series);
+        var highPrice = new HighPriceIndicator(series);
+        var lowPrice = new LowPriceIndicator(series);
 
         var emaShort = new EMAIndicator(closePrice, sp.emaShort());
         var emaLong = new EMAIndicator(closePrice, sp.emaLong());
@@ -35,6 +97,24 @@ public class TechnicalIndicatorService {
         var macd = new MACDIndicator(closePrice, sp.macdShort(), sp.macdLong());
         var macdSignal = new EMAIndicator(macd, sp.macdSignal());
         var adx = new ADXIndicator(series, sp.rsiPeriod());
+
+        var highestEntry = new HighestValueIndicator(highPrice, sp.donchianEntry());
+        var lowestEntry = new LowestValueIndicator(lowPrice, sp.donchianEntry());
+        var highestExit = new HighestValueIndicator(highPrice, sp.donchianExit());
+        var lowestExit = new LowestValueIndicator(lowPrice, sp.donchianExit());
+
+        return buildSnapshot(closePrice, emaShort, emaLong, rsi, macd, macdSignal, adx,
+                highestEntry, lowestEntry, highestExit, lowestExit, series, index);
+    }
+
+    private IndicatorSnapshot buildSnapshot(
+            ClosePriceIndicator closePrice,
+            EMAIndicator emaShort, EMAIndicator emaLong,
+            RSIIndicator rsi, MACDIndicator macd, EMAIndicator macdSignal,
+            ADXIndicator adx,
+            HighestValueIndicator highestEntry, LowestValueIndicator lowestEntry,
+            HighestValueIndicator highestExit, LowestValueIndicator lowestExit,
+            BarSeries series, int index) {
 
         // EMA 交叉偵測
         boolean goldenCross = index > 0
@@ -60,16 +140,7 @@ public class TechnicalIndicatorService {
         boolean macdBearishCross = macdHistPrev.isGreaterThanOrEqual(series.numFactory().zero())
                 && macdHistCurr.isLessThan(series.numFactory().zero());
 
-        // ======== Donchian Channel ========
-        // 使用前一根 K 線的通道值，避免前瞻偏差
-        var highPrice = new HighPriceIndicator(series);
-        var lowPrice = new LowPriceIndicator(series);
-
-        var highestEntry = new HighestValueIndicator(highPrice, sp.donchianEntry());
-        var lowestEntry = new LowestValueIndicator(lowPrice, sp.donchianEntry());
-        var highestExit = new HighestValueIndicator(highPrice, sp.donchianExit());
-        var lowestExit = new LowestValueIndicator(lowPrice, sp.donchianExit());
-
+        // Donchian Channel — 使用前一根 K 線的通道值，避免前瞻偏差
         int prevIdx = Math.max(0, index - 1);
         BigDecimal donchianHigh = toBigDecimal(highestEntry.getValue(prevIdx));
         BigDecimal donchianLow = toBigDecimal(lowestEntry.getValue(prevIdx));

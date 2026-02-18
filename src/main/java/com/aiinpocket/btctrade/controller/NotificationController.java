@@ -10,6 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +27,7 @@ import java.util.Map;
 public class NotificationController {
 
     private final NotificationChannelService channelService;
+    private final ObjectMapper objectMapper;
 
     /** 取得當前使用者的所有通知管道 */
     @GetMapping
@@ -52,6 +56,12 @@ public class NotificationController {
             boolean enabled = (Boolean) body.getOrDefault("enabled", true);
             boolean notifyOnEntry = (Boolean) body.getOrDefault("notifyOnEntry", true);
             boolean notifyOnExit = (Boolean) body.getOrDefault("notifyOnExit", true);
+
+            // 驗證 configJson 格式與必填欄位
+            String validationError = validateConfigJson(type, configJson);
+            if (validationError != null) {
+                return ResponseEntity.badRequest().body(Map.of("error", validationError));
+            }
 
             NotificationChannel channel = channelService.saveChannel(
                     principal.getAppUser(), type, configJson, enabled, notifyOnEntry, notifyOnExit);
@@ -85,5 +95,55 @@ public class NotificationController {
             @PathVariable Long id) {
         boolean success = channelService.testChannel(principal.getUserId(), id);
         return ResponseEntity.ok(Map.of("success", success));
+    }
+
+    /**
+     * 驗證通知管道的 configJson 格式與必填欄位。
+     * @return 錯誤訊息，null 表示驗證通過
+     */
+    private String validateConfigJson(ChannelType type, String configJson) {
+        if (configJson == null || configJson.isBlank()) {
+            return "設定內容不能為空";
+        }
+        if (configJson.length() > 2000) {
+            return "設定內容過長";
+        }
+
+        JsonNode cfg;
+        try {
+            cfg = objectMapper.readTree(configJson);
+        } catch (Exception e) {
+            return "設定內容格式不正確（需為 JSON）";
+        }
+
+        return switch (type) {
+            case DISCORD -> {
+                String botToken = textValue(cfg, "botToken");
+                String channelId = textValue(cfg, "channelId");
+                if (botToken.isEmpty()) yield "Discord Bot Token 為必填";
+                if (channelId.isEmpty()) yield "Discord Channel ID 為必填";
+                if (!channelId.matches("\\d{17,20}")) yield "Discord Channel ID 格式不正確（應為數字）";
+                yield null;
+            }
+            case GMAIL -> {
+                String email = textValue(cfg, "recipientEmail");
+                if (email.isEmpty()) yield "收件人 Email 為必填";
+                if (!email.matches("^[\\w.+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) yield "Email 格式不正確";
+                yield null;
+            }
+            case TELEGRAM -> {
+                String botToken = textValue(cfg, "botToken");
+                String chatId = textValue(cfg, "chatId");
+                if (botToken.isEmpty()) yield "Telegram Bot Token 為必填";
+                if (chatId.isEmpty()) yield "Telegram Chat ID 為必填";
+                if (!chatId.matches("-?\\d+")) yield "Telegram Chat ID 格式不正確（應為數字）";
+                yield null;
+            }
+        };
+    }
+
+    private static String textValue(JsonNode node, String field) {
+        JsonNode child = node.get(field);
+        return child != null && child.isTextual() ? child.textValue().trim() : "";
     }
 }

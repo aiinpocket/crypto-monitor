@@ -117,7 +117,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 - **WebSocket 認證**：Handshake 階段驗證 Session，未登入連線直接拒絕
 - **WebSocket CORS**：限制允許來源（localhost + 生產域名），非白名單來源無法連線
 - **資源授權檢查**：通知管道、策略模板等操作均驗證用戶所有權
-- **輸入驗證**：回測參數範圍限制（年數 1~10、symbol 長度限制）
+- **輸入驗證**：回測參數範圍限制、通知管道 configJson 格式檢查（Discord ID/Email/Telegram ChatID）
 - **全域異常處理**：`@RestControllerAdvice` 統一攔截異常，回傳一致的 JSON 錯誤格式
 - **錯誤訊息保護**：API 僅回傳使用者友善錯誤，不暴露內部實作細節（過濾 SQL/Exception 關鍵字）
 - **XSS 防護**：WebSocket 訊號使用 DOM API 建構（非 `innerHTML`），前端一律 `x-text`
@@ -128,7 +128,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 ### 響應式設計 (RWD)
 
 - **手機版漢堡選單**：導航列自動收合為下拉選單
-- **側邊欄適配**：手機版隱藏固定側邊欄，避免內容重疊
+- **行動版側邊欄**：浮動按鈕觸發滑入式觀察清單面板，背景遮罩點擊關閉
 - **表格水平滾動**：交易紀錄、績效對比表支援手機端橫向捲動
 - **彈窗自適應**：策略編輯/幣對搜尋彈窗加入 `max-w-[90vw]` 防止手機溢出
 - **Toast 通知系統**：取代 `alert()`，使用非阻塞式浮動通知
@@ -382,6 +382,15 @@ git push main
 | `StrategyPerformance` | `idx_perf_template_symbol` | 績效批次查詢（前端列表） |
 | `TradeSignal` | `idx_signal_symbol_backtest` | 交易訊號按幣對+回測篩選 |
 | `TradeSignal` | `idx_signal_symbol_time` | 交易訊號按幣對+時間排序 |
+| `TradeSignal` | `idx_signal_symbol_backtest_time` | 儀表板最近訊號查詢 |
+| `TradePosition` | `idx_position_backtest_entry` | 非回測持倉按時間排序 |
+
+### 回測指標計算優化
+
+ta4j 指標計算器支援預建立模式（`IndicatorSet`），回測迴圈外一次性建立所有指標實例，
+讓 ta4j 內部快取在連續 bar 查詢時生效：
+- **優化前**：每根 K 線重新建立所有指標，計算複雜度 O(n²)
+- **優化後**：指標實例共享快取，計算複雜度 O(n)
 
 ### N+1 查詢修復
 

@@ -12,7 +12,8 @@ import java.time.Instant;
         @Index(name = "idx_signal_time", columnList = "signal_time"),
         @Index(name = "idx_signal_action", columnList = "action"),
         @Index(name = "idx_signal_symbol_backtest", columnList = "symbol, is_backtest"),
-        @Index(name = "idx_signal_symbol_time", columnList = "symbol, signal_time")
+        @Index(name = "idx_signal_symbol_time", columnList = "symbol, signal_time"),
+        @Index(name = "idx_signal_symbol_backtest_time", columnList = "symbol, is_backtest, signal_time")
 })
 @Getter
 @Setter

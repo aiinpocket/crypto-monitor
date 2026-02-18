@@ -149,6 +149,9 @@ public class BacktestService {
 
         BarSeries series = barSeriesFactory.createFromKlines(klines, "backtest");
 
+        // ---- 預建立指標集合（迴圈外一次性建立，讓 ta4j 內部快取生效）----
+        TechnicalIndicatorService.IndicatorSet indicatorSet = backtestIndicator.createIndicators(series);
+
         // ---- 模擬狀態（純記憶體）----
         BigDecimal capital = BigDecimal.valueOf(backtestProps.risk().initialCapital());
         final BigDecimal initialCapital = capital;
@@ -179,8 +182,8 @@ public class BacktestService {
                 }
             }
 
-            // ====== 步驟 2：計算指標（使用自訂參數，無前瞻）======
-            IndicatorSnapshot snap = backtestIndicator.computeAt(series, i);
+            // ====== 步驟 2：計算指標（使用預建立的指標集合，O(1) 查詢）======
+            IndicatorSnapshot snap = backtestIndicator.computeFromSet(indicatorSet, series, i);
 
             // ====== 步驟 3：持倉中 → 檢查其他出場條件 ======
             if (openPos != null) {

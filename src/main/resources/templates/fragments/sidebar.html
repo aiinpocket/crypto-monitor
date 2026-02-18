@@ -1,147 +1,168 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<aside th:fragment="sidebar(symbols, allSymbols, userSymbols, activeSymbol)"
-       class="hidden md:block fixed left-0 top-[49px] bottom-0 w-56 bg-bg-card pixel-border-dark overflow-y-auto scrollbar-thin"
-       x-data="sidebarData()">
+<div th:fragment="sidebar(symbols, allSymbols, userSymbols, activeSymbol)"
+     x-data="sidebarData()" @sidebar-toggle.window="sidebarOpen = !sidebarOpen">
 
-    <!-- 觀察清單 -->
-    <div class="p-3">
-        <div class="flex items-center justify-between mb-2">
-            <h2 class="text-sm text-primary font-heading">&#128065; 觀察清單</h2>
-            <button @click="openAddModal()"
-                    class="text-primary hover:text-primary-hover cursor-pointer text-base"
-                    title="新增到觀察清單"
-                    aria-label="新增幣對到觀察清單">+</button>
+    <!-- 行動版：浮動切換按鈕 -->
+    <button x-show="!sidebarOpen" x-cloak @click="sidebarOpen = true"
+            class="md:hidden fixed bottom-5 left-4 z-50 w-11 h-11 flex items-center justify-center bg-bg-card pixel-border text-primary cursor-pointer"
+            aria-label="開啟觀察清單">
+        <span class="text-base">&#128065;</span>
+    </button>
+
+    <!-- 行動版：背景遮罩 -->
+    <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"
+         class="md:hidden fixed inset-0 bg-black/50 z-30" x-transition.opacity></div>
+
+    <!-- 側邊欄 -->
+    <aside class="fixed left-0 top-[49px] bottom-0 w-56 bg-bg-card pixel-border-dark overflow-y-auto scrollbar-thin z-40 transition-transform duration-200"
+           :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'">
+
+        <!-- 行動版：關閉按鈕 -->
+        <div class="md:hidden flex justify-end px-3 pt-2">
+            <button @click="sidebarOpen = false" class="text-text-muted hover:text-primary cursor-pointer text-base"
+                    aria-label="關閉側邊欄">&#10005;</button>
         </div>
 
-        <!-- 符號列表 -->
-        <ul class="space-y-0.5">
-            <li th:each="ts : ${symbols}" class="group">
-                <a th:href="'/?symbol=' + ${ts.symbol}"
-                   class="flex items-center justify-between px-2 py-1.5 transition-all duration-100 cursor-pointer text-[13px]"
-                   th:classappend="${ts.symbol == activeSymbol} ? 'bg-primary/10 border-l-2 border-primary text-primary' : 'hover:bg-white/5 text-text-main'"
-                   th:attrappend="class=${ts.syncStatus.name() == 'DELISTED'} ? ' opacity-50' : ''">
-                    <div class="flex flex-col gap-0.5">
-                        <span class="font-heading text-xs" th:text="${ts.symbol}">BTCUSDT</span>
-                        <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="text-xs text-negative">&#128128; 已下架</span>
-                        <span th:unless="${ts.syncStatus.name() == 'DELISTED'}" class="text-xs text-text-muted" th:text="${ts.displayName}">BTC/USDT</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <!-- 同步狀態像素心形 -->
-                        <span th:if="${ts.syncStatus.name() == 'READY'}" class="text-positive text-[13px]">&#9829;</span>
-                        <span th:if="${ts.syncStatus.name() == 'SYNCING'}" class="text-warning text-[13px] anim-flash">&#9829;</span>
-                        <span th:if="${ts.syncStatus.name() == 'PENDING'}" class="text-text-muted text-[13px]">&#9825;</span>
-                        <span th:if="${ts.syncStatus.name() == 'ERROR'}" class="text-negative text-[13px]">&#9760;</span>
-                        <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="text-negative text-[13px]">&#9760;</span>
-                        <!-- 即時價格 -->
-                        <span th:unless="${ts.syncStatus.name() == 'DELISTED'}" class="text-xs text-primary font-heading" th:id="'price-' + ${ts.symbol}">--</span>
-                        <!-- 移除按鈕 -->
-                        <button class="opacity-0 group-hover:opacity-100 text-text-muted hover:text-negative cursor-pointer text-[13px]"
-                                th:data-symbol="${ts.symbol}"
-                                onclick="event.preventDefault(); event.stopPropagation(); removeFromWatchlist(this.dataset.symbol);">&#10005;</button>
-                    </div>
-                </a>
-            </li>
-        </ul>
-
-        <div th:if="${#lists.isEmpty(symbols)}" class="text-center py-6 text-text-muted text-[13px]">
-            <div class="text-xl mb-2 opacity-50">&#128269;</div>
-            尚無觀察幣對<br>
-            <button @click="openAddModal()" class="text-primary hover:underline mt-1 cursor-pointer">點此新增</button>
-        </div>
-    </div>
-
-    <!-- 全域幣對池 -->
-    <div class="p-3 border-t border-border-main">
-        <h2 class="text-sm text-primary font-heading mb-2">&#127760; 全域幣對</h2>
-        <ul class="space-y-0.5">
-            <li th:each="ts : ${allSymbols}" class="flex items-center justify-between px-2 py-1 text-[13px]"
-                th:classappend="${ts.syncStatus.name() == 'DELISTED'} ? 'opacity-50' : ''">
-                <div class="flex items-center gap-1">
-                    <span th:if="${ts.syncStatus.name() == 'READY'}" class="text-positive text-xs">&#9829;</span>
-                    <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="text-negative text-xs">&#9760;</span>
-                    <span th:if="${ts.syncStatus.name() != 'READY' && ts.syncStatus.name() != 'DELISTED'}" class="text-text-muted text-xs">&#9825;</span>
-                    <span class="text-text-muted" th:text="${ts.symbol}">BTCUSDT</span>
-                </div>
-                <button th:if="${ts.syncStatus.name() == 'DELISTED'}"
-                        class="text-xs text-warning hover:text-primary cursor-pointer"
-                        th:data-symbol="${ts.symbol}"
-                        onclick="reenableSymbol(this.dataset.symbol)">
-                    &#9888; 啟用
-                </button>
-                <button th:if="${ts.syncStatus.name() != 'DELISTED' && !#lists.contains(userSymbols, ts.symbol)}"
-                        class="text-xs text-cta hover:text-cta-hover cursor-pointer"
-                        th:data-symbol="${ts.symbol}"
-                        onclick="addToWatchlist(this.dataset.symbol)">
-                    + 加入
-                </button>
-                <span th:if="${ts.syncStatus.name() != 'DELISTED' && #lists.contains(userSymbols, ts.symbol)}"
-                      class="text-xs text-positive">&#10003;</span>
-            </li>
-        </ul>
-    </div>
-
-    <!-- 搜尋下拉式新增幣對對話框 -->
-    <div x-show="showAddModal" x-cloak
-         class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60"
-         @click.self="closeAddModal()">
-        <div class="pixel-card p-5 w-[380px] max-w-[90vw]">
-            <h3 class="font-heading text-sm text-primary mb-3">&#128270; 新增追蹤幣對</h3>
-
-            <!-- 搜尋輸入框 -->
-            <div class="relative mb-2">
-                <input type="text" x-model="searchQuery" @input="filterPairs()"
-                       placeholder="搜尋幣對..."
-                       class="w-full pl-3 pr-3 py-2 bg-bg-input pixel-border-dark text-text-main text-sm focus:outline-none uppercase"
-                       x-ref="searchInput">
+        <!-- 觀察清單 -->
+        <div class="p-3">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-sm text-primary font-heading">&#128065; 觀察清單</h2>
+                <button @click="openAddModal()"
+                        class="text-primary hover:text-primary-hover cursor-pointer text-base"
+                        title="新增到觀察清單"
+                        aria-label="新增幣對到觀察清單">+</button>
             </div>
 
-            <!-- 載入狀態 -->
-            <div x-show="loading" class="text-center py-6 text-text-muted text-[13px]">
-                <div class="anim-flash">載入中...</div>
-            </div>
-
-            <!-- 錯誤訊息 -->
-            <div x-show="addError" class="text-negative text-[13px] mb-2" x-text="addError"></div>
-
-            <!-- 幣對列表 -->
-            <div x-show="!loading" class="max-h-60 overflow-y-auto scrollbar-thin pixel-border-dark">
-                <template x-if="filteredPairs.length === 0 && !loading">
-                    <div class="text-center py-4 text-text-muted text-[13px]">
-                        <template x-if="searchQuery.length > 0"><span>找不到符合的幣對</span></template>
-                        <template x-if="searchQuery.length === 0"><span>輸入關鍵字搜尋</span></template>
-                    </div>
-                </template>
-                <template x-for="pair in filteredPairs" :key="pair.symbol">
-                    <button @click="selectPair(pair)"
-                            class="w-full flex items-center justify-between px-3 py-2 hover:bg-white/5 cursor-pointer border-b border-border-main last:border-b-0 text-[13px]"
-                            :class="pair.tracked ? 'opacity-50' : ''">
-                        <div class="flex items-center gap-2">
-                            <span class="text-primary font-heading text-xs"
-                                 x-text="pair.baseAsset.substring(0, Math.min(3, pair.baseAsset.length))"></span>
-                            <div class="text-left">
-                                <div class="text-text-main" x-text="pair.symbol"></div>
-                            </div>
+            <!-- 符號列表 -->
+            <ul class="space-y-0.5">
+                <li th:each="ts : ${symbols}" class="group">
+                    <a th:href="'/?symbol=' + ${ts.symbol}"
+                       class="flex items-center justify-between px-2 py-1.5 transition-all duration-100 cursor-pointer text-[13px]"
+                       th:classappend="${ts.symbol == activeSymbol} ? 'bg-primary/10 border-l-2 border-primary text-primary' : 'hover:bg-white/5 text-text-main'"
+                       th:attrappend="class=${ts.syncStatus.name() == 'DELISTED'} ? ' opacity-50' : ''">
+                        <div class="flex flex-col gap-0.5">
+                            <span class="font-heading text-xs" th:text="${ts.symbol}">BTCUSDT</span>
+                            <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="text-xs text-negative">&#128128; 已下架</span>
+                            <span th:unless="${ts.syncStatus.name() == 'DELISTED'}" class="text-xs text-text-muted" th:text="${ts.displayName}">BTC/USDT</span>
                         </div>
-                        <template x-if="pair.tracked">
-                            <span class="text-positive">&#10003;</span>
-                        </template>
-                        <template x-if="!pair.tracked">
-                            <span class="text-cta">+ 加入</span>
-                        </template>
-                    </button>
-                </template>
-            </div>
+                        <div class="flex items-center gap-1">
+                            <!-- 同步狀態像素心形 -->
+                            <span th:if="${ts.syncStatus.name() == 'READY'}" class="text-positive text-[13px]">&#9829;</span>
+                            <span th:if="${ts.syncStatus.name() == 'SYNCING'}" class="text-warning text-[13px] anim-flash">&#9829;</span>
+                            <span th:if="${ts.syncStatus.name() == 'PENDING'}" class="text-text-muted text-[13px]">&#9825;</span>
+                            <span th:if="${ts.syncStatus.name() == 'ERROR'}" class="text-negative text-[13px]">&#9760;</span>
+                            <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="text-negative text-[13px]">&#9760;</span>
+                            <!-- 即時價格 -->
+                            <span th:unless="${ts.syncStatus.name() == 'DELISTED'}" class="text-xs text-primary font-heading" th:id="'price-' + ${ts.symbol}">--</span>
+                            <!-- 移除按鈕 -->
+                            <button class="opacity-0 group-hover:opacity-100 text-text-muted hover:text-negative cursor-pointer text-[13px]"
+                                    th:data-symbol="${ts.symbol}"
+                                    onclick="event.preventDefault(); event.stopPropagation(); removeFromWatchlist(this.dataset.symbol);">&#10005;</button>
+                        </div>
+                    </a>
+                </li>
+            </ul>
 
-            <div x-show="!loading && filteredPairs.length > 0" class="text-xs text-text-muted mt-1">
-                顯示 <span x-text="filteredPairs.length"></span> / <span x-text="allPairs.length"></span>
-            </div>
-
-            <div class="flex justify-end mt-3">
-                <button @click="closeAddModal()" class="pixel-btn pixel-btn-purple text-[13px]">關閉</button>
+            <div th:if="${#lists.isEmpty(symbols)}" class="text-center py-6 text-text-muted text-[13px]">
+                <div class="text-xl mb-2 opacity-50">&#128269;</div>
+                尚無觀察幣對<br>
+                <button @click="openAddModal()" class="text-primary hover:underline mt-1 cursor-pointer">點此新增</button>
             </div>
         </div>
-    </div>
+
+        <!-- 全域幣對池 -->
+        <div class="p-3 border-t border-border-main">
+            <h2 class="text-sm text-primary font-heading mb-2">&#127760; 全域幣對</h2>
+            <ul class="space-y-0.5">
+                <li th:each="ts : ${allSymbols}" class="flex items-center justify-between px-2 py-1 text-[13px]"
+                    th:classappend="${ts.syncStatus.name() == 'DELISTED'} ? 'opacity-50' : ''">
+                    <div class="flex items-center gap-1">
+                        <span th:if="${ts.syncStatus.name() == 'READY'}" class="text-positive text-xs">&#9829;</span>
+                        <span th:if="${ts.syncStatus.name() == 'DELISTED'}" class="text-negative text-xs">&#9760;</span>
+                        <span th:if="${ts.syncStatus.name() != 'READY' && ts.syncStatus.name() != 'DELISTED'}" class="text-text-muted text-xs">&#9825;</span>
+                        <span class="text-text-muted" th:text="${ts.symbol}">BTCUSDT</span>
+                    </div>
+                    <button th:if="${ts.syncStatus.name() == 'DELISTED'}"
+                            class="text-xs text-warning hover:text-primary cursor-pointer"
+                            th:data-symbol="${ts.symbol}"
+                            onclick="reenableSymbol(this.dataset.symbol)">
+                        &#9888; 啟用
+                    </button>
+                    <button th:if="${ts.syncStatus.name() != 'DELISTED' && !#lists.contains(userSymbols, ts.symbol)}"
+                            class="text-xs text-cta hover:text-cta-hover cursor-pointer"
+                            th:data-symbol="${ts.symbol}"
+                            onclick="addToWatchlist(this.dataset.symbol)">
+                        + 加入
+                    </button>
+                    <span th:if="${ts.syncStatus.name() != 'DELISTED' && #lists.contains(userSymbols, ts.symbol)}"
+                          class="text-xs text-positive">&#10003;</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 搜尋下拉式新增幣對對話框 -->
+        <div x-show="showAddModal" x-cloak
+             class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60"
+             @click.self="closeAddModal()">
+            <div class="pixel-card p-5 w-[380px] max-w-[90vw]">
+                <h3 class="font-heading text-sm text-primary mb-3">&#128270; 新增追蹤幣對</h3>
+
+                <!-- 搜尋輸入框 -->
+                <div class="relative mb-2">
+                    <input type="text" x-model="searchQuery" @input="filterPairs()"
+                           placeholder="搜尋幣對..."
+                           class="w-full pl-3 pr-3 py-2 bg-bg-input pixel-border-dark text-text-main text-sm focus:outline-none uppercase"
+                           x-ref="searchInput">
+                </div>
+
+                <!-- 載入狀態 -->
+                <div x-show="loading" class="text-center py-6 text-text-muted text-[13px]">
+                    <div class="anim-flash">載入中...</div>
+                </div>
+
+                <!-- 錯誤訊息 -->
+                <div x-show="addError" class="text-negative text-[13px] mb-2" x-text="addError"></div>
+
+                <!-- 幣對列表 -->
+                <div x-show="!loading" class="max-h-60 overflow-y-auto scrollbar-thin pixel-border-dark">
+                    <template x-if="filteredPairs.length === 0 && !loading">
+                        <div class="text-center py-4 text-text-muted text-[13px]">
+                            <template x-if="searchQuery.length > 0"><span>找不到符合的幣對</span></template>
+                            <template x-if="searchQuery.length === 0"><span>輸入關鍵字搜尋</span></template>
+                        </div>
+                    </template>
+                    <template x-for="pair in filteredPairs" :key="pair.symbol">
+                        <button @click="selectPair(pair)"
+                                class="w-full flex items-center justify-between px-3 py-2 hover:bg-white/5 cursor-pointer border-b border-border-main last:border-b-0 text-[13px]"
+                                :class="pair.tracked ? 'opacity-50' : ''">
+                            <div class="flex items-center gap-2">
+                                <span class="text-primary font-heading text-xs"
+                                     x-text="pair.baseAsset.substring(0, Math.min(3, pair.baseAsset.length))"></span>
+                                <div class="text-left">
+                                    <div class="text-text-main" x-text="pair.symbol"></div>
+                                </div>
+                            </div>
+                            <template x-if="pair.tracked">
+                                <span class="text-positive">&#10003;</span>
+                            </template>
+                            <template x-if="!pair.tracked">
+                                <span class="text-cta">+ 加入</span>
+                            </template>
+                        </button>
+                    </template>
+                </div>
+
+                <div x-show="!loading && filteredPairs.length > 0" class="text-xs text-text-muted mt-1">
+                    顯示 <span x-text="filteredPairs.length"></span> / <span x-text="allPairs.length"></span>
+                </div>
+
+                <div class="flex justify-end mt-3">
+                    <button @click="closeAddModal()" class="pixel-btn pixel-btn-purple text-[13px]">關閉</button>
+                </div>
+            </div>
+        </div>
+    </aside>
 
     <script th:inline="javascript">
         const trackedSymbolSet = new Set(/*[[${allSymbols.![symbol]}]]*/ []);
@@ -149,6 +170,7 @@
 
         function sidebarData() {
             return {
+                sidebarOpen: false,
                 showAddModal: false, searchQuery: '', allPairs: [], filteredPairs: [], loading: false, addError: '',
 
                 async openAddModal() {
@@ -196,5 +218,5 @@
             } catch (e) { toast('網路連線異常', 'error'); }
         }
     </script>
-</aside>
+</div>
 </html>
