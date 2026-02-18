@@ -121,8 +121,9 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 - **全域幣對保護**：移除危險的 DELETE 端點，防止用戶影響全域資料
 - **回測並行鎖定**：`@Transactional` 內檢查 PENDING+RUNNING 雙重狀態，防止 race condition
 - **輸入驗證**：回測參數範圍限制、通知管道 configJson 格式檢查、幣對新增時 Binance ExchangeInfo 即時驗證
-- **全域異常處理**：`@RestControllerAdvice` 統一攔截異常，回傳一致的 JSON 錯誤格式
-- **錯誤訊息保護**：API 僅回傳使用者友善錯誤，不暴露內部實作細節（過濾 SQL/Exception 關鍵字）
+- **通知 Token 遮蔽**：API 回傳通知管道設定時，Bot Token 僅顯示末 4 碼（`****xxxx`），前端不保存完整憑證
+- **全域異常處理**：`@RestControllerAdvice` 統一攔截異常，回傳一致的 JSON 錯誤格式（含 NumberFormatException、HttpMessageNotReadableException）
+- **錯誤訊息保護**：API 僅回傳使用者友善錯誤，不暴露內部實作細節（過濾 SQL/Exception/Token 等關鍵字）
 - **XSS 防護**：WebSocket 訊號使用 DOM API 建構（非 `innerHTML`），前端一律 `x-text`
 - **WebSocket session 管理**：原子化 session 清理（`computeIfPresent`）+ 指數退避重連
 - **CDN 版本鎖定**：Alpine.js / Chart.js 固定小版本，防止浮動版本引入破壞
@@ -130,6 +131,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 
 ### 響應式設計 (RWD)
 
+- **導航列頁面高亮**：桌面版和手機版導航自動標示當前頁面（ring 光暈 / 粗體文字）
 - **手機版漢堡選單**：導航列自動收合為下拉選單
 - **行動版側邊欄**：浮動按鈕觸發滑入式觀察清單面板，背景遮罩點擊關閉
 - **表格水平滾動**：交易紀錄、績效對比表支援手機端橫向捲動
