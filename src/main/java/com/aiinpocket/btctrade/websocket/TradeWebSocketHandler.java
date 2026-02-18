@@ -113,7 +113,9 @@ public class TradeWebSocketHandler extends TextWebSocketHandler {
             for (var session : targetSessions) {
                 if (session.isOpen()) {
                     try {
-                        session.sendMessage(message);
+                        synchronized (session) {
+                            session.sendMessage(message);
+                        }
                     } catch (IOException e) {
                         log.warn("Failed to send to user {} session {}", userId, session.getId());
                     }
@@ -131,7 +133,9 @@ public class TradeWebSocketHandler extends TextWebSocketHandler {
             for (var session : sessions) {
                 if (session.isOpen()) {
                     try {
-                        session.sendMessage(message);
+                        synchronized (session) {
+                            session.sendMessage(message);
+                        }
                     } catch (IOException e) {
                         log.warn("Failed to send message to session {}", session.getId());
                     }
