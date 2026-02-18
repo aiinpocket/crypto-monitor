@@ -23,23 +23,23 @@
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="font-heading text-[10px] text-primary glow-gold" x-text="'Lv.' + level"></span>
-                            <span class="text-[8px] text-text-heading" th:text="${user.displayName}">勇者</span>
-                            <span class="text-[7px] px-1.5 py-0.5 pixel-border text-[8px]" x-text="charLabel"></span>
+                            <span class="font-heading text-sm text-primary glow-gold" x-text="'Lv.' + level"></span>
+                            <span class="text-[13px] text-text-heading" th:text="${user.displayName}">勇者</span>
+                            <span class="text-xs px-1.5 py-0.5 pixel-border text-[13px]" x-text="charLabel"></span>
                         </div>
                         <!-- EXP 條 -->
                         <div class="flex items-center gap-2 mt-1">
-                            <span class="text-[7px] text-text-muted">EXP</span>
+                            <span class="text-xs text-text-muted">EXP</span>
                             <div class="pixel-exp-bar w-32 md:w-48">
                                 <div class="pixel-exp-fill" :style="'width:' + expPct + '%'"></div>
                             </div>
-                            <span class="text-[7px] text-text-muted" x-text="currentExp + '/' + expToNext"></span>
+                            <span class="text-xs text-text-muted" x-text="currentExp + '/' + expToNext"></span>
                         </div>
                     </div>
                 </div>
                 <!-- 每日獎勵按鈕 -->
                 <button @click="claimDaily()"
-                        class="pixel-btn text-[8px] py-1.5 px-3"
+                        class="pixel-btn text-[13px] py-1.5 px-3"
                         :class="dailyClaimed ? 'pixel-btn-purple opacity-50 cursor-not-allowed' : 'pixel-btn-gold anim-sparkle'"
                         :disabled="dailyClaimed"
                         :aria-label="dailyClaimed ? '每日獎勵已領取' : '領取每日獎勵'">
@@ -51,10 +51,10 @@
         <!-- 頁面標題 -->
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
-                <h1 class="font-heading text-[12px] text-primary glow-gold" th:text="${activeSymbol}">BTCUSDT</h1>
+                <h1 class="font-heading text-lg text-primary glow-gold" th:text="${activeSymbol}">BTCUSDT</h1>
                 <div class="flex items-center gap-1">
-                    <span id="ws-status" class="text-negative text-[8px]">&#9679;</span>
-                    <span class="text-[7px] text-text-muted" id="ws-label">未連線</span>
+                    <span id="ws-status" class="text-negative text-[13px]">&#9679;</span>
+                    <span class="text-xs text-text-muted" id="ws-label">未連線</span>
                 </div>
             </div>
         </div>
@@ -64,48 +64,48 @@
              class="mb-4 pixel-card p-3 border-l-4 border-l-negative">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="text-[14px]">&#9888;</span>
+                    <span class="text-lg">&#9888;</span>
                     <div>
-                        <span class="text-negative text-[8px]">已查無此幣別</span>
-                        <span class="text-text-muted text-[7px] ml-1" th:text="'幣對 ' + ${activeSymbol} + ' 已從 Binance 下架'">-</span>
+                        <span class="text-negative text-[13px]">已查無此幣別</span>
+                        <span class="text-text-muted text-xs ml-1" th:text="'幣對 ' + ${activeSymbol} + ' 已從 Binance 下架'">-</span>
                     </div>
                 </div>
-                <button onclick="reenableCurrentSymbol()" class="pixel-btn pixel-btn-gold text-[7px] py-1 px-2">重新啟用</button>
+                <button onclick="reenableCurrentSymbol()" class="pixel-btn pixel-btn-gold text-xs py-1 px-2">重新啟用</button>
             </div>
         </div>
 
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 mb-4">
             <div class="pixel-card p-3">
-                <div class="text-[7px] text-text-muted mb-1">&#127902; 當前幣對</div>
-                <div class="font-heading text-[10px] text-primary glow-gold" th:text="${activeSymbol}">BTCUSDT</div>
+                <div class="text-xs text-text-muted mb-1">&#127902; 當前幣對</div>
+                <div class="font-heading text-sm text-primary glow-gold" th:text="${activeSymbol}">BTCUSDT</div>
             </div>
             <div class="pixel-card p-3">
-                <div class="text-[7px] text-text-muted mb-1">&#128202; K 線資料</div>
-                <div class="font-heading text-[10px] text-text-main" th:text="${#numbers.formatInteger(klineCount, 1, 'COMMA')}">0</div>
+                <div class="text-xs text-text-muted mb-1">&#128202; K 線資料</div>
+                <div class="font-heading text-base text-text-main" th:text="${#numbers.formatInteger(klineCount, 1, 'COMMA')}">0</div>
             </div>
             <div class="pixel-card p-3">
-                <div class="text-[7px] text-text-muted mb-1">&#9876; 歷史交易</div>
-                <div class="font-heading text-[10px] text-text-main" th:text="${livePositions != null ? livePositions.size() : 0}">0</div>
+                <div class="text-xs text-text-muted mb-1">&#9876; 歷史交易</div>
+                <div class="font-heading text-base text-text-main" th:text="${livePositions != null ? livePositions.size() : 0}">0</div>
             </div>
             <div class="pixel-card p-3">
-                <div class="text-[7px] text-text-muted mb-1">&#127919; 持倉狀態</div>
+                <div class="text-xs text-text-muted mb-1">&#127919; 持倉狀態</div>
                 <div th:if="${openPosition != null}">
-                    <span class="text-[8px] font-heading"
+                    <span class="text-[13px] font-heading"
                           th:classappend="${openPosition.direction.name() == 'LONG'} ? 'text-positive' : 'text-negative'"
                           th:text="${openPosition.direction.name()}">LONG</span>
-                    <div class="text-[7px] text-text-muted mt-0.5" th:text="'@ $' + ${#numbers.formatDecimal(openPosition.entryPrice, 1, 'COMMA', 2, 'POINT')}">-</div>
+                    <div class="text-xs text-text-muted mt-0.5" th:text="'@ $' + ${#numbers.formatDecimal(openPosition.entryPrice, 1, 'COMMA', 2, 'POINT')}">-</div>
                 </div>
-                <div th:unless="${openPosition != null}" class="font-heading text-[10px] text-text-muted">--</div>
+                <div th:unless="${openPosition != null}" class="font-heading text-base text-text-muted">--</div>
             </div>
         </div>
 
         <!-- 戰鬥日誌（訊號） -->
         <div class="mb-4">
-            <h2 class="text-[8px] text-primary font-heading mb-2">&#128220; 戰鬥日誌</h2>
+            <h2 class="text-sm text-primary font-heading mb-2">&#128220; 戰鬥日誌</h2>
             <div class="pixel-card p-3">
                 <div id="signal-log" role="log" aria-live="polite" aria-label="交易訊號日誌"
-                     class="max-h-40 overflow-y-auto scrollbar-thin text-[8px] text-text-muted leading-relaxed">
+                     class="max-h-40 overflow-y-auto scrollbar-thin text-[13px] text-text-muted leading-relaxed">
                     等待 WebSocket 連線...
                 </div>
             </div>
@@ -113,38 +113,38 @@
 
         <!-- 交易紀錄 -->
         <div>
-            <h2 class="text-[8px] text-primary font-heading mb-2">&#128176; 交易紀錄</h2>
+            <h2 class="text-sm text-primary font-heading mb-2">&#128176; 交易紀錄</h2>
             <div class="pixel-card overflow-hidden overflow-x-auto scrollbar-thin">
                 <table class="w-full min-w-[580px]" aria-label="交易紀錄">
                     <thead>
                         <tr class="border-b border-border-main">
-                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">方向</th>
-                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">進場價</th>
-                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">出場價</th>
-                            <th scope="col" class="px-3 py-2 text-right text-[7px] text-text-muted">損益</th>
-                            <th scope="col" class="px-3 py-2 text-right text-[7px] text-text-muted">報酬率</th>
-                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">原因</th>
-                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">狀態</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">方向</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">進場價</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">出場價</th>
+                            <th scope="col" class="px-3 py-2 text-right text-xs text-text-muted">損益</th>
+                            <th scope="col" class="px-3 py-2 text-right text-xs text-text-muted">報酬率</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">原因</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">狀態</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:each="pos : ${livePositions}" class="border-b border-border-main/50 hover:bg-white/[0.02]">
                             <td class="px-3 py-2">
-                                <span class="text-[8px] font-heading"
+                                <span class="text-[13px] font-heading"
                                       th:classappend="${pos.direction.name() == 'LONG'} ? 'text-positive' : 'text-negative'"
                                       th:text="${pos.direction.name()}">LONG</span>
                             </td>
-                            <td class="px-3 py-2 text-[8px]" th:text="'$' + ${#numbers.formatDecimal(pos.entryPrice, 1, 'COMMA', 2, 'POINT')}">-</td>
-                            <td class="px-3 py-2 text-[8px]" th:text="${pos.exitPrice != null ? '$' + #numbers.formatDecimal(pos.exitPrice, 1, 'COMMA', 2, 'POINT') : '--'}">-</td>
-                            <td class="px-3 py-2 text-right text-[8px]"
+                            <td class="px-3 py-2 text-[13px]" th:text="'$' + ${#numbers.formatDecimal(pos.entryPrice, 1, 'COMMA', 2, 'POINT')}">-</td>
+                            <td class="px-3 py-2 text-[13px]" th:text="${pos.exitPrice != null ? '$' + #numbers.formatDecimal(pos.exitPrice, 1, 'COMMA', 2, 'POINT') : '--'}">-</td>
+                            <td class="px-3 py-2 text-right text-[13px]"
                                 th:classappend="${pos.realizedPnl != null and pos.realizedPnl > 0} ? 'text-positive' : 'text-negative'"
                                 th:text="${pos.realizedPnl != null ? (pos.realizedPnl > 0 ? '+' : '') + pos.realizedPnl : '--'}">-</td>
-                            <td class="px-3 py-2 text-right text-[8px]"
+                            <td class="px-3 py-2 text-right text-[13px]"
                                 th:classappend="${pos.returnPct != null and pos.returnPct > 0} ? 'text-positive' : 'text-negative'"
                                 th:text="${pos.returnPct != null ? (pos.returnPct > 0 ? '+' : '') + pos.returnPct.movePointRight(2) + '%' : '--'}">-</td>
-                            <td class="px-3 py-2 text-[8px] text-text-muted" th:text="${pos.exitReason != null ? pos.exitReason : '--'}">-</td>
+                            <td class="px-3 py-2 text-[13px] text-text-muted" th:text="${pos.exitReason != null ? pos.exitReason : '--'}">-</td>
                             <td class="px-3 py-2">
-                                <span class="text-[7px]"
+                                <span class="text-xs"
                                       th:classappend="${pos.status.name() == 'OPEN'} ? 'text-primary' : 'text-text-muted'"
                                       th:text="${pos.status.name()}">-</span>
                             </td>
@@ -152,9 +152,9 @@
                     </tbody>
                 </table>
                 <div th:if="${livePositions == null or livePositions.isEmpty()}" class="text-center py-8">
-                    <div class="text-[20px] mb-2 opacity-40">&#128566;</div>
-                    <div class="text-text-muted text-[8px]">尚無交易紀錄</div>
-                    <div class="text-text-muted text-[7px] mt-2 leading-relaxed">
+                    <div class="text-2xl mb-2 opacity-40">&#128566;</div>
+                    <div class="text-text-muted text-[13px]">尚無交易紀錄</div>
+                    <div class="text-text-muted text-xs mt-2 leading-relaxed">
                         前往 <a href="/strategies" class="text-cta hover:text-cta-hover underline">策略</a> 頁面挑選策略，
                         再到 <a href="/backtest" class="text-cta hover:text-cta-hover underline">回測</a> 驗證效果
                     </div>
@@ -180,7 +180,7 @@
                 wsRetryCount = 0;
                 if (wsCountdownId) { clearInterval(wsCountdownId); wsCountdownId = null; }
                 wsStatusEl.textContent = '\u25CF';
-                wsStatusEl.className = 'text-positive text-[8px]';
+                wsStatusEl.className = 'text-positive text-[13px]';
                 wsLabel.textContent = '\u5DF2\u9023\u7DDA';
                 signalLog.textContent = '\u5DF2\u9023\u7DDA\uFF0C\u7B49\u5F85\u6230\u9B25\u8A0A\u865F...\n';
             };
@@ -227,7 +227,7 @@
             ws.onclose = () => {
                 wsRetryCount++;
                 wsStatusEl.textContent = '\u25CF';
-                wsStatusEl.className = 'text-warning text-[8px] anim-flash';
+                wsStatusEl.className = 'text-warning text-[13px] anim-flash';
                 const delay = Math.min(5000 * wsRetryCount, 30000);
                 let remaining = Math.round(delay / 1000);
                 wsLabel.textContent = '\u5DF2\u65B7\u7DDA\u2027' + remaining + 's\u5F8C\u91CD\u9023';

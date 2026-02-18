@@ -5,29 +5,29 @@
     <div class="flex items-center justify-between max-w-screen-2xl mx-auto">
         <!-- Logo 像素風格 -->
         <a href="/" class="flex items-center gap-2 no-underline">
-            <div class="text-[16px]">&#9876;</div>
-            <span class="font-heading text-[12px] text-primary glow-gold">BtcTrade</span>
+            <div class="text-xl">&#9876;</div>
+            <span class="font-heading text-lg text-primary glow-gold">BtcTrade</span>
         </a>
 
         <!-- 手機選單按鈕 -->
         <button @click="mobileOpen = !mobileOpen" class="md:hidden text-text-muted hover:text-primary cursor-pointer"
                 aria-label="切換導航選單" :aria-expanded="mobileOpen">
-            <span x-show="!mobileOpen" class="text-[14px]">&#9776;</span>
-            <span x-show="mobileOpen" x-cloak class="text-[14px]">&#10005;</span>
+            <span x-show="!mobileOpen" class="text-lg">&#9776;</span>
+            <span x-show="mobileOpen" x-cloak class="text-lg">&#10005;</span>
         </button>
 
         <!-- 桌面導航 -->
         <div class="hidden md:flex items-center gap-1">
-            <a href="/" class="pixel-btn pixel-btn-gold text-[7px] py-1 px-2">
+            <a href="/" class="pixel-btn pixel-btn-gold text-xs py-1.5 px-3">
                 &#127968; 主控台
             </a>
-            <a href="/strategies" class="pixel-btn pixel-btn-purple text-[7px] py-1 px-2">
+            <a href="/strategies" class="pixel-btn pixel-btn-purple text-xs py-1.5 px-3">
                 &#128214; 策略
             </a>
-            <a href="/backtest" class="pixel-btn pixel-btn-gold text-[7px] py-1 px-2">
+            <a href="/backtest" class="pixel-btn pixel-btn-gold text-xs py-1.5 px-3">
                 &#9889; 回測
             </a>
-            <a href="/settings" class="pixel-btn pixel-btn-purple text-[7px] py-1 px-2">
+            <a href="/settings" class="pixel-btn pixel-btn-purple text-xs py-1.5 px-3">
                 &#9881; 設定
             </a>
         </div>
@@ -36,33 +36,33 @@
         <div class="hidden md:flex items-center gap-3" x-data="navProfile()" x-init="load()">
             <!-- EXP 條 -->
             <div class="flex items-center gap-2">
-                <span class="text-primary text-[8px] font-heading" x-text="'Lv.' + level"></span>
+                <span class="text-primary text-sm font-heading" x-text="'Lv.' + level"></span>
                 <div class="pixel-exp-bar w-24">
                     <div class="pixel-exp-fill" :style="'width:' + expPct + '%'"></div>
                 </div>
             </div>
             <!-- 用戶名 -->
-            <div class="text-[8px] text-text-main" th:text="${user.displayName}">User</div>
+            <div class="text-sm text-text-main" th:text="${user.displayName}">User</div>
             <!-- 頭像 -->
             <img th:if="${user.avatarUrl != null}" th:src="${user.avatarUrl}"
                  class="w-7 h-7 border-2 border-primary" style="image-rendering: pixelated;" alt="avatar">
             <div th:unless="${user.avatarUrl != null}"
-                 class="w-7 h-7 bg-primary flex items-center justify-center text-pixel-dark text-[8px] font-heading border-2 border-primary-hover"
+                 class="w-7 h-7 bg-primary flex items-center justify-center text-pixel-dark text-sm font-heading border-2 border-primary-hover"
                  th:text="${user.displayName != null ? user.displayName.substring(0,1) : '?'}">U</div>
-            <a href="/logout" class="text-text-muted hover:text-negative text-[10px] cursor-pointer" title="登出" aria-label="登出">&#10140;</a>
+            <a href="/logout" class="text-text-muted hover:text-negative text-base cursor-pointer" title="登出" aria-label="登出">&#10140;</a>
         </div>
     </div>
 
     <!-- 手機下拉選單 -->
     <div x-show="mobileOpen" x-cloak x-transition
          class="md:hidden mt-2 pb-2 border-t border-border-main pt-2 space-y-1">
-        <a href="/" class="block px-3 py-2 text-text-muted hover:text-primary text-[8px]">&#127968; 主控台</a>
-        <a href="/strategies" class="block px-3 py-2 text-text-muted hover:text-primary text-[8px]">&#128214; 策略</a>
-        <a href="/backtest" class="block px-3 py-2 text-text-muted hover:text-primary text-[8px]">&#9889; 回測</a>
-        <a href="/settings" class="block px-3 py-2 text-text-muted hover:text-primary text-[8px]">&#9881; 設定</a>
+        <a href="/" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#127968; 主控台</a>
+        <a href="/strategies" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#128214; 策略</a>
+        <a href="/backtest" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#9889; 回測</a>
+        <a href="/settings" class="block px-3 py-2 text-text-muted hover:text-primary text-sm">&#9881; 設定</a>
         <div class="flex items-center justify-between px-3 py-2 border-t border-border-main mt-1 pt-2">
-            <span class="text-[8px] text-text-main" th:text="${user.displayName}">User</span>
-            <a href="/logout" class="text-[8px] text-negative">登出</a>
+            <span class="text-sm text-text-main" th:text="${user.displayName}">User</span>
+            <a href="/logout" class="text-sm text-negative">登出</a>
         </div>
     </div>
 

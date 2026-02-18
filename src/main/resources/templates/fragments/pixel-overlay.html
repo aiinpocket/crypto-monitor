@@ -7,10 +7,10 @@
     <template x-if="showLevelUp">
         <div class="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
             <div class="text-center anim-flash">
-                <div class="text-primary text-[24px] font-heading glow-gold anim-level-up">
+                <div class="text-primary text-2xl font-heading glow-gold anim-level-up">
                     LEVEL UP!
                 </div>
-                <div class="text-primary text-[16px] mt-4 font-heading" x-text="'Lv.' + levelUpData.newLevel"></div>
+                <div class="text-primary text-lg mt-4 font-heading" x-text="'Lv.' + levelUpData.newLevel"></div>
             </div>
         </div>
     </template>
@@ -19,11 +19,11 @@
     <template x-for="ach in achievementQueue" :key="ach.key">
         <div class="fixed top-24 right-4 z-[190] pixel-card p-4 max-w-xs anim-slide-in">
             <div class="flex items-center gap-3">
-                <div class="text-[20px]">&#9733;</div>
+                <div class="text-xl">&#9733;</div>
                 <div>
-                    <div class="text-primary text-[10px] font-heading">成就解鎖！</div>
-                    <div class="text-text-heading text-[9px] mt-1" x-text="ach.name"></div>
-                    <div class="text-text-muted text-[8px] mt-1" x-text="'+' + ach.exp + ' EXP'"></div>
+                    <div class="text-primary text-sm font-heading">成就解鎖！</div>
+                    <div class="text-text-heading text-sm mt-1" x-text="ach.name"></div>
+                    <div class="text-text-muted text-xs mt-1" x-text="'+' + ach.exp + ' EXP'"></div>
                 </div>
             </div>
         </div>
@@ -34,11 +34,11 @@
         <div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60"
              @click="showDailyReward = false">
             <div class="pixel-card p-6 text-center anim-bounce" @click.stop>
-                <div class="text-[24px] mb-3">&#128230;</div>
-                <div class="text-primary text-[12px] font-heading mb-2">每日獎勵！</div>
-                <div class="text-positive text-[10px]">+15 EXP</div>
+                <div class="text-3xl mb-3">&#128230;</div>
+                <div class="text-primary text-base font-heading mb-2">每日獎勵！</div>
+                <div class="text-positive text-sm">+15 EXP</div>
                 <button @click="showDailyReward = false"
-                        class="pixel-btn pixel-btn-gold text-[8px] mt-4">
+                        class="pixel-btn pixel-btn-gold text-xs mt-4">
                     收下！
                 </button>
             </div>

@@ -10,17 +10,17 @@
 <main class="pt-[60px] px-4 md:px-6 pb-12 max-w-6xl mx-auto" x-data="backtestApp()">
 
     <div class="mb-6">
-        <h1 class="font-heading text-[12px] text-primary glow-gold">&#9889; 副本挑戰</h1>
-        <p class="text-text-muted text-[8px] mt-1">選擇策略，挑戰歷史市場</p>
+        <h1 class="font-heading text-lg text-primary glow-gold">&#9889; 副本挑戰</h1>
+        <p class="text-text-muted text-[13px] mt-1">選擇策略，挑戰歷史市場</p>
     </div>
 
     <!-- 挑戰面板 -->
     <div class="pixel-card p-4 mb-4">
-        <h2 class="text-[9px] text-text-heading mb-3">&#127919; 發起挑戰</h2>
+        <h2 class="text-sm text-text-heading mb-3">&#127919; 發起挑戰</h2>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
-                <label class="block text-[7px] text-text-muted mb-1">策略模板</label>
-                <select x-model="form.templateId" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] cursor-pointer focus:outline-none">
+                <label class="block text-xs text-text-muted mb-1">策略模板</label>
+                <select x-model="form.templateId" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] cursor-pointer focus:outline-none">
                     <option value="">請選擇...</option>
                     <template x-for="t in allTemplates" :key="t.id">
                         <option :value="t.id" x-text="t.name + (t.systemDefault ? ' &#9733;' : '')"></option>
@@ -28,20 +28,20 @@
                 </select>
             </div>
             <div>
-                <label class="block text-[7px] text-text-muted mb-1">交易對</label>
-                <select x-model="form.symbol" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] cursor-pointer focus:outline-none">
+                <label class="block text-xs text-text-muted mb-1">交易對</label>
+                <select x-model="form.symbol" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] cursor-pointer focus:outline-none">
                     <template x-for="s in symbols" :key="s"><option :value="s" x-text="s"></option></template>
                 </select>
             </div>
             <div>
-                <label class="block text-[7px] text-text-muted mb-1">回測年數</label>
-                <select x-model.number="form.years" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] cursor-pointer focus:outline-none">
+                <label class="block text-xs text-text-muted mb-1">回測年數</label>
+                <select x-model.number="form.years" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] cursor-pointer focus:outline-none">
                     <option value="1">1 年</option><option value="2">2 年</option><option value="3">3 年</option><option value="5">5 年</option>
                 </select>
             </div>
             <div class="flex items-end">
                 <button @click="submitBacktest()" :disabled="running || !form.templateId"
-                        class="w-full pixel-btn pixel-btn-gold text-[8px] py-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="w-full pixel-btn pixel-btn-gold text-[13px] py-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span x-show="!running">&#9876; 開始挑戰！</span>
                     <span x-show="running" class="flex items-center justify-center gap-2">
                         <span class="anim-flash">&#9876;</span>
@@ -57,52 +57,52 @@
         <!-- 戰報卡片 -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div class="pixel-card p-3">
-                <span class="text-[7px] text-text-muted block mb-0.5">年化報酬</span>
-                <span class="text-[10px] font-heading" :class="result?.annualizedReturn >= 0 ? 'text-positive' : 'text-negative'"
+                <span class="text-xs text-text-muted block mb-0.5">年化報酬</span>
+                <span class="text-base font-heading" :class="result?.annualizedReturn >= 0 ? 'text-positive' : 'text-negative'"
                       x-text="result ? (result.annualizedReturn * 100).toFixed(2) + '%' : '--'"></span>
             </div>
             <div class="pixel-card p-3">
-                <span class="text-[7px] text-text-muted block mb-0.5">最大回撤</span>
-                <span class="text-[10px] font-heading text-negative" x-text="result ? (result.maxDrawdown * 100).toFixed(2) + '%' : '--'"></span>
+                <span class="text-xs text-text-muted block mb-0.5">最大回撤</span>
+                <span class="text-base font-heading text-negative" x-text="result ? (result.maxDrawdown * 100).toFixed(2) + '%' : '--'"></span>
             </div>
             <div class="pixel-card p-3">
-                <span class="text-[7px] text-text-muted block mb-0.5">Sharpe</span>
-                <span class="text-[10px] font-heading text-primary" x-text="result?.sharpeRatio?.toFixed(2) || '--'"></span>
+                <span class="text-xs text-text-muted block mb-0.5">Sharpe</span>
+                <span class="text-base font-heading text-primary" x-text="result?.sharpeRatio?.toFixed(2) || '--'"></span>
             </div>
             <div class="pixel-card p-3">
-                <span class="text-[7px] text-text-muted block mb-0.5">勝率</span>
-                <span class="text-[10px] font-heading text-text-heading" x-text="result ? (result.winRate * 100).toFixed(1) + '%' : '--'"></span>
+                <span class="text-xs text-text-muted block mb-0.5">勝率</span>
+                <span class="text-base font-heading text-text-heading" x-text="result ? (result.winRate * 100).toFixed(1) + '%' : '--'"></span>
             </div>
             <div class="pixel-card p-3">
-                <span class="text-[7px] text-text-muted block mb-0.5">總交易數</span>
-                <span class="text-[10px] font-heading text-text-heading" x-text="result?.totalTrades || '--'"></span>
+                <span class="text-xs text-text-muted block mb-0.5">總交易數</span>
+                <span class="text-base font-heading text-text-heading" x-text="result?.totalTrades || '--'"></span>
             </div>
             <div class="pixel-card p-3">
-                <span class="text-[7px] text-text-muted block mb-0.5">Profit Factor</span>
-                <span class="text-[10px] font-heading text-primary" x-text="result?.profitFactor?.toFixed(2) || '--'"></span>
+                <span class="text-xs text-text-muted block mb-0.5">Profit Factor</span>
+                <span class="text-base font-heading text-primary" x-text="result?.profitFactor?.toFixed(2) || '--'"></span>
             </div>
             <div class="pixel-card p-3">
-                <span class="text-[7px] text-text-muted block mb-0.5">最終資金</span>
-                <span class="text-[10px] font-heading text-positive" x-text="result ? '$' + parseFloat(result.finalCapital).toLocaleString(undefined, {minimumFractionDigits: 2}) : '--'"></span>
+                <span class="text-xs text-text-muted block mb-0.5">最終資金</span>
+                <span class="text-base font-heading text-positive" x-text="result ? '$' + parseFloat(result.finalCapital).toLocaleString(undefined, {minimumFractionDigits: 2}) : '--'"></span>
             </div>
             <div class="pixel-card p-3">
-                <span class="text-[7px] text-text-muted block mb-0.5">判定</span>
-                <span class="text-[10px] font-heading" :class="result?.passed ? 'text-positive' : 'text-negative'"
+                <span class="text-xs text-text-muted block mb-0.5">判定</span>
+                <span class="text-base font-heading" :class="result?.passed ? 'text-positive' : 'text-negative'"
                       x-text="result?.passed ? '&#127942; PASSED' : '&#128128; FAILED'"></span>
             </div>
         </div>
 
         <!-- 權益曲線 -->
         <div class="pixel-card p-4 mb-4">
-            <h3 class="text-[9px] text-text-heading mb-3">&#128200; 權益曲線</h3>
+            <h3 class="text-sm text-text-heading mb-3">&#128200; 權益曲線</h3>
             <div class="h-64"><canvas id="equityChart"></canvas></div>
         </div>
 
         <!-- 交易明細 -->
         <div class="pixel-card p-4">
-            <h3 class="text-[9px] text-text-heading mb-3">&#128220; 交易明細</h3>
+            <h3 class="text-sm text-text-heading mb-3">&#128220; 交易明細</h3>
             <div class="overflow-x-auto scrollbar-thin">
-                <table class="w-full text-[7px]">
+                <table class="w-full text-xs">
                     <thead>
                     <tr class="text-text-muted border-b border-border-main">
                         <th scope="col" class="py-1.5 px-2 text-left">#</th><th scope="col" class="py-1.5 px-2 text-left">方向</th>
@@ -132,11 +132,11 @@
 
     <!-- 回測歷史 -->
     <div class="mt-6" x-show="history.length > 0">
-        <h2 class="text-[9px] text-text-heading mb-3">&#128218; 歷史紀錄</h2>
+        <h2 class="text-sm text-text-heading mb-3">&#128218; 歷史紀錄</h2>
         <div class="pixel-card overflow-hidden">
-            <table class="w-full text-[8px]">
+            <table class="w-full text-[13px]">
                 <thead>
-                <tr class="text-text-muted text-[7px] border-b border-border-main">
+                <tr class="text-text-muted text-xs border-b border-border-main">
                     <th class="py-2 px-3 text-left">交易對</th><th class="py-2 px-3 text-left">策略</th>
                     <th class="py-2 px-3 text-left">狀態</th><th class="py-2 px-3 text-left">時間</th>
                     <th class="py-2 px-3 text-right">操作</th>
@@ -148,11 +148,11 @@
                         <td class="py-2 px-3 font-heading text-primary" x-text="run.symbol"></td>
                         <td class="py-2 px-3 text-text-muted" x-text="run.templateName"></td>
                         <td class="py-2 px-3">
-                            <span class="text-[7px]" :class="{'text-positive': run.status==='COMPLETED','text-warning anim-flash': run.status==='RUNNING','text-negative': run.status==='FAILED','text-text-muted': run.status==='PENDING'}" x-text="run.status"></span>
+                            <span class="text-xs" :class="{'text-positive': run.status==='COMPLETED','text-warning anim-flash': run.status==='RUNNING','text-negative': run.status==='FAILED','text-text-muted': run.status==='PENDING'}" x-text="run.status"></span>
                         </td>
-                        <td class="py-2 px-3 text-[7px] text-text-muted" x-text="new Date(run.createdAt).toLocaleString()"></td>
+                        <td class="py-2 px-3 text-xs text-text-muted" x-text="new Date(run.createdAt).toLocaleString()"></td>
                         <td class="py-2 px-3 text-right">
-                            <button x-show="run.status==='COMPLETED'" @click="loadResult(run.id)" class="text-[7px] text-cta hover:text-cta-hover cursor-pointer">查看</button>
+                            <button x-show="run.status==='COMPLETED'" @click="loadResult(run.id)" class="text-xs text-cta hover:text-cta-hover cursor-pointer">查看</button>
                         </td>
                     </tr>
                 </template>
@@ -161,7 +161,7 @@
         </div>
     </div>
 
-    <div x-show="message" x-cloak x-transition class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[8px] z-50"
+    <div x-show="message" x-cloak x-transition class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[13px] z-50"
          :class="messageType === 'success' ? 'text-positive' : 'text-negative'" x-text="message"></div>
 </main>
 
@@ -202,8 +202,8 @@
                 const sampled=curve.filter((_,i)=>i%step===0);
                 this.equityChart=new Chart(canvas.getContext('2d'),{type:'line',data:{labels:sampled.map(p=>new Date(p.time).toLocaleDateString()),
                     datasets:[{label:'權益',data:sampled.map(p=>parseFloat(p.equity)),borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.1)',borderWidth:2,fill:true,tension:0,pointRadius:0,stepped:'before'}]},
-                    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#16213e',titleColor:'#e8e8f0',bodyColor:'#7a7a9a',borderColor:'#2a2a4a',borderWidth:2,titleFont:{family:'"Press Start 2P"',size:8},bodyFont:{family:'"Press Start 2P"',size:7}}},
-                        scales:{x:{display:true,ticks:{color:'#7a7a9a',maxTicksLimit:6,font:{family:'"Press Start 2P"',size:6}},grid:{color:'rgba(42,42,74,0.3)'}},y:{display:true,ticks:{color:'#7a7a9a',font:{family:'"Press Start 2P"',size:6},callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(42,42,74,0.3)'}}}}});
+                    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#16213e',titleColor:'#e8e8f0',bodyColor:'#7a7a9a',borderColor:'#2a2a4a',borderWidth:2,titleFont:{family:'"Exo 2"',size:12},bodyFont:{family:'"Exo 2"',size:11}}},
+                        scales:{x:{display:true,ticks:{color:'#7a7a9a',maxTicksLimit:6,font:{family:'"Exo 2"',size:10}},grid:{color:'rgba(42,42,74,0.3)'}},y:{display:true,ticks:{color:'#7a7a9a',font:{family:'"Exo 2"',size:10},callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(42,42,74,0.3)'}}}}});
             },
             showMsg(m,t) { this.message=m; this.messageType=t; setTimeout(()=>{this.message='';},4000); }
         };

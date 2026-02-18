@@ -11,14 +11,14 @@
     <!-- 頁面標題 -->
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="font-heading text-[12px] text-primary glow-gold">&#128214; 技能書</h1>
-            <p class="text-text-muted text-[8px] mt-1">管理你的交易策略 — 克隆、調參、回測</p>
+            <h1 class="font-heading text-lg text-primary glow-gold">&#128214; 技能書</h1>
+            <p class="text-text-muted text-[13px] mt-1">管理你的交易策略 — 克隆、調參、回測</p>
         </div>
     </div>
 
     <!-- 載入指示 -->
     <div x-show="loading" class="text-center py-8">
-        <span class="text-[10px] text-primary anim-flash">&#9876; 載入中...</span>
+        <span class="text-sm text-primary anim-flash">&#9876; 載入中...</span>
     </div>
 
     <!-- 策略模板卡片 -->
@@ -27,18 +27,18 @@
             <div class="pixel-card p-4" :class="tmpl.systemDefault ? 'border-l-4 border-l-primary' : ''">
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-2">
-                        <span class="text-[10px]" x-text="tmpl.systemDefault ? '&#9733;' : '&#128220;'"></span>
-                        <h3 class="text-[9px] text-text-heading" x-text="tmpl.name"></h3>
-                        <span x-show="tmpl.systemDefault" class="text-[7px] px-1.5 py-0.5 bg-primary/20 text-primary pixel-border">傳說</span>
+                        <span class="text-sm" x-text="tmpl.systemDefault ? '&#9733;' : '&#128220;'"></span>
+                        <h3 class="text-sm text-text-heading" x-text="tmpl.name"></h3>
+                        <span x-show="tmpl.systemDefault" class="text-xs px-1.5 py-0.5 bg-primary/20 text-primary pixel-border">傳說</span>
                     </div>
                     <div class="flex gap-1">
-                        <button @click="cloneTemplate(tmpl.id)" class="pixel-btn pixel-btn-purple text-[7px] py-0.5 px-2">複製卷軸</button>
-                        <button x-show="!tmpl.systemDefault" @click="openEditor(tmpl)" class="pixel-btn pixel-btn-gold text-[7px] py-0.5 px-2">&#9998;</button>
+                        <button @click="cloneTemplate(tmpl.id)" class="pixel-btn pixel-btn-purple text-xs py-0.5 px-2">複製卷軸</button>
+                        <button x-show="!tmpl.systemDefault" @click="openEditor(tmpl)" class="pixel-btn pixel-btn-gold text-xs py-0.5 px-2">&#9998;</button>
                         <button x-show="!tmpl.systemDefault" @click="deleteTemplate(tmpl.id)"
-                                class="text-[8px] text-negative hover:text-red-300 cursor-pointer px-1">&#10005;</button>
+                                class="text-[13px] text-negative hover:text-red-300 cursor-pointer px-1">&#10005;</button>
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-2 text-[7px]">
+                <div class="grid grid-cols-3 gap-2 text-xs">
                     <div class="bg-bg-input p-1.5 pixel-border-dark">
                         <span class="text-text-muted block">停損</span>
                         <span class="text-text-main" x-text="(tmpl.stopLossPct * 100).toFixed(1) + '%'"></span>
@@ -57,10 +57,10 @@
     </div>
 
     <div x-show="templates.length === 0" class="text-center py-12">
-        <div class="text-[24px] mb-3 opacity-40">&#128214;</div>
-        <p class="text-text-heading text-[9px]">歡迎踏上交易之旅！</p>
-        <p class="text-text-muted text-[8px] mt-2 leading-relaxed">系統提供傳說級策略，複製後自訂參數即可開始回測</p>
-        <div class="mt-4 text-[7px] text-text-muted leading-loose">
+        <div class="text-2xl mb-3 opacity-40">&#128214;</div>
+        <p class="text-text-heading text-sm">歡迎踏上交易之旅！</p>
+        <p class="text-text-muted text-[13px] mt-2 leading-relaxed">系統提供傳說級策略，複製後自訂參數即可開始回測</p>
+        <div class="mt-4 text-xs text-text-muted leading-loose">
             <span class="block">1. 複製傳說級策略卷軸</span>
             <span class="block">2. 前往 <a href="/backtest" class="text-cta hover:text-cta-hover underline">副本挑戰</a> 調參回測</span>
             <span class="block">3. 至 <a href="/settings" class="text-cta hover:text-cta-hover underline">設定</a> 開啟交易通知</span>
@@ -71,13 +71,13 @@
     <div class="mb-6">
         <div class="flex items-center justify-between mb-3">
             <div>
-                <h2 class="font-heading text-[10px] text-text-heading">&#128200; 績效對比</h2>
-                <p class="text-text-muted text-[7px] mt-0.5">基準: BTCUSDT | 每 4 小時更新</p>
+                <h2 class="font-heading text-sm text-text-heading">&#128200; 績效對比</h2>
+                <p class="text-text-muted text-xs mt-0.5">基準: BTCUSDT | 每 4 小時更新</p>
             </div>
             <div class="flex items-center gap-2">
-                <span x-show="perfLoading" class="text-[7px] text-text-muted anim-flash">計算中...</span>
+                <span x-show="perfLoading" class="text-xs text-text-muted anim-flash">計算中...</span>
                 <button @click="refreshAllPerformance()" :disabled="perfLoading"
-                        class="pixel-btn pixel-btn-purple text-[7px] py-1 px-2 disabled:opacity-50">&#9889; 重新計算</button>
+                        class="pixel-btn pixel-btn-purple text-xs py-1 px-2 disabled:opacity-50">&#9889; 重新計算</button>
             </div>
         </div>
 
@@ -85,7 +85,7 @@
             <template x-for="m in metricOptions" :key="m.key">
                 <button @click="selectedMetric = m.key" role="tab"
                         :aria-selected="selectedMetric === m.key"
-                        class="text-[7px] px-2 py-1 cursor-pointer transition-colors"
+                        class="text-xs px-2 py-1 cursor-pointer transition-colors"
                         :class="selectedMetric === m.key ? 'pixel-border text-primary bg-primary/10' : 'pixel-border-dark text-text-muted hover:text-text-main'"
                         x-text="m.label"></button>
             </template>
@@ -93,7 +93,7 @@
 
         <div class="pixel-card overflow-hidden" x-show="perfSummaries.length > 0">
             <div class="overflow-x-auto scrollbar-thin">
-                <table class="w-full text-[7px]">
+                <table class="w-full text-xs">
                     <thead>
                         <tr class="border-b border-border-main">
                             <th scope="col" class="sticky left-0 z-10 bg-bg-card px-3 py-2 text-left text-text-muted min-w-[120px]">策略</th>
@@ -109,7 +109,7 @@
                                 <td class="sticky left-0 z-10 bg-bg-card px-3 py-2">
                                     <div class="flex items-center gap-1">
                                         <span class="text-text-heading truncate max-w-[100px]" x-text="s.templateName"></span>
-                                        <span x-show="s.systemDefault" class="text-[6px] text-primary">&#9733;</span>
+                                        <span x-show="s.systemDefault" class="text-sm text-primary">&#9733;</span>
                                     </div>
                                 </td>
                                 <template x-for="col in periodColumns" :key="col.key">
@@ -125,13 +125,13 @@
                     </tbody>
                 </table>
             </div>
-            <div class="px-3 py-1.5 border-t border-border-main/50 text-[6px] text-text-muted">
+            <div class="px-3 py-1.5 border-t border-border-main/50 text-sm text-text-muted">
                 <span x-show="lastComputedTime">最後更新: <span x-text="lastComputedTime"></span></span>
                 <span x-show="!lastComputedTime">尚未計算</span>
             </div>
         </div>
 
-        <div x-show="perfSummaries.length === 0 && !perfLoading" class="pixel-card p-6 text-center text-text-muted text-[8px]">
+        <div x-show="perfSummaries.length === 0 && !perfLoading" class="pixel-card p-6 text-center text-text-muted text-[13px]">
             點擊「重新計算」開始
         </div>
     </div>
@@ -139,50 +139,50 @@
     <!-- 編輯彈窗 -->
     <div x-show="showEditor" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" @click.self="showEditor = false">
         <div class="pixel-card p-5 w-[560px] max-w-[92vw] max-h-[85vh] overflow-y-auto scrollbar-thin">
-            <h3 class="font-heading text-[10px] text-primary mb-4" x-text="'&#9998; 編輯：' + editing.name"></h3>
+            <h3 class="font-heading text-sm text-primary mb-4" x-text="'&#9998; 編輯：' + editing.name"></h3>
             <div class="mb-3">
-                <label class="block text-[7px] text-text-muted mb-1">模板名稱</label>
-                <input type="text" x-model="editing.name" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
+                <label class="block text-xs text-text-muted mb-1">模板名稱</label>
+                <input type="text" x-model="editing.name" class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
             </div>
-            <h4 class="text-[8px] text-text-heading mt-4 mb-2 border-b border-border-main pb-1">&#128295; 技術指標</h4>
+            <h4 class="text-[13px] text-text-heading mt-4 mb-2 border-b border-border-main pb-1">&#128295; 技術指標</h4>
             <div class="grid grid-cols-2 gap-2">
                 <template x-for="field in indicatorFields" :key="field.key">
                     <div>
-                        <label class="block text-[7px] text-text-muted mb-0.5" x-text="field.label"></label>
+                        <label class="block text-xs text-text-muted mb-0.5" x-text="field.label"></label>
                         <input type="number" x-model.number="editing[field.key]" :step="field.step || 1"
-                               class="w-full px-2 py-1 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
+                               class="w-full px-2 py-1 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
                     </div>
                 </template>
             </div>
-            <h4 class="text-[8px] text-text-heading mt-4 mb-2 border-b border-border-main pb-1">&#128737; 風險控制</h4>
+            <h4 class="text-[13px] text-text-heading mt-4 mb-2 border-b border-border-main pb-1">&#128737; 風險控制</h4>
             <div class="grid grid-cols-2 gap-2">
                 <template x-for="field in riskFields" :key="field.key">
                     <div>
-                        <label class="block text-[7px] text-text-muted mb-0.5" x-text="field.label"></label>
+                        <label class="block text-xs text-text-muted mb-0.5" x-text="field.label"></label>
                         <input type="number" x-model.number="editing[field.key]" :step="field.step || 1"
-                               class="w-full px-2 py-1 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
+                               class="w-full px-2 py-1 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
                     </div>
                 </template>
             </div>
-            <h4 class="text-[8px] text-text-heading mt-4 mb-2 border-b border-border-main pb-1">RSI 進出場</h4>
+            <h4 class="text-[13px] text-text-heading mt-4 mb-2 border-b border-border-main pb-1">RSI 進出場</h4>
             <div class="grid grid-cols-2 gap-2">
                 <template x-for="field in rsiFields" :key="field.key">
                     <div>
-                        <label class="block text-[7px] text-text-muted mb-0.5" x-text="field.label"></label>
+                        <label class="block text-xs text-text-muted mb-0.5" x-text="field.label"></label>
                         <input type="number" x-model.number="editing[field.key]" :step="field.step || 1"
-                               class="w-full px-2 py-1 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
+                               class="w-full px-2 py-1 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
                     </div>
                 </template>
             </div>
             <div class="flex justify-end gap-2 mt-4 pt-3 border-t border-border-main">
-                <button @click="showEditor = false" class="pixel-btn pixel-btn-purple text-[8px]">取消</button>
-                <button @click="saveTemplate()" class="pixel-btn pixel-btn-gold text-[8px]">&#10003; 儲存</button>
+                <button @click="showEditor = false" class="pixel-btn pixel-btn-purple text-[13px]">取消</button>
+                <button @click="saveTemplate()" class="pixel-btn pixel-btn-gold text-[13px]">&#10003; 儲存</button>
             </div>
         </div>
     </div>
 
     <div x-show="message" x-cloak x-transition
-         class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[8px] z-50"
+         class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[13px] z-50"
          :class="messageType === 'success' ? 'text-positive' : 'text-negative'"
          x-text="message"></div>
 </main>

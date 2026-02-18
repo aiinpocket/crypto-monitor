@@ -56,7 +56,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 | 技術分析 | ta4j 0.17+ |
 | 排程 | Quartz Scheduler (RAM JobStore) |
 | 即時通訊 | WebSocket (`/ws/trades`) |
-| 前端 | Thymeleaf + Tailwind CSS (CDN) + Alpine.js + Press Start 2P |
+| 前端 | Thymeleaf + Tailwind CSS (CDN) + Alpine.js + Exo 2 / Press Start 2P |
 | 序列化 | Jackson 3 (`tools.jackson`) |
 | 圖表 | Chart.js (CDN) |
 | 容器 | Docker Compose (開發) / Kubernetes (生產) |
@@ -187,10 +187,11 @@ BtcTrade 採用 RPG 像素遊戲風格，透過角色養成與成就機制吸引
 
 ### 像素風格設計
 
-- **字體**：Press Start 2P（Google Fonts 像素字體）
+- **字體**：Press Start 2P（標題）+ Exo 2（正文），兼顧像素風格與可讀性
 - **角色**：純 CSS `box-shadow` 像素藝術（無外部圖片）
 - **動畫**：`steps()` CSS timing function 呈現像素跳動感
 - **配色**：RPG 暗色主題（深紫黑 #1a1a2e + 金幣 #e2b714 + 魔法紫 #a855f7）
+- **光效**：硬邊像素陰影（無模糊擴散），保持文字銳利度
 
 ### 遊戲化 API
 

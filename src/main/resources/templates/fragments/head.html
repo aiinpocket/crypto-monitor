@@ -32,8 +32,8 @@
                     },
                     fontFamily: {
                         heading: ['"Press Start 2P"', 'monospace'],
-                        body: ['"Press Start 2P"', 'monospace'],
-                        mono: ['"Press Start 2P"', 'monospace'],
+                        body: ['"Exo 2"', 'sans-serif'],
+                        mono: ['"Exo 2"', 'monospace'],
                     }
                 }
             }
@@ -41,10 +41,11 @@
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Press Start 2P', monospace; font-size: 10px; image-rendering: pixelated; }
+        body { font-family: 'Exo 2', sans-serif; font-size: 14px; image-rendering: pixelated; }
         * { image-rendering: pixelated; }
+        .font-heading { font-family: 'Press Start 2P', monospace; }
 
         /* ===== 像素邊框系統 ===== */
         .pixel-border {
@@ -163,8 +164,8 @@
             50% { opacity: 0; }
         }
         @keyframes pixelSparkle {
-            0%, 100% { box-shadow: 0 0 4px #e2b714; }
-            50% { box-shadow: 0 0 12px #e2b714, 0 0 24px #ffd642; }
+            0%, 100% { box-shadow: 0 0 2px #e2b714; }
+            50% { box-shadow: 0 0 6px #e2b714; }
         }
         .anim-level-up { animation: pixelLevelUp 1.5s steps(8) forwards; }
         .anim-bounce { animation: pixelBounce 0.8s steps(6) forwards; }
@@ -182,9 +183,9 @@
         .toast-enter { animation: pixelSlideIn 0.3s steps(4); }
         .toast-exit { animation: pixelSlideIn 0.3s steps(4) reverse forwards; }
 
-        /* ===== 金光文字 ===== */
-        .glow-gold { text-shadow: 0 0 6px rgba(226,183,20,0.5), 2px 2px 0 #8a6d0a; }
-        .glow-purple { text-shadow: 0 0 6px rgba(168,85,247,0.5), 2px 2px 0 #6b21a8; }
+        /* ===== 金光文字（硬邊像素陰影，無模糊） ===== */
+        .glow-gold { text-shadow: 1px 1px 0 #8a6d0a, -1px -1px 0 rgba(226,183,20,0.15); }
+        .glow-purple { text-shadow: 1px 1px 0 #6b21a8, -1px -1px 0 rgba(168,85,247,0.15); }
 
         /* ===== 像素角色基礎 ===== */
         .pixel-character {
@@ -240,19 +241,19 @@
                 overlay.className = 'fixed inset-0 z-[200] flex items-center justify-center bg-black/60';
                 const card = document.createElement('div');
                 card.className = 'pixel-card p-5 max-w-xs text-center';
-                card.innerHTML = '<div class="text-[14px] mb-3">&#9888;</div>';
+                card.innerHTML = '<div class="text-xl mb-3">&#9888;</div>';
                 const msgEl = document.createElement('div');
-                msgEl.className = 'text-text-heading text-[9px] mb-4 leading-relaxed';
+                msgEl.className = 'text-text-heading text-sm mb-4 leading-relaxed';
                 msgEl.textContent = msg;
                 card.appendChild(msgEl);
                 const btnRow = document.createElement('div');
                 btnRow.className = 'flex justify-center gap-2';
                 const cancelBtn = document.createElement('button');
-                cancelBtn.className = 'pixel-btn pixel-btn-purple text-[8px] py-1.5 px-4';
+                cancelBtn.className = 'pixel-btn pixel-btn-purple text-xs py-1.5 px-4';
                 cancelBtn.textContent = '\u53D6\u6D88';
                 cancelBtn.onclick = () => { overlay.remove(); resolve(false); };
                 const okBtn = document.createElement('button');
-                okBtn.className = 'pixel-btn pixel-btn-gold text-[8px] py-1.5 px-4';
+                okBtn.className = 'pixel-btn pixel-btn-gold text-xs py-1.5 px-4';
                 okBtn.textContent = '\u78BA\u5B9A';
                 okBtn.onclick = () => { overlay.remove(); resolve(true); };
                 btnRow.appendChild(cancelBtn);
@@ -272,24 +273,24 @@
                 overlay.className = 'fixed inset-0 z-[200] flex items-center justify-center bg-black/60';
                 const card = document.createElement('div');
                 card.className = 'pixel-card p-5 max-w-xs text-center';
-                card.innerHTML = '<div class="text-[14px] mb-3">&#9998;</div>';
+                card.innerHTML = '<div class="text-xl mb-3">&#9998;</div>';
                 const msgEl = document.createElement('div');
-                msgEl.className = 'text-text-heading text-[9px] mb-3 leading-relaxed';
+                msgEl.className = 'text-text-heading text-sm mb-3 leading-relaxed';
                 msgEl.textContent = msg;
                 card.appendChild(msgEl);
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.value = defaultVal || '';
-                input.className = 'w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none mb-4';
+                input.className = 'w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-sm focus:outline-none mb-4';
                 card.appendChild(input);
                 const btnRow = document.createElement('div');
                 btnRow.className = 'flex justify-center gap-2';
                 const cancelBtn = document.createElement('button');
-                cancelBtn.className = 'pixel-btn pixel-btn-purple text-[8px] py-1.5 px-4';
+                cancelBtn.className = 'pixel-btn pixel-btn-purple text-xs py-1.5 px-4';
                 cancelBtn.textContent = '\u53D6\u6D88';
                 cancelBtn.onclick = () => { overlay.remove(); resolve(null); };
                 const okBtn = document.createElement('button');
-                okBtn.className = 'pixel-btn pixel-btn-gold text-[8px] py-1.5 px-4';
+                okBtn.className = 'pixel-btn pixel-btn-gold text-xs py-1.5 px-4';
                 okBtn.textContent = '\u78BA\u5B9A';
                 okBtn.onclick = () => { overlay.remove(); resolve(input.value || null); };
                 btnRow.appendChild(cancelBtn);
@@ -319,7 +320,7 @@
                 info: 'bg-bg-card text-text-main pixel-border-dark'
             };
             const el = document.createElement('div');
-            el.className = `px-4 py-3 text-[10px] shadow-lg toast-enter ${colors[type] || colors.info}`;
+            el.className = `px-4 py-3 text-sm shadow-lg toast-enter ${colors[type] || colors.info}`;
             el.textContent = msg;
             container.appendChild(el);
             setTimeout(() => { el.classList.add('toast-exit'); setTimeout(() => el.remove(), 300); }, 3000);

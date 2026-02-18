@@ -9,30 +9,30 @@
 <main class="pt-[60px] px-4 md:px-6 pb-12 max-w-4xl mx-auto" x-data="settingsApp()">
 
     <div class="mb-6">
-        <h1 class="font-heading text-[12px] text-primary glow-gold">&#9881; 冒險設定</h1>
-        <p class="text-text-muted text-[8px] mt-1">管理通知管道與角色職業</p>
+        <h1 class="font-heading text-lg text-primary glow-gold">&#9881; 冒險設定</h1>
+        <p class="text-text-muted text-[13px] mt-1">管理通知管道與角色職業</p>
     </div>
 
     <!-- 像素 Tab 導航 -->
     <div class="flex gap-1 mb-4 flex-wrap" role="tablist" aria-label="設定分頁">
         <button @click="activeTab = 'character'" role="tab" :aria-selected="activeTab === 'character'"
                 :class="activeTab === 'character' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
-                class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#128100; 角色</button>
+                class="pixel-btn text-[13px] py-1.5 px-3 cursor-pointer">&#128100; 角色</button>
         <button @click="activeTab = 'discord'" role="tab" :aria-selected="activeTab === 'discord'"
                 :class="activeTab === 'discord' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
-                class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#128172; Discord</button>
+                class="pixel-btn text-[13px] py-1.5 px-3 cursor-pointer">&#128172; Discord</button>
         <button @click="activeTab = 'gmail'" role="tab" :aria-selected="activeTab === 'gmail'"
                 :class="activeTab === 'gmail' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
-                class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#9993; Gmail</button>
+                class="pixel-btn text-[13px] py-1.5 px-3 cursor-pointer">&#9993; Gmail</button>
         <button @click="activeTab = 'telegram'" role="tab" :aria-selected="activeTab === 'telegram'"
                 :class="activeTab === 'telegram' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
-                class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#9992; Telegram</button>
+                class="pixel-btn text-[13px] py-1.5 px-3 cursor-pointer">&#9992; Telegram</button>
     </div>
 
     <!-- 角色設定 -->
     <div x-show="activeTab === 'character'" x-cloak>
         <div class="pixel-card p-4">
-            <h2 class="text-[9px] text-text-heading mb-4">&#128100; 選擇職業</h2>
+            <h2 class="text-sm text-text-heading mb-4">&#128100; 選擇職業</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <template x-for="cls in classes" :key="cls.key">
                     <button @click="selectClass(cls.key)"
@@ -43,14 +43,14 @@
                                 <div :class="'pixel-char-' + cls.key.toLowerCase()"></div>
                             </div>
                         </div>
-                        <div class="text-[8px] font-heading" :class="selectedClass === cls.key ? 'text-primary' : 'text-text-heading'" x-text="cls.name"></div>
-                        <div class="text-[7px] text-text-muted mt-1" x-text="cls.desc"></div>
+                        <div class="text-[13px] font-heading" :class="selectedClass === cls.key ? 'text-primary' : 'text-text-heading'" x-text="cls.name"></div>
+                        <div class="text-xs text-text-muted mt-1" x-text="cls.desc"></div>
                     </button>
                 </template>
             </div>
             <div class="mt-4 flex justify-end">
                 <button @click="saveClass()" :disabled="savingClass"
-                        class="pixel-btn pixel-btn-gold text-[8px] py-1.5 px-4 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                        class="pixel-btn pixel-btn-gold text-[13px] py-1.5 px-4 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
                     <span x-show="!savingClass">&#10003; 確認職業</span>
                     <span x-show="savingClass" class="anim-flash">儲存中...</span>
                 </button>
@@ -59,10 +59,10 @@
 
         <!-- 成就列表 -->
         <div class="pixel-card p-4 mt-4">
-            <h2 class="text-[9px] text-text-heading mb-3">&#127942; 成就列表</h2>
+            <h2 class="text-sm text-text-heading mb-3">&#127942; 成就列表</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <template x-for="a in achievements" :key="a.key">
-                    <div class="flex items-center gap-2 px-2 py-1.5 text-[7px]"
+                    <div class="flex items-center gap-2 px-2 py-1.5 text-xs"
                          :class="a.unlocked ? 'text-text-main' : 'text-text-muted opacity-50'">
                         <span x-text="a.unlocked ? '&#9733;' : '&#9734;'" :class="a.unlocked ? 'text-primary' : ''"></span>
                         <div>
@@ -80,8 +80,8 @@
         <div class="pixel-card p-4">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-[9px] text-text-heading">&#128172; Discord 通知</h2>
-                    <p class="text-text-muted text-[7px] mt-0.5">使用 Discord Bot 發送交易訊號</p>
+                    <h2 class="text-sm text-text-heading">&#128172; Discord 通知</h2>
+                    <p class="text-text-muted text-xs mt-0.5">使用 Discord Bot 發送交易訊號</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" x-model="discord.enabled" class="sr-only peer">
@@ -94,22 +94,22 @@
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-[7px] text-text-muted mb-1">Bot Token</label>
+                    <label class="block text-xs text-text-muted mb-1">Bot Token</label>
                     <input type="password" x-model="discord.botToken" placeholder="Discord Bot Token"
-                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
-                    <p class="text-[7px] text-text-muted mt-0.5">Discord Developer Portal 取得</p>
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
+                    <p class="text-xs text-text-muted mt-0.5">Discord Developer Portal 取得</p>
                 </div>
                 <div>
-                    <label class="block text-[7px] text-text-muted mb-1">Channel ID</label>
+                    <label class="block text-xs text-text-muted mb-1">Channel ID</label>
                     <input type="text" x-model="discord.channelId" placeholder="頻道 ID"
-                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
                 </div>
                 <div class="flex gap-4 pt-1">
-                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-xs">
                         <input type="checkbox" x-model="discord.notifyOnEntry" class="w-3 h-3 accent-cta">
                         <span>進場通知</span>
                     </label>
-                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-xs">
                         <input type="checkbox" x-model="discord.notifyOnExit" class="w-3 h-3 accent-cta">
                         <span>出場通知</span>
                     </label>
@@ -118,15 +118,15 @@
 
             <div class="flex items-center justify-between mt-4 pt-3 border-t border-border-main">
                 <button @click="testChannel('DISCORD')" :disabled="testing"
-                        class="pixel-btn pixel-btn-purple text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                        class="pixel-btn pixel-btn-purple text-xs py-1 px-3 disabled:opacity-50 cursor-pointer">
                     <span x-show="!testing">&#128225; 測試</span>
                     <span x-show="testing" class="anim-flash">測試中...</span>
                 </button>
                 <div class="flex gap-2">
                     <button x-show="discord.id" @click="deleteChannel('DISCORD')"
-                            class="pixel-btn text-[7px] py-1 px-3 text-negative cursor-pointer" style="box-shadow: -2px 0 0 0 #ef4444, 2px 0 0 0 #ef4444, 0 -2px 0 0 #ef4444, 0 2px 0 0 #ef4444;">&#10005; 刪除</button>
+                            class="pixel-btn text-xs py-1 px-3 text-negative cursor-pointer" style="box-shadow: -2px 0 0 0 #ef4444, 2px 0 0 0 #ef4444, 0 -2px 0 0 #ef4444, 0 2px 0 0 #ef4444;">&#10005; 刪除</button>
                     <button @click="saveChannel('DISCORD')" :disabled="saving"
-                            class="pixel-btn pixel-btn-gold text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                            class="pixel-btn pixel-btn-gold text-xs py-1 px-3 disabled:opacity-50 cursor-pointer">
                         <span x-show="!saving">&#128190; 儲存</span>
                         <span x-show="saving" class="anim-flash">儲存中...</span>
                     </button>
@@ -140,8 +140,8 @@
         <div class="pixel-card p-4">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-[9px] text-text-heading">&#9993; Gmail 通知</h2>
-                    <p class="text-text-muted text-[7px] mt-0.5">系統 SMTP 發送郵件到指定信箱</p>
+                    <h2 class="text-sm text-text-heading">&#9993; Gmail 通知</h2>
+                    <p class="text-text-muted text-xs mt-0.5">系統 SMTP 發送郵件到指定信箱</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" x-model="gmail.enabled" class="sr-only peer">
@@ -154,16 +154,16 @@
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-[7px] text-text-muted mb-1">收件人 Email</label>
+                    <label class="block text-xs text-text-muted mb-1">收件人 Email</label>
                     <input type="email" x-model="gmail.recipientEmail" placeholder="your-email@gmail.com"
-                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
                 </div>
                 <div class="flex gap-4 pt-1">
-                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-xs">
                         <input type="checkbox" x-model="gmail.notifyOnEntry" class="w-3 h-3 accent-cta">
                         <span>進場通知</span>
                     </label>
-                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-xs">
                         <input type="checkbox" x-model="gmail.notifyOnExit" class="w-3 h-3 accent-cta">
                         <span>出場通知</span>
                     </label>
@@ -172,15 +172,15 @@
 
             <div class="flex items-center justify-between mt-4 pt-3 border-t border-border-main">
                 <button @click="testChannel('GMAIL')" :disabled="testing"
-                        class="pixel-btn pixel-btn-purple text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                        class="pixel-btn pixel-btn-purple text-xs py-1 px-3 disabled:opacity-50 cursor-pointer">
                     <span x-show="!testing">&#128225; 測試</span>
                     <span x-show="testing" class="anim-flash">測試中...</span>
                 </button>
                 <div class="flex gap-2">
                     <button x-show="gmail.id" @click="deleteChannel('GMAIL')"
-                            class="pixel-btn text-[7px] py-1 px-3 text-negative cursor-pointer" style="box-shadow: -2px 0 0 0 #ef4444, 2px 0 0 0 #ef4444, 0 -2px 0 0 #ef4444, 0 2px 0 0 #ef4444;">&#10005; 刪除</button>
+                            class="pixel-btn text-xs py-1 px-3 text-negative cursor-pointer" style="box-shadow: -2px 0 0 0 #ef4444, 2px 0 0 0 #ef4444, 0 -2px 0 0 #ef4444, 0 2px 0 0 #ef4444;">&#10005; 刪除</button>
                     <button @click="saveChannel('GMAIL')" :disabled="saving"
-                            class="pixel-btn pixel-btn-gold text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                            class="pixel-btn pixel-btn-gold text-xs py-1 px-3 disabled:opacity-50 cursor-pointer">
                         <span x-show="!saving">&#128190; 儲存</span>
                         <span x-show="saving" class="anim-flash">儲存中...</span>
                     </button>
@@ -194,8 +194,8 @@
         <div class="pixel-card p-4">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-[9px] text-text-heading">&#9992; Telegram 通知</h2>
-                    <p class="text-text-muted text-[7px] mt-0.5">使用 Telegram Bot 發送訊號通知</p>
+                    <h2 class="text-sm text-text-heading">&#9992; Telegram 通知</h2>
+                    <p class="text-text-muted text-xs mt-0.5">使用 Telegram Bot 發送訊號通知</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" x-model="telegram.enabled" class="sr-only peer">
@@ -208,23 +208,23 @@
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-[7px] text-text-muted mb-1">Bot Token</label>
+                    <label class="block text-xs text-text-muted mb-1">Bot Token</label>
                     <input type="password" x-model="telegram.botToken" placeholder="Telegram Bot Token"
-                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
-                    <p class="text-[7px] text-text-muted mt-0.5">@BotFather 取得</p>
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
+                    <p class="text-xs text-text-muted mt-0.5">@BotFather 取得</p>
                 </div>
                 <div>
-                    <label class="block text-[7px] text-text-muted mb-1">Chat ID</label>
+                    <label class="block text-xs text-text-muted mb-1">Chat ID</label>
                     <input type="text" x-model="telegram.chatId" placeholder="Chat ID"
-                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[8px] focus:outline-none">
-                    <p class="text-[7px] text-text-muted mt-0.5">@userinfobot 取得</p>
+                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
+                    <p class="text-xs text-text-muted mt-0.5">@userinfobot 取得</p>
                 </div>
                 <div class="flex gap-4 pt-1">
-                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-xs">
                         <input type="checkbox" x-model="telegram.notifyOnEntry" class="w-3 h-3 accent-cta">
                         <span>進場通知</span>
                     </label>
-                    <label class="flex items-center gap-1.5 cursor-pointer text-[7px]">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-xs">
                         <input type="checkbox" x-model="telegram.notifyOnExit" class="w-3 h-3 accent-cta">
                         <span>出場通知</span>
                     </label>
@@ -233,15 +233,15 @@
 
             <div class="flex items-center justify-between mt-4 pt-3 border-t border-border-main">
                 <button @click="testChannel('TELEGRAM')" :disabled="testing"
-                        class="pixel-btn pixel-btn-purple text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                        class="pixel-btn pixel-btn-purple text-xs py-1 px-3 disabled:opacity-50 cursor-pointer">
                     <span x-show="!testing">&#128225; 測試</span>
                     <span x-show="testing" class="anim-flash">測試中...</span>
                 </button>
                 <div class="flex gap-2">
                     <button x-show="telegram.id" @click="deleteChannel('TELEGRAM')"
-                            class="pixel-btn text-[7px] py-1 px-3 text-negative cursor-pointer" style="box-shadow: -2px 0 0 0 #ef4444, 2px 0 0 0 #ef4444, 0 -2px 0 0 #ef4444, 0 2px 0 0 #ef4444;">&#10005; 刪除</button>
+                            class="pixel-btn text-xs py-1 px-3 text-negative cursor-pointer" style="box-shadow: -2px 0 0 0 #ef4444, 2px 0 0 0 #ef4444, 0 -2px 0 0 #ef4444, 0 2px 0 0 #ef4444;">&#10005; 刪除</button>
                     <button @click="saveChannel('TELEGRAM')" :disabled="saving"
-                            class="pixel-btn pixel-btn-gold text-[7px] py-1 px-3 disabled:opacity-50 cursor-pointer">
+                            class="pixel-btn pixel-btn-gold text-xs py-1 px-3 disabled:opacity-50 cursor-pointer">
                         <span x-show="!saving">&#128190; 儲存</span>
                         <span x-show="saving" class="anim-flash">儲存中...</span>
                     </button>
@@ -250,7 +250,7 @@
         </div>
     </div>
 
-    <div x-show="message" x-cloak x-transition class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[8px] z-50"
+    <div x-show="message" x-cloak x-transition class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[13px] z-50"
          :class="messageType === 'success' ? 'text-positive' : 'text-negative'" x-text="message"></div>
 </main>
 
