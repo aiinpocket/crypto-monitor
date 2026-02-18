@@ -53,7 +53,10 @@
             <div th:unless="${user.avatarUrl != null}"
                  class="w-7 h-7 bg-primary flex items-center justify-center text-pixel-dark text-sm font-heading border-2 border-primary-hover"
                  th:text="${user.displayName != null ? user.displayName.substring(0,1) : '?'}">U</div>
-            <a href="/logout" class="text-text-muted hover:text-negative text-base cursor-pointer" title="登出" aria-label="登出">&#10140;</a>
+            <form action="/logout" method="POST" class="inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="text-text-muted hover:text-negative text-base cursor-pointer bg-transparent border-none p-0" title="登出" aria-label="登出">&#10140;</button>
+            </form>
         </div>
     </div>
 
@@ -67,7 +70,10 @@
         <a href="/settings" class="block px-3 py-2 text-sm" :class="path === '/settings' ? 'text-cta font-bold' : 'text-text-muted hover:text-primary'">&#9881; 設定</a>
         <div class="flex items-center justify-between px-3 py-2 border-t border-border-main mt-1 pt-2">
             <span class="text-sm text-text-main" th:text="${user.displayName}">User</span>
-            <a href="/logout" class="text-sm text-negative">登出</a>
+            <form action="/logout" method="POST" class="inline">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="text-sm text-negative bg-transparent border-none p-0 cursor-pointer">登出</button>
+            </form>
         </div>
     </div>
 
