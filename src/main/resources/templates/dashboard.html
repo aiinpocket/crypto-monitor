@@ -75,7 +75,7 @@
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 mb-4">
             <div class="pixel-card p-3">
                 <div class="text-[7px] text-text-muted mb-1">&#127902; 當前幣對</div>
                 <div class="font-heading text-[10px] text-primary glow-gold" th:text="${activeSymbol}">BTCUSDT</div>
@@ -151,8 +151,13 @@
                         </tr>
                     </tbody>
                 </table>
-                <div th:if="${livePositions == null or livePositions.isEmpty()}" class="text-center py-8 text-text-muted text-[8px]">
-                    &#128566; 尚未有交易紀錄，去回測看看吧！
+                <div th:if="${livePositions == null or livePositions.isEmpty()}" class="text-center py-8">
+                    <div class="text-[20px] mb-2 opacity-40">&#128566;</div>
+                    <div class="text-text-muted text-[8px]">尚無交易紀錄</div>
+                    <div class="text-text-muted text-[7px] mt-2 leading-relaxed">
+                        前往 <a href="/strategies" class="text-cta hover:text-cta-hover underline">策略</a> 頁面挑選策略，
+                        再到 <a href="/backtest" class="text-cta hover:text-cta-hover underline">回測</a> 驗證效果
+                    </div>
                 </div>
             </div>
         </div>
@@ -165,13 +170,15 @@
         const wsLabel = document.getElementById('ws-label');
         const signalLog = document.getElementById('signal-log');
         let ws;
-
         let wsRetryCount = 0;
+        let wsCountdownId = null;
+
         function connectWs() {
             const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(protocol + '//' + location.host + '/ws/trades');
             ws.onopen = () => {
                 wsRetryCount = 0;
+                if (wsCountdownId) { clearInterval(wsCountdownId); wsCountdownId = null; }
                 wsStatusEl.textContent = '\u25CF';
                 wsStatusEl.className = 'text-positive text-[8px]';
                 wsLabel.textContent = '\u5DF2\u9023\u7DDA';
@@ -197,13 +204,18 @@
                             line.appendChild(timeSpan);
                             line.appendChild(actionSpan);
                             line.appendChild(priceSpan);
+                            if (signalLog.children.length > 100) signalLog.removeChild(signalLog.firstChild);
                             signalLog.appendChild(line);
                             signalLog.scrollTop = signalLog.scrollHeight;
                             break;
                         }
                         case 'PRICE_TICK': {
                             const priceEl = document.getElementById('price-' + String(data.symbol).replace(/[^A-Z0-9]/g, ''));
-                            if (priceEl) priceEl.textContent = '$' + Number(data.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            if (priceEl) {
+                                priceEl.textContent = '$' + Number(data.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                priceEl.classList.add('anim-flash');
+                                setTimeout(() => priceEl.classList.remove('anim-flash'), 600);
+                            }
                             break;
                         }
                         case 'SYNC_PROGRESS': { if (data.status === 'READY' || data.status === 'ERROR') location.reload(); break; }
@@ -214,10 +226,21 @@
             ws.onclose = () => {
                 wsRetryCount++;
                 wsStatusEl.textContent = '\u25CF';
-                wsStatusEl.className = 'text-negative text-[8px]';
+                wsStatusEl.className = 'text-warning text-[8px] anim-flash';
                 const delay = Math.min(5000 * wsRetryCount, 30000);
-                wsLabel.textContent = '\u5DF2\u65B7\u7DDA\u2027' + Math.round(delay/1000) + 's\u5F8C\u91CD\u9023';
-                setTimeout(connectWs, delay);
+                let remaining = Math.round(delay / 1000);
+                wsLabel.textContent = '\u5DF2\u65B7\u7DDA\u2027' + remaining + 's\u5F8C\u91CD\u9023';
+                if (wsCountdownId) clearInterval(wsCountdownId);
+                wsCountdownId = setInterval(() => {
+                    remaining--;
+                    if (remaining > 0) {
+                        wsLabel.textContent = '\u5DF2\u65B7\u7DDA\u2027' + remaining + 's\u5F8C\u91CD\u9023';
+                    } else {
+                        clearInterval(wsCountdownId);
+                        wsCountdownId = null;
+                    }
+                }, 1000);
+                setTimeout(() => { if (wsCountdownId) { clearInterval(wsCountdownId); wsCountdownId = null; } connectWs(); }, delay);
             };
         }
         connectWs();

@@ -10,6 +10,12 @@ spring:
     username: ${DB_USERNAME:btctrade}
     password: ${DB_PASSWORD:btctrade_dev}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:

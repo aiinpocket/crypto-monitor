@@ -101,23 +101,20 @@ public class StrategyPerformanceService {
     }
 
     /**
-     * 遍歷所有模板計算績效（供 Quartz Job 呼叫）。
+     * 遍歷所有模板並行計算績效（供 Quartz Job 呼叫）。
+     * 利用 backtestExecutor 線程池平行處理，大幅縮短全量計算時間。
      */
     public void computeAllPerformances() {
         List<StrategyTemplate> allTemplates = templateRepo.findAll();
-        log.info("[績效排程] 開始計算 {} 個模板的績效", allTemplates.size());
+        log.info("[績效排程] 開始非同步計算 {} 個模板的績效", allTemplates.size());
 
-        int total = 0;
         for (StrategyTemplate template : allTemplates) {
             try {
-                computePerformance(template.getId());
-                total++;
+                computePerformanceAsync(template.getId());
             } catch (Exception e) {
-                log.error("[績效排程] 模板 {} 計算失敗: {}", template.getId(), e.getMessage());
+                log.error("[績效排程] 提交模板 {} 非同步計算失敗: {}", template.getId(), e.getMessage());
             }
         }
-
-        log.info("[績效排程] 完成，成功 {}/{} 個模板", total, allTemplates.size());
     }
 
     /**

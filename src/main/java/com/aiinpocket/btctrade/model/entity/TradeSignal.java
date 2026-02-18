@@ -10,7 +10,9 @@ import java.time.Instant;
 @Entity
 @Table(name = "trade_signal", indexes = {
         @Index(name = "idx_signal_time", columnList = "signal_time"),
-        @Index(name = "idx_signal_action", columnList = "action")
+        @Index(name = "idx_signal_action", columnList = "action"),
+        @Index(name = "idx_signal_symbol_backtest", columnList = "symbol, is_backtest"),
+        @Index(name = "idx_signal_symbol_time", columnList = "symbol, signal_time")
 })
 @Getter
 @Setter

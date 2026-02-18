@@ -376,12 +376,27 @@ git push main
 | `UserWatchlist` | `idx_watchlist_symbol` | 通知分發（按幣對查訂閱者） |
 | `NotificationChannel` | `idx_notif_user_enabled` | 用戶啟用管道查詢（通知發送） |
 | `StrategyPerformance` | `idx_perf_template_symbol` | 績效批次查詢（前端列表） |
+| `TradeSignal` | `idx_signal_symbol_backtest` | 交易訊號按幣對+回測篩選 |
+| `TradeSignal` | `idx_signal_symbol_time` | 交易訊號按幣對+時間排序 |
+
+### N+1 查詢修復
+
+| 位置 | 修復方式 | 效果 |
+|------|---------|------|
+| `BacktestRunRepository` | JOIN FETCH 預載 user + strategyTemplate | 消除 LAZY N+1 |
+| `StrategyPerformanceRepository` | JOIN FETCH 預載 strategyTemplate | 績效查詢從 N+2 降為 2 次 |
+| `GamificationService` | 批次查詢已解鎖成就，記憶體過濾 | 成就檢查從 N 次降為 1 次 |
 
 ### 批次查詢優化
 
 K 線資料同步使用批次查詢取代逐筆 `existsBy` 查詢：
 - **優化前**：每批 1000 條 K 線 → 1000 次 DB 查詢
 - **優化後**：每批 1000 條 K 線 → 1 次批次查詢 + 記憶體過濾
+
+### 連線池與並行計算
+
+- **HikariCP**：顯式配置連線池（max 15 / idle 5），支援多用戶並發查詢
+- **績效計算並行化**：Quartz 排程全量績效計算改為非同步提交至 backtestExecutor，利用多線程並行處理
 
 ## 日誌配置
 

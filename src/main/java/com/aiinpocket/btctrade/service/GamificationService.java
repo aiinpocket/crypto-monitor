@@ -24,6 +24,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -126,29 +128,35 @@ public class GamificationService {
     public List<AchievementDef> checkAndUnlockAchievements(AppUser user, String trigger) {
         List<AchievementDef> unlocked = new ArrayList<>();
 
+        // 批次查詢已解鎖成就（一次查詢取代多次 existsBy）
+        Set<String> alreadyUnlocked = achievementRepo.findByUserIdOrderByUnlockedAtDesc(user.getId())
+                .stream()
+                .map(UserAchievement::getAchievementKey)
+                .collect(Collectors.toSet());
+
         switch (trigger) {
             case "LOGIN" -> {
-                unlocked.addAll(tryUnlock(user, AchievementDef.FIRST_LOGIN, user.getTotalLogins() >= 1));
-                unlocked.addAll(tryUnlock(user, AchievementDef.LOGIN_7D, user.getTotalLogins() >= 7));
-                unlocked.addAll(tryUnlock(user, AchievementDef.LOGIN_30D, user.getTotalLogins() >= 30));
-                unlocked.addAll(tryUnlock(user, AchievementDef.LOGIN_100D, user.getTotalLogins() >= 100));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.FIRST_LOGIN, user.getTotalLogins() >= 1, alreadyUnlocked));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.LOGIN_7D, user.getTotalLogins() >= 7, alreadyUnlocked));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.LOGIN_30D, user.getTotalLogins() >= 30, alreadyUnlocked));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.LOGIN_100D, user.getTotalLogins() >= 100, alreadyUnlocked));
             }
             case "BACKTEST" -> {
                 long completedCount = eventRepo.countByUserIdAndEventType(user.getId(), "BACKTEST_COMPLETE")
                         + eventRepo.countByUserIdAndEventType(user.getId(), "BACKTEST_PROFIT");
                 long profitCount = eventRepo.countByUserIdAndEventType(user.getId(), "BACKTEST_PROFIT");
-                unlocked.addAll(tryUnlock(user, AchievementDef.FIRST_BACKTEST, completedCount >= 1));
-                unlocked.addAll(tryUnlock(user, AchievementDef.PROFITABLE_1, profitCount >= 1));
-                unlocked.addAll(tryUnlock(user, AchievementDef.PROFITABLE_10, profitCount >= 10));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.FIRST_BACKTEST, completedCount >= 1, alreadyUnlocked));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.PROFITABLE_1, profitCount >= 1, alreadyUnlocked));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.PROFITABLE_10, profitCount >= 10, alreadyUnlocked));
             }
             case "STRATEGY" -> {
                 int templateCount = templateRepo.countByUserId(user.getId());
-                unlocked.addAll(tryUnlock(user, AchievementDef.STRATEGY_CLONE, templateCount >= 1));
-                unlocked.addAll(tryUnlock(user, AchievementDef.STRATEGY_5, templateCount >= 5));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.STRATEGY_CLONE, templateCount >= 1, alreadyUnlocked));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.STRATEGY_5, templateCount >= 5, alreadyUnlocked));
             }
             case "WATCHLIST" -> {
                 long watchlistCount = watchlistRepo.countByUserId(user.getId());
-                unlocked.addAll(tryUnlock(user, AchievementDef.WATCHLIST_5, watchlistCount >= 5));
+                unlocked.addAll(tryUnlockBatch(user, AchievementDef.WATCHLIST_5, watchlistCount >= 5, alreadyUnlocked));
             }
             case "BACKTEST_METRICS" -> {
                 // 由呼叫端傳入具體指標，在此只做等級成就
@@ -269,11 +277,21 @@ public class GamificationService {
 
     // ===== 內部方法 =====
 
+    private List<AchievementDef> tryUnlockBatch(AppUser user, AchievementDef def, boolean condition, Set<String> alreadyUnlocked) {
+        if (!condition) return List.of();
+        if (alreadyUnlocked.contains(def.name())) return List.of();
+        return doUnlock(user, def);
+    }
+
     private List<AchievementDef> tryUnlock(AppUser user, AchievementDef def, boolean condition) {
         if (!condition) return List.of();
         if (achievementRepo.existsByUserIdAndAchievementKey(user.getId(), def.name())) {
             return List.of();
         }
+        return doUnlock(user, def);
+    }
+
+    private List<AchievementDef> doUnlock(AppUser user, AchievementDef def) {
 
         achievementRepo.save(UserAchievement.builder()
                 .user(user)
@@ -288,7 +306,6 @@ public class GamificationService {
 
         log.info("[遊戲化] 用戶 {} 解鎖成就: {} ({})", user.getId(), def.name(), def.getDisplayName());
 
-        // 成就獎勵經驗
         if (def.getExpReward() > 0) {
             awardExp(user, def.getExpReward(), "ACHIEVEMENT_" + def.name());
         }
