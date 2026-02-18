@@ -204,9 +204,10 @@
                             line.appendChild(timeSpan);
                             line.appendChild(actionSpan);
                             line.appendChild(priceSpan);
+                            const nearBottom = signalLog.scrollHeight - signalLog.scrollTop - signalLog.clientHeight < 60;
                             if (signalLog.children.length > 100) signalLog.removeChild(signalLog.firstChild);
                             signalLog.appendChild(line);
-                            signalLog.scrollTop = signalLog.scrollHeight;
+                            if (nearBottom) signalLog.scrollTop = signalLog.scrollHeight;
                             break;
                         }
                         case 'PRICE_TICK': {

@@ -10,8 +10,11 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Map;
 
+@Slf4j
 public class UserWebSocketInterceptor implements HandshakeInterceptor {
 
     @Override
@@ -31,10 +34,12 @@ public class UserWebSocketInterceptor implements HandshakeInterceptor {
                         && ctx.getAuthentication().getPrincipal() instanceof AppUserPrincipal principal) {
                     attributes.put("userId", principal.getUserId());
                     attributes.put("userEmail", principal.getAppUser().getEmail());
+                    return true;
                 }
             }
         }
-        return true;
+        log.debug("WebSocket handshake rejected: unauthenticated");
+        return false;
     }
 
     @Override

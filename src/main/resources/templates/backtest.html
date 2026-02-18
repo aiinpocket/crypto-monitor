@@ -173,8 +173,8 @@
             allTemplates: [], symbols: serverSymbols, running: false, result: null, history: [],
             equityChart: null, message: '', messageType: 'success', pollPct: 0,
             async init() { await Promise.all([this.loadTemplates(), this.loadHistory()]); },
-            async loadTemplates() { try { const r=await fetch('/api/user/strategies'); if(r.ok) this.allTemplates=await r.json(); } catch(e){} },
-            async loadHistory() { try { const r=await fetch('/api/user/backtest/history'); if(r.ok) this.history=await r.json(); } catch(e){} },
+            async loadTemplates() { try { const r=await fetch('/api/user/strategies'); if(r.ok) this.allTemplates=await r.json(); else this.showMsg('載入策略列表失敗','error'); } catch(e){ this.showMsg('網路異常','error'); } },
+            async loadHistory() { try { const r=await fetch('/api/user/backtest/history'); if(r.ok) this.history=await r.json(); } catch(e){ this.showMsg('載入歷史紀錄失敗','error'); } },
             async submitBacktest() {
                 if(!this.form.templateId) return; this.running=true; this.result=null;
                 try {

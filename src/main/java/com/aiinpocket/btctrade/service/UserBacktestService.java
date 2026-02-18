@@ -160,7 +160,7 @@ public class UserBacktestService {
             log.error("[用戶回測] 失敗: runId={}, error={}", runId, e.getMessage(), e);
             try {
                 run.setStatus(BacktestRunStatus.FAILED);
-                run.setResultJson("{\"error\": \"" + escapeJson(e.getMessage()) + "\"}");
+                run.setResultJson(buildErrorJson(e.getMessage()));
                 run.setCompletedAt(Instant.now());
                 runRepo.save(run);
             } catch (Exception dbEx) {
@@ -186,12 +186,18 @@ public class UserBacktestService {
         return run;
     }
 
-    /** JSON 字串轉義（避免錯誤訊息中的特殊字元破壞 JSON 格式） */
-    private String escapeJson(String input) {
-        if (input == null) return "Unknown error";
-        return input.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r");
+    /** 將錯誤訊息安全序列化為 JSON 結果（不洩漏內部細節） */
+    private String buildErrorJson(String rawMessage) {
+        String safeMessage = "回測計算失敗，請稍後重試";
+        if (rawMessage != null && !rawMessage.contains("Exception")
+                && !rawMessage.contains("SQL") && !rawMessage.contains("constraint")
+                && rawMessage.length() < 200) {
+            safeMessage = rawMessage;
+        }
+        try {
+            return objectMapper.writeValueAsString(java.util.Map.of("error", safeMessage));
+        } catch (Exception e) {
+            return "{\"error\":\"回測計算失敗\"}";
+        }
     }
 }
