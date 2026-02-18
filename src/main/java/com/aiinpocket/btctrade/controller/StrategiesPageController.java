@@ -1,7 +1,11 @@
 package com.aiinpocket.btctrade.controller;
 
 import com.aiinpocket.btctrade.model.entity.AppUser;
+import com.aiinpocket.btctrade.model.entity.TrackedSymbol;
+
+import java.util.List;
 import com.aiinpocket.btctrade.security.AppUserPrincipal;
+import com.aiinpocket.btctrade.service.TrackedSymbolService;
 import com.aiinpocket.btctrade.service.UserWatchlistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class StrategiesPageController {
 
     private final UserWatchlistService watchlistService;
+    private final TrackedSymbolService trackedSymbolService;
 
     /**
      * 渲染策略管理頁面。
@@ -52,6 +57,10 @@ public class StrategiesPageController {
 
         model.addAttribute("user", user);
         model.addAttribute("watchlistSymbols", watchlistService.getWatchlistSymbols(user.getId()));
+        // 提供所有 READY 幣對讓回測不受限於觀察清單
+        List<String> readySymbols = trackedSymbolService.getReadySymbols().stream()
+                .map(TrackedSymbol::getSymbol).toList();
+        model.addAttribute("readySymbols", readySymbols);
         return "backtest";
     }
 }

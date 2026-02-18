@@ -9,7 +9,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 | 模組 | 說明 |
 |------|------|
 | Google OAuth2 登入 | 一鍵登入，自動建立用戶帳戶 |
-| 個人觀察清單 | 從全域幣對池中選擇想關注的交易對 |
+| 個人觀察清單 | 自由輸入任何 Binance 幣對，即時驗證並自動同步歷史資料 |
 | 策略模板管理 | 克隆系統預設策略 → 自訂參數 → 回測驗證 |
 | 即時 WebSocket | 價格跳動、交易訊號、同步進度即時推送 |
 | 多管道通知 | Discord Bot / Gmail SMTP / Telegram Bot 交易訊號通知 |
@@ -117,7 +117,7 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 - **WebSocket 認證**：Handshake 階段驗證 Session，未登入連線直接拒絕
 - **WebSocket CORS**：限制允許來源（localhost + 生產域名），非白名單來源無法連線
 - **資源授權檢查**：通知管道、策略模板等操作均驗證用戶所有權
-- **輸入驗證**：回測參數範圍限制、通知管道 configJson 格式檢查（Discord ID/Email/Telegram ChatID）
+- **輸入驗證**：回測參數範圍限制、通知管道 configJson 格式檢查、幣對新增時 Binance ExchangeInfo 即時驗證
 - **全域異常處理**：`@RestControllerAdvice` 統一攔截異常，回傳一致的 JSON 錯誤格式
 - **錯誤訊息保護**：API 僅回傳使用者友善錯誤，不暴露內部實作細節（過濾 SQL/Exception 關鍵字）
 - **XSS 防護**：WebSocket 訊號使用 DOM API 建構（非 `innerHTML`），前端一律 `x-text`
@@ -269,6 +269,7 @@ Google Console 設定 Redirect URI：`http://localhost:8080/login/oauth2/code/go
 |--------|------|------|
 | POST | `/api/backtest/run` | 系統回測 |
 | GET/POST/DELETE | `/api/symbols` | 全域幣對管理 |
+| GET | `/api/symbols/validate` | 幣對即時驗證（Binance ExchangeInfo） |
 | WS | `/ws/trades` | WebSocket 即時推送 |
 | GET | `/actuator/health` | 健康檢查 |
 

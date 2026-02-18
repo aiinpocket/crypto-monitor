@@ -43,8 +43,16 @@ public class SymbolController {
     @PostMapping
     public ResponseEntity<?> addSymbol(@RequestBody SymbolRequest request) {
         try {
+            String symbol = request.symbol().toUpperCase().trim();
+
+            // 驗證幣對是否在 Binance 上架交易中
+            if (!exchangeInfoService.isSymbolTrading(symbol)) {
+                return ResponseEntity.badRequest().body(Map.of("error",
+                        "幣對 " + symbol + " 在 Binance 上不存在或已下架"));
+            }
+
             TrackedSymbol saved = trackedSymbolService.addSymbol(
-                    request.symbol(), request.displayName());
+                    symbol, request.displayName());
 
             // 自動觸發背景歷史資料同步（PENDING 或重新啟用的），從 2021/01/01 開始
             if (saved.getSyncStatus() == SyncStatus.PENDING) {
@@ -55,6 +63,21 @@ public class SymbolController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    /**
+     * 驗證幣對是否在 Binance 上架交易中。
+     * 用於前端輸入時即時驗證。
+     */
+    @GetMapping("/validate")
+    public ResponseEntity<Map<String, Object>> validateSymbol(@RequestParam String symbol) {
+        String upper = symbol.toUpperCase().trim();
+        if (upper.isEmpty() || upper.length() > 20) {
+            return ResponseEntity.badRequest().body(Map.of("valid", false, "error", "格式不正確"));
+        }
+        boolean trading = exchangeInfoService.isSymbolTrading(upper);
+        boolean tracked = trackedSymbolService.getBySymbol(upper).isPresent();
+        return ResponseEntity.ok(Map.of("valid", trading, "symbol", upper, "tracked", tracked));
     }
 
     @DeleteMapping("/{symbol}")

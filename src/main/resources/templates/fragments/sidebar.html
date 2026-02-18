@@ -128,7 +128,19 @@
                 <div x-show="!loading" class="max-h-60 overflow-y-auto scrollbar-thin pixel-border-dark">
                     <template x-if="filteredPairs.length === 0 && !loading">
                         <div class="text-center py-4 text-text-muted text-[13px]">
-                            <template x-if="searchQuery.length > 0"><span>找不到符合的幣對</span></template>
+                            <template x-if="searchQuery.length >= 3">
+                                <div>
+                                    <span x-show="!customValidating && !customValid">找不到符合的幣對</span>
+                                    <span x-show="customValidating" class="anim-flash">驗證中...</span>
+                                    <button x-show="customValid && !customValidating"
+                                            @click="addCustomSymbol()"
+                                            class="text-cta hover:text-cta-hover cursor-pointer block mx-auto mt-2">
+                                        + 新增 <span x-text="searchQuery.toUpperCase()"></span> 並同步資料
+                                    </button>
+                                    <span x-show="customChecked && !customValid && !customValidating" class="text-negative block mt-1">此幣對在 Binance 上不存在</span>
+                                </div>
+                            </template>
+                            <template x-if="searchQuery.length > 0 && searchQuery.length < 3"><span>繼續輸入以搜尋...</span></template>
                             <template x-if="searchQuery.length === 0"><span>輸入關鍵字搜尋</span></template>
                         </div>
                     </template>
@@ -169,12 +181,16 @@
         const userSymbolSet = new Set(/*[[${userSymbols}]]*/ []);
 
         function sidebarData() {
+            let _validateTimer = null;
             return {
                 sidebarOpen: false,
                 showAddModal: false, searchQuery: '', allPairs: [], filteredPairs: [], loading: false, addError: '',
+                customValidating: false, customValid: false, customChecked: false,
 
                 async openAddModal() {
-                    this.showAddModal = true; this.searchQuery = ''; this.addError = ''; this.filteredPairs = []; this.loading = true;
+                    this.showAddModal = true; this.searchQuery = ''; this.addError = ''; this.filteredPairs = [];
+                    this.customValid = false; this.customChecked = false; this.customValidating = false;
+                    this.loading = true;
                     try {
                         const resp = await fetch('/api/symbols/available-pairs');
                         if (!resp.ok) throw new Error('載入失敗');
@@ -185,8 +201,36 @@
                 },
                 filterPairs() {
                     const q = this.searchQuery.toUpperCase().trim();
+                    this.customValid = false; this.customChecked = false;
                     if (!q) { this.filteredPairs = this.allPairs.slice(0, 50); return; }
                     this.filteredPairs = this.allPairs.filter(p => p.symbol.includes(q) || p.baseAsset.includes(q)).slice(0, 50);
+                    // 如果清單搜不到且輸入>=3字元，延遲驗證 Binance
+                    if (this.filteredPairs.length === 0 && q.length >= 3) {
+                        clearTimeout(_validateTimer);
+                        _validateTimer = setTimeout(() => this.validateCustomSymbol(q), 600);
+                    }
+                },
+                async validateCustomSymbol(symbol) {
+                    this.customValidating = true;
+                    try {
+                        const r = await fetch('/api/symbols/validate?symbol=' + encodeURIComponent(symbol));
+                        if (r.ok) { const d = await r.json(); this.customValid = d.valid; this.customChecked = true; }
+                    } catch(e) { this.customChecked = true; }
+                    finally { this.customValidating = false; }
+                },
+                async addCustomSymbol() {
+                    const symbol = this.searchQuery.toUpperCase().trim();
+                    this.addError = '';
+                    try {
+                        // 新增到全域追蹤（含 Binance 驗證 + 自動同步）
+                        const resp = await fetch('/api/symbols', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ symbol: symbol, displayName: symbol.replace('USDT','') + '/USDT' }) });
+                        if (!resp.ok) { const err = await resp.json(); if (!err.error?.includes('已在追蹤')) { this.addError = err.error || '新增失敗'; return; } }
+                        // 加入用戶觀察清單
+                        await fetch('/api/user/watchlist', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ symbol: symbol }) });
+                        this.closeAddModal(); location.reload();
+                    } catch (e) { this.addError = '網路錯誤'; }
                 },
                 async selectPair(pair) {
                     if (pair.tracked) return; this.addError = '';
@@ -199,7 +243,8 @@
                         this.closeAddModal(); location.reload();
                     } catch (e) { this.addError = '網路錯誤'; }
                 },
-                closeAddModal() { this.showAddModal = false; this.searchQuery = ''; this.addError = ''; }
+                closeAddModal() { this.showAddModal = false; this.searchQuery = ''; this.addError = '';
+                    this.customValid = false; this.customChecked = false; this.customValidating = false; }
             };
         }
 
