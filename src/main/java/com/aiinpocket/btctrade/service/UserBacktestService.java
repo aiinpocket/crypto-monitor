@@ -7,6 +7,7 @@ import com.aiinpocket.btctrade.model.entity.BacktestRun;
 import com.aiinpocket.btctrade.model.entity.StrategyTemplate;
 import com.aiinpocket.btctrade.model.enums.BacktestRunStatus;
 import com.aiinpocket.btctrade.repository.BacktestRunRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
@@ -54,9 +55,25 @@ public class UserBacktestService {
         this.backtestExecutor = backtestExecutor;
     }
 
+    /** 啟動時清理因伺服器重啟而卡住的 RUNNING/PENDING 回測 */
+    @PostConstruct
+    void cleanupStaleRuns() {
+        List<BacktestRun> staleRuns = runRepo.findByStatusIn(
+                List.of(BacktestRunStatus.RUNNING, BacktestRunStatus.PENDING));
+        if (!staleRuns.isEmpty()) {
+            for (BacktestRun run : staleRuns) {
+                run.setStatus(BacktestRunStatus.FAILED);
+                run.setResultJson("{\"error\":\"伺服器重啟導致回測中斷，請重新提交\"}");
+                run.setCompletedAt(Instant.now());
+            }
+            runRepo.saveAll(staleRuns);
+            log.info("[用戶回測] 啟動清理：{} 筆卡住的回測已標記為 FAILED", staleRuns.size());
+        }
+    }
+
     /**
      * 提交回測任務。
-     * 建立 BacktestRun 紀錄後立即返回，實際計算由 @Async 在背景執行。
+     * 建立 BacktestRun 紀錄後立即返回，實際計算在 backtestExecutor 中非同步執行。
      *
      * @param user       發起回測的用戶
      * @param templateId 策略模板 ID
@@ -97,14 +114,6 @@ public class UserBacktestService {
         return run;
     }
 
-    /**
-     * 非同步執行回測計算。
-     * 在 backtestExecutor 執行緒池中運行，不阻塞呼叫端。
-     * 計算完成後將結果序列化為 JSON 儲存到 DB。
-     *
-     * @param runId         回測紀錄 ID
-     * @param customProps   策略模板轉換後的參數
-     */
     /** 在 backtestExecutor 執行緒池中執行回測（由 submitBacktest 透過 executor 提交） */
     void executeBacktest(Long runId, TradingStrategyProperties customProps) {
         BacktestRun run = runRepo.findById(runId).orElse(null);

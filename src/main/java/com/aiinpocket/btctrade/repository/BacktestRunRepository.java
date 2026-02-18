@@ -37,4 +37,7 @@ public interface BacktestRunRepository extends JpaRepository<BacktestRun, Long> 
 
     /** 查詢所有指定狀態的回測（用於系統監控或清理逾時任務） */
     List<BacktestRun> findByStatus(BacktestRunStatus status);
+
+    /** 查詢多種狀態的回測（啟動時清理卡住的 RUNNING/PENDING） */
+    List<BacktestRun> findByStatusIn(List<BacktestRunStatus> statuses);
 }
