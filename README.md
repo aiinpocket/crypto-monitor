@@ -296,7 +296,8 @@ trading:
     trailing-offset-pct: 0.003   # 移動停利偏移
     time-stop-days: 1        # 時間止損天數
     max-holding-days: 3      # 最大持倉天數
-    initial-capital: 10000   # 初始資金
+    initial-capital: 10000   # 模擬初始資金
+    position-size-pct: 1.0   # 每次進場倉位比例（0.0~1.0）
 ```
 
 ## 排程任務
@@ -388,6 +389,12 @@ git push main
 | `TradeSignal` | `idx_signal_symbol_time` | 交易訊號按幣對+時間排序 |
 | `TradeSignal` | `idx_signal_symbol_backtest_time` | 儀表板最近訊號查詢 |
 | `TradePosition` | `idx_position_backtest_entry` | 非回測持倉按時間排序 |
+
+### 回測資金管理
+
+- **倉位比例**：每次進場使用可用資金的 `positionSizePct` 比例（預設 100%，可自訂）
+- **複利計算**：每筆交易結束後，損益會反映到可用資金中，下一次進場基於更新後的資金計算
+- **部分倉位**：設定 < 100% 時，未投入的資金保留在帳戶中，權益曲線反映「保留資金 + 持倉浮盈」的真實淨值
 
 ### 回測記憶體優化
 
