@@ -9,6 +9,7 @@ import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -60,8 +61,12 @@ public class BinanceKlineMessageHandler {
                 // K 線收盤 → 存入 DB + 觸發策略評估
                 if (!klineRepo.existsBySymbolAndIntervalTypeAndOpenTime(
                         symbol, interval, kline.getOpenTime())) {
-                    klineRepo.save(kline);
-                    log.debug("Saved closed kline: {} {} @ {}", symbol, interval, kline.getClosePrice());
+                    try {
+                        klineRepo.save(kline);
+                        log.debug("Saved closed kline: {} {} @ {}", symbol, interval, kline.getClosePrice());
+                    } catch (DataIntegrityViolationException e) {
+                        log.debug("Kline 已由 DataFetchJob 寫入，跳過: {} {} {}", symbol, interval, kline.getOpenTime());
+                    }
                 }
                 eventPublisher.publishEvent(new KlineClosed(symbol, interval, kline));
             } else {

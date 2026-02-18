@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 
@@ -37,6 +38,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(HttpMessageNotReadableException e) {
         return ResponseEntity.badRequest().body(Map.of("error", "請求格式不正確，請檢查欄位型別"));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNoResource(NoResourceFoundException e) {
+        log.debug("靜態資源不存在: {}", e.getResourcePath());
+        return ResponseEntity.status(404).body(Map.of("error", "資源不存在"));
     }
 
     @ExceptionHandler(Exception.class)

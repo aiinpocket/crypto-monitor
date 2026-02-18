@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -69,7 +71,14 @@ public class BinanceApiService {
                 entity.getSymbol(), entity.getIntervalType(), entity.getOpenTime())) {
             return Optional.of(entity);
         }
-        return Optional.of(klineRepository.save(entity));
+        try {
+            return Optional.of(klineRepository.save(entity));
+        } catch (DataIntegrityViolationException e) {
+            // WebSocket 搶先寫入導致競態衝突，安全忽略
+            log.debug("Kline 已由 WebSocket 寫入，跳過: {} {} {}", entity.getSymbol(),
+                    entity.getIntervalType(), entity.getOpenTime());
+            return Optional.of(entity);
+        }
     }
 
     private List<BinanceKlineResponse> fetchKlines(
