@@ -10,7 +10,8 @@
         </a>
 
         <!-- 手機選單按鈕 -->
-        <button @click="mobileOpen = !mobileOpen" class="md:hidden text-text-muted hover:text-primary cursor-pointer">
+        <button @click="mobileOpen = !mobileOpen" class="md:hidden text-text-muted hover:text-primary cursor-pointer"
+                aria-label="切換導航選單" :aria-expanded="mobileOpen">
             <span x-show="!mobileOpen" class="text-[14px]">&#9776;</span>
             <span x-show="mobileOpen" x-cloak class="text-[14px]">&#10005;</span>
         </button>
@@ -48,7 +49,7 @@
             <div th:unless="${user.avatarUrl != null}"
                  class="w-7 h-7 bg-primary flex items-center justify-center text-pixel-dark text-[8px] font-heading border-2 border-primary-hover"
                  th:text="${user.displayName != null ? user.displayName.substring(0,1) : '?'}">U</div>
-            <a href="/logout" class="text-text-muted hover:text-negative text-[10px] cursor-pointer" title="登出">&#10140;</a>
+            <a href="/logout" class="text-text-muted hover:text-negative text-[10px] cursor-pointer" title="登出" aria-label="登出">&#10140;</a>
         </div>
     </div>
 

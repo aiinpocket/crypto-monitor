@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
 <head th:replace="~{fragments/head :: head('BtcTrade - 副本挑戰')}"></head>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 <body class="bg-bg-dark text-text-main min-h-screen">
 
 <div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
@@ -102,10 +102,10 @@
                 <table class="w-full text-[7px]">
                     <thead>
                     <tr class="text-text-muted border-b border-border-main">
-                        <th class="py-1.5 px-2 text-left">#</th><th class="py-1.5 px-2 text-left">方向</th>
-                        <th class="py-1.5 px-2 text-left">進場</th><th class="py-1.5 px-2 text-right">進場價</th>
-                        <th class="py-1.5 px-2 text-right">出場價</th><th class="py-1.5 px-2 text-right">損益</th>
-                        <th class="py-1.5 px-2 text-right">報酬率</th><th class="py-1.5 px-2 text-left">原因</th>
+                        <th scope="col" class="py-1.5 px-2 text-left">#</th><th scope="col" class="py-1.5 px-2 text-left">方向</th>
+                        <th scope="col" class="py-1.5 px-2 text-left">進場</th><th scope="col" class="py-1.5 px-2 text-right">進場價</th>
+                        <th scope="col" class="py-1.5 px-2 text-right">出場價</th><th scope="col" class="py-1.5 px-2 text-right">損益</th>
+                        <th scope="col" class="py-1.5 px-2 text-right">報酬率</th><th scope="col" class="py-1.5 px-2 text-left">原因</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -176,7 +176,7 @@
                 if(!this.form.templateId) return; this.running=true; this.result=null;
                 try {
                     const r=await fetch('/api/user/backtest/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(this.form)});
-                    if(!r.ok){const e=await r.json();this.showMsg(e.error||'提交失敗','error');this.running=false;return;}
+                    if(!r.ok){try{const e=await r.json();this.showMsg(e.error||'\u63D0\u4EA4\u5931\u6557','error');}catch(_){this.showMsg('\u63D0\u4EA4\u5931\u6557','error');}this.running=false;return;}
                     const{id}=await r.json(); this.showMsg('挑戰已開始...','success'); await this.pollResult(id);
                 } catch(e){this.showMsg('網路錯誤','error');this.running=false;}
             },

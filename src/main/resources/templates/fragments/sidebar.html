@@ -10,7 +10,8 @@
             <h2 class="text-[8px] text-primary font-heading">&#128065; 觀察清單</h2>
             <button @click="openAddModal()"
                     class="text-primary hover:text-primary-hover cursor-pointer text-[12px]"
-                    title="新增到觀察清單">+</button>
+                    title="新增到觀察清單"
+                    aria-label="新增幣對到觀察清單">+</button>
         </div>
 
         <!-- 符號列表 -->
@@ -84,7 +85,7 @@
     <div x-show="showAddModal" x-cloak
          class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60"
          @click.self="closeAddModal()">
-        <div class="pixel-card p-5 w-[380px]">
+        <div class="pixel-card p-5 w-[380px] max-w-[90vw]">
             <h3 class="font-heading text-[10px] text-primary mb-3">&#128270; 新增追蹤幣對</h3>
 
             <!-- 搜尋輸入框 -->

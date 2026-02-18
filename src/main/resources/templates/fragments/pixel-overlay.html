@@ -79,7 +79,7 @@
                         // 標記已讀
                         await fetch('/api/user/gamification/events/seen', { method: 'POST' });
                     } catch (e) {
-                        console.debug('[像素事件] 載入事件失敗:', e);
+                        /* silently ignore event loading failures */
                     }
                 }
             };

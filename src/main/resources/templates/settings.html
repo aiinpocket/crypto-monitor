@@ -14,17 +14,17 @@
     </div>
 
     <!-- 像素 Tab 導航 -->
-    <div class="flex gap-1 mb-4">
-        <button @click="activeTab = 'character'"
+    <div class="flex gap-1 mb-4 flex-wrap" role="tablist" aria-label="設定分頁">
+        <button @click="activeTab = 'character'" role="tab" :aria-selected="activeTab === 'character'"
                 :class="activeTab === 'character' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
                 class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#128100; 角色</button>
-        <button @click="activeTab = 'discord'"
+        <button @click="activeTab = 'discord'" role="tab" :aria-selected="activeTab === 'discord'"
                 :class="activeTab === 'discord' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
                 class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#128172; Discord</button>
-        <button @click="activeTab = 'gmail'"
+        <button @click="activeTab = 'gmail'" role="tab" :aria-selected="activeTab === 'gmail'"
                 :class="activeTab === 'gmail' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
                 class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#9993; Gmail</button>
-        <button @click="activeTab = 'telegram'"
+        <button @click="activeTab = 'telegram'" role="tab" :aria-selected="activeTab === 'telegram'"
                 :class="activeTab === 'telegram' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
                 class="pixel-btn text-[8px] py-1.5 px-3 cursor-pointer">&#9992; Telegram</button>
     </div>
@@ -307,7 +307,8 @@
                     const r = await fetch('/api/user/notifications');
                     if (!r.ok) return;
                     (await r.json()).forEach(ch => {
-                        const cfg = JSON.parse(ch.configJson || '{}');
+                        let cfg = {};
+                        try { cfg = JSON.parse(ch.configJson || '{}'); } catch(_) { cfg = {}; }
                         if (ch.channelType === 'DISCORD') this.discord = { id: ch.id, enabled: ch.enabled, botToken: cfg.botToken||'', channelId: cfg.channelId||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };
                         else if (ch.channelType === 'GMAIL') this.gmail = { id: ch.id, enabled: ch.enabled, recipientEmail: cfg.recipientEmail||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };
                         else if (ch.channelType === 'TELEGRAM') this.telegram = { id: ch.id, enabled: ch.enabled, botToken: cfg.botToken||'', chatId: cfg.chatId||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };

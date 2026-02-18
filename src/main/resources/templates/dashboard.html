@@ -41,7 +41,8 @@
                 <button @click="claimDaily()"
                         class="pixel-btn text-[8px] py-1.5 px-3"
                         :class="dailyClaimed ? 'pixel-btn-purple opacity-50 cursor-not-allowed' : 'pixel-btn-gold anim-sparkle'"
-                        :disabled="dailyClaimed">
+                        :disabled="dailyClaimed"
+                        :aria-label="dailyClaimed ? '每日獎勵已領取' : '領取每日獎勵'">
                     <span x-text="dailyClaimed ? '&#10003; 已領取' : '&#128230; 每日獎勵'"></span>
                 </button>
             </div>
@@ -103,7 +104,8 @@
         <div class="mb-4">
             <h2 class="text-[8px] text-primary font-heading mb-2">&#128220; 戰鬥日誌</h2>
             <div class="pixel-card p-3">
-                <div id="signal-log" class="max-h-40 overflow-y-auto scrollbar-thin text-[8px] text-text-muted leading-relaxed">
+                <div id="signal-log" role="log" aria-live="polite" aria-label="交易訊號日誌"
+                     class="max-h-40 overflow-y-auto scrollbar-thin text-[8px] text-text-muted leading-relaxed">
                     等待 WebSocket 連線...
                 </div>
             </div>
@@ -113,16 +115,16 @@
         <div>
             <h2 class="text-[8px] text-primary font-heading mb-2">&#128176; 交易紀錄</h2>
             <div class="pixel-card overflow-hidden overflow-x-auto scrollbar-thin">
-                <table class="w-full min-w-[580px]">
+                <table class="w-full min-w-[580px]" aria-label="交易紀錄">
                     <thead>
                         <tr class="border-b border-border-main">
-                            <th class="px-3 py-2 text-left text-[7px] text-text-muted">方向</th>
-                            <th class="px-3 py-2 text-left text-[7px] text-text-muted">進場價</th>
-                            <th class="px-3 py-2 text-left text-[7px] text-text-muted">出場價</th>
-                            <th class="px-3 py-2 text-right text-[7px] text-text-muted">損益</th>
-                            <th class="px-3 py-2 text-right text-[7px] text-text-muted">報酬率</th>
-                            <th class="px-3 py-2 text-left text-[7px] text-text-muted">原因</th>
-                            <th class="px-3 py-2 text-left text-[7px] text-text-muted">狀態</th>
+                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">方向</th>
+                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">進場價</th>
+                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">出場價</th>
+                            <th scope="col" class="px-3 py-2 text-right text-[7px] text-text-muted">損益</th>
+                            <th scope="col" class="px-3 py-2 text-right text-[7px] text-text-muted">報酬率</th>
+                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">原因</th>
+                            <th scope="col" class="px-3 py-2 text-left text-[7px] text-text-muted">狀態</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -164,41 +166,58 @@
         const signalLog = document.getElementById('signal-log');
         let ws;
 
+        let wsRetryCount = 0;
         function connectWs() {
             const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(protocol + '//' + location.host + '/ws/trades');
             ws.onopen = () => {
-                wsStatusEl.innerHTML = '&#9679;';
+                wsRetryCount = 0;
+                wsStatusEl.textContent = '\u25CF';
                 wsStatusEl.className = 'text-positive text-[8px]';
-                wsLabel.textContent = '已連線';
-                signalLog.textContent = '已連線，等待戰鬥訊號...\n';
+                wsLabel.textContent = '\u5DF2\u9023\u7DDA';
+                signalLog.textContent = '\u5DF2\u9023\u7DDA\uFF0C\u7B49\u5F85\u6230\u9B25\u8A0A\u865F...\n';
             };
             ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                switch (data.type) {
-                    case 'TRADE_SIGNAL': {
-                        const time = new Date(data.timestamp).toLocaleTimeString();
-                        const isEntry = data.action.includes('ENTRY');
-                        const line = document.createElement('div');
-                        line.innerHTML = `<span class="text-text-muted">[${time}]</span> <span class="${isEntry ? 'text-positive' : 'text-negative'}">${isEntry ? '&#9876; 進場' : '&#128737; 出場'} ${data.action}</span> @ <span class="text-primary">$${Number(data.price).toLocaleString()}</span>`;
-                        signalLog.appendChild(line);
-                        signalLog.scrollTop = signalLog.scrollHeight;
-                        break;
+                try {
+                    const data = JSON.parse(event.data);
+                    switch (data.type) {
+                        case 'TRADE_SIGNAL': {
+                            const time = new Date(data.timestamp).toLocaleTimeString();
+                            const isEntry = String(data.action).includes('ENTRY');
+                            const line = document.createElement('div');
+                            const timeSpan = document.createElement('span');
+                            timeSpan.className = 'text-text-muted';
+                            timeSpan.textContent = '[' + time + '] ';
+                            const actionSpan = document.createElement('span');
+                            actionSpan.className = isEntry ? 'text-positive' : 'text-negative';
+                            actionSpan.textContent = (isEntry ? '\u2694 \u9032\u5834 ' : '\u{1F6E1} \u51FA\u5834 ') + String(data.action);
+                            const priceSpan = document.createElement('span');
+                            priceSpan.className = 'text-primary';
+                            priceSpan.textContent = ' @ $' + Number(data.price).toLocaleString();
+                            line.appendChild(timeSpan);
+                            line.appendChild(actionSpan);
+                            line.appendChild(priceSpan);
+                            signalLog.appendChild(line);
+                            signalLog.scrollTop = signalLog.scrollHeight;
+                            break;
+                        }
+                        case 'PRICE_TICK': {
+                            const priceEl = document.getElementById('price-' + String(data.symbol).replace(/[^A-Z0-9]/g, ''));
+                            if (priceEl) priceEl.textContent = '$' + Number(data.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            break;
+                        }
+                        case 'SYNC_PROGRESS': { if (data.status === 'READY' || data.status === 'ERROR') location.reload(); break; }
+                        case 'SYMBOL_DELISTED': { if (data.symbol === activeSymbol) location.reload(); break; }
                     }
-                    case 'PRICE_TICK': {
-                        const priceEl = document.getElementById('price-' + data.symbol);
-                        if (priceEl) priceEl.textContent = '$' + Number(data.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                        break;
-                    }
-                    case 'SYNC_PROGRESS': { if (data.status === 'READY' || data.status === 'ERROR') location.reload(); break; }
-                    case 'SYMBOL_DELISTED': { if (data.symbol === activeSymbol) location.reload(); break; }
-                }
+                } catch (e) { /* ignore malformed WS messages */ }
             };
             ws.onclose = () => {
-                wsStatusEl.innerHTML = '&#9679;';
+                wsRetryCount++;
+                wsStatusEl.textContent = '\u25CF';
                 wsStatusEl.className = 'text-negative text-[8px]';
-                wsLabel.textContent = '已斷線';
-                setTimeout(connectWs, 5000);
+                const delay = Math.min(5000 * wsRetryCount, 30000);
+                wsLabel.textContent = '\u5DF2\u65B7\u7DDA\u2027' + Math.round(delay/1000) + 's\u5F8C\u91CD\u9023';
+                setTimeout(connectWs, delay);
             };
         }
         connectWs();
@@ -207,8 +226,8 @@
             try {
                 const resp = await fetch('/api/symbols/' + activeSymbol + '/reenable', { method: 'POST' });
                 if (resp.ok) location.reload();
-                else { const err = await resp.json(); toast(err.error || '重新啟用失敗', 'error'); }
-            } catch (e) { toast('網路連線異常', 'error'); }
+                else { try { const err = await resp.json(); toast(err.error || '\u91CD\u65B0\u555F\u7528\u5931\u6557', 'error'); } catch(_) { toast('\u91CD\u65B0\u555F\u7528\u5931\u6557', 'error'); } }
+            } catch (e) { toast('\u7DB2\u8DEF\u9023\u7DDA\u7570\u5E38', 'error'); }
         }
 
         function characterBar() {

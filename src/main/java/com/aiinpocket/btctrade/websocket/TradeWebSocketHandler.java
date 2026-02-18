@@ -47,13 +47,10 @@ public class TradeWebSocketHandler extends TextWebSocketHandler {
         sessions.remove(session);
         Long userId = getUserId(session);
         if (userId != null) {
-            Set<WebSocketSession> set = userSessions.get(userId);
-            if (set != null) {
+            userSessions.computeIfPresent(userId, (k, set) -> {
                 set.remove(session);
-                if (set.isEmpty()) {
-                    userSessions.remove(userId);
-                }
-            }
+                return set.isEmpty() ? null : set;
+            });
             log.info("WebSocket disconnected: {} (user: {})", session.getId(), userId);
         } else {
             log.info("WebSocket disconnected: {} (anonymous)", session.getId());
@@ -155,13 +152,10 @@ public class TradeWebSocketHandler extends TextWebSocketHandler {
             removed++;
             Long userId = getUserId(session);
             if (userId != null) {
-                Set<WebSocketSession> set = userSessions.get(userId);
-                if (set != null) {
+                userSessions.computeIfPresent(userId, (k, set) -> {
                     set.remove(session);
-                    if (set.isEmpty()) {
-                        userSessions.remove(userId);
-                    }
-                }
+                    return set.isEmpty() ? null : set;
+                });
             }
         }
         if (removed > 0) {

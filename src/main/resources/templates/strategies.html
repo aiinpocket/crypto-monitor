@@ -53,7 +53,8 @@
 
     <div x-show="templates.length === 0" class="text-center py-12 text-text-muted text-[8px]">
         <div class="text-[24px] mb-2 opacity-50">&#128214;</div>
-        尚無策略模板
+        <p>尚無策略模板</p>
+        <p class="mt-2 text-[7px]">系統會提供預設策略，你可以複製後自訂參數</p>
     </div>
 
     <!-- 績效對比 -->
@@ -70,9 +71,10 @@
             </div>
         </div>
 
-        <div class="flex gap-1 mb-2 flex-wrap">
+        <div class="flex gap-1 mb-2 flex-wrap" role="tablist" aria-label="績效指標切換">
             <template x-for="m in metricOptions" :key="m.key">
-                <button @click="selectedMetric = m.key"
+                <button @click="selectedMetric = m.key" role="tab"
+                        :aria-selected="selectedMetric === m.key"
                         class="text-[7px] px-2 py-1 cursor-pointer transition-colors"
                         :class="selectedMetric === m.key ? 'pixel-border text-primary bg-primary/10' : 'pixel-border-dark text-text-muted hover:text-text-main'"
                         x-text="m.label"></button>
@@ -84,7 +86,7 @@
                 <table class="w-full text-[7px]">
                     <thead>
                         <tr class="border-b border-border-main">
-                            <th class="sticky left-0 z-10 bg-bg-card px-3 py-2 text-left text-text-muted min-w-[120px]">策略</th>
+                            <th scope="col" class="sticky left-0 z-10 bg-bg-card px-3 py-2 text-left text-text-muted min-w-[120px]">策略</th>
                             <template x-for="col in periodColumns" :key="col.key">
                                 <th class="px-2 py-2 text-right text-text-muted min-w-[70px] whitespace-nowrap" x-text="col.label"></th>
                             </template>
@@ -126,7 +128,7 @@
 
     <!-- 編輯彈窗 -->
     <div x-show="showEditor" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" @click.self="showEditor = false">
-        <div class="pixel-card p-5 w-[560px] max-h-[85vh] overflow-y-auto scrollbar-thin">
+        <div class="pixel-card p-5 w-[560px] max-w-[92vw] max-h-[85vh] overflow-y-auto scrollbar-thin">
             <h3 class="font-heading text-[10px] text-primary mb-4" x-text="'&#9998; 編輯：' + editing.name"></h3>
             <div class="mb-3">
                 <label class="block text-[7px] text-text-muted mb-1">模板名稱</label>
