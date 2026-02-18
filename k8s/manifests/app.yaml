@@ -37,6 +37,11 @@ spec:
                 secretKeyRef:
                   name: crypto-monitor-secrets
                   key: DB_PASSWORD
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: crypto-monitor-secrets
+                  key: GOOGLE_CLIENT_ID
             - name: GOOGLE_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
