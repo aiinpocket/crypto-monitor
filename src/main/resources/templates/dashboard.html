@@ -94,7 +94,6 @@
                     <span class="text-[13px] font-heading"
                           th:classappend="${openPosition.direction.name() == 'LONG'} ? 'text-positive' : 'text-negative'"
                           th:text="${openPosition.direction.name()}">LONG</span>
-                    <div class="text-xs text-text-muted mt-0.5" th:text="'@ $' + ${#numbers.formatDecimal(openPosition.entryPrice, 1, 'COMMA', 2, 'POINT')}">-</div>
                 </div>
                 <div th:unless="${openPosition != null}" class="font-heading text-base text-text-muted">--</div>
             </div>
@@ -115,13 +114,10 @@
         <div>
             <h2 class="text-sm text-primary font-heading mb-2">&#128176; 交易紀錄</h2>
             <div class="pixel-card overflow-hidden overflow-x-auto scrollbar-thin">
-                <table class="w-full min-w-[580px]" aria-label="交易紀錄">
+                <table class="w-full min-w-[400px]" aria-label="交易紀錄">
                     <thead>
                         <tr class="border-b border-border-main">
                             <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">方向</th>
-                            <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">進場價</th>
-                            <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">出場價</th>
-                            <th scope="col" class="px-3 py-2 text-right text-xs text-text-muted">損益</th>
                             <th scope="col" class="px-3 py-2 text-right text-xs text-text-muted">報酬率</th>
                             <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">原因</th>
                             <th scope="col" class="px-3 py-2 text-left text-xs text-text-muted">狀態</th>
@@ -134,11 +130,6 @@
                                       th:classappend="${pos.direction.name() == 'LONG'} ? 'text-positive' : 'text-negative'"
                                       th:text="${pos.direction.name()}">LONG</span>
                             </td>
-                            <td class="px-3 py-2 text-[13px]" th:text="'$' + ${#numbers.formatDecimal(pos.entryPrice, 1, 'COMMA', 2, 'POINT')}">-</td>
-                            <td class="px-3 py-2 text-[13px]" th:text="${pos.exitPrice != null ? '$' + #numbers.formatDecimal(pos.exitPrice, 1, 'COMMA', 2, 'POINT') : '--'}">-</td>
-                            <td class="px-3 py-2 text-right text-[13px]"
-                                th:classappend="${pos.realizedPnl != null and pos.realizedPnl > 0} ? 'text-positive' : 'text-negative'"
-                                th:text="${pos.realizedPnl != null ? (pos.realizedPnl > 0 ? '+' : '') + pos.realizedPnl : '--'}">-</td>
                             <td class="px-3 py-2 text-right text-[13px]"
                                 th:classappend="${pos.returnPct != null and pos.returnPct > 0} ? 'text-positive' : 'text-negative'"
                                 th:text="${pos.returnPct != null ? (pos.returnPct > 0 ? '+' : '') + pos.returnPct.movePointRight(2) + '%' : '--'}">-</td>
@@ -200,7 +191,7 @@
                             actionSpan.textContent = (isEntry ? '\u2694 \u9032\u5834 ' : '\u{1F6E1} \u51FA\u5834 ') + String(data.action);
                             const priceSpan = document.createElement('span');
                             priceSpan.className = 'text-primary';
-                            priceSpan.textContent = ' @ $' + Number(data.price).toLocaleString();
+                            priceSpan.textContent = ' @ ' + Number(data.price).toLocaleString();
                             line.appendChild(timeSpan);
                             line.appendChild(actionSpan);
                             line.appendChild(priceSpan);
@@ -213,7 +204,7 @@
                         case 'PRICE_TICK': {
                             const priceEl = document.getElementById('price-' + String(data.symbol).replace(/[^A-Z0-9]/g, ''));
                             if (priceEl) {
-                                priceEl.textContent = '$' + Number(data.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                priceEl.textContent = Number(data.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                                 priceEl.classList.add('anim-flash');
                                 setTimeout(() => priceEl.classList.remove('anim-flash'), 600);
                             }

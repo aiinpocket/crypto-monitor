@@ -129,8 +129,7 @@
                     <thead>
                     <tr class="text-text-muted border-b border-border-main">
                         <th scope="col" class="py-1.5 px-2 text-left">#</th><th scope="col" class="py-1.5 px-2 text-left">方向</th>
-                        <th scope="col" class="py-1.5 px-2 text-left">進場</th><th scope="col" class="py-1.5 px-2 text-right">進場價</th>
-                        <th scope="col" class="py-1.5 px-2 text-right">出場價</th><th scope="col" class="py-1.5 px-2 text-right">損益</th>
+                        <th scope="col" class="py-1.5 px-2 text-left">進場</th>
                         <th scope="col" class="py-1.5 px-2 text-right">報酬率</th><th scope="col" class="py-1.5 px-2 text-left">原因</th>
                     </tr>
                     </thead>
@@ -140,9 +139,6 @@
                             <td class="py-1.5 px-2 text-text-muted" x-text="trade.tradeNumber"></td>
                             <td class="py-1.5 px-2" :class="trade.direction === 'LONG' ? 'text-positive' : 'text-negative'" x-text="trade.direction === 'LONG' ? '做多' : '做空'"></td>
                             <td class="py-1.5 px-2 text-text-muted" x-text="new Date(trade.entryTime).toLocaleDateString()"></td>
-                            <td class="py-1.5 px-2 text-right" x-text="'$' + parseFloat(trade.entryPrice).toLocaleString()"></td>
-                            <td class="py-1.5 px-2 text-right" x-text="'$' + parseFloat(trade.exitPrice).toLocaleString()"></td>
-                            <td class="py-1.5 px-2 text-right" :class="parseFloat(trade.pnl) >= 0 ? 'text-positive' : 'text-negative'" x-text="'$' + parseFloat(trade.pnl).toFixed(2)"></td>
                             <td class="py-1.5 px-2 text-right" :class="parseFloat(trade.returnPct) >= 0 ? 'text-positive' : 'text-negative'" x-text="(parseFloat(trade.returnPct) * 100).toFixed(2) + '%'"></td>
                             <td class="py-1.5 px-2 text-text-muted" x-text="trade.exitReason"></td>
                         </tr>
@@ -238,10 +234,11 @@
                 if(this.equityChart)this.equityChart.destroy();
                 const curve=this.result.equityCurve;const step=Math.max(1,Math.floor(curve.length/500));
                 const sampled=curve.filter((_,i)=>i%step===0);
+                const initEquity=sampled.length>0?parseFloat(sampled[0].equity):1;
                 this.equityChart=new Chart(canvas.getContext('2d'),{type:'line',data:{labels:sampled.map(p=>new Date(p.time).toLocaleDateString()),
-                    datasets:[{label:'權益',data:sampled.map(p=>parseFloat(p.equity)),borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.1)',borderWidth:2,fill:true,tension:0,pointRadius:0,stepped:'before'}]},
-                    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#16213e',titleColor:'#e8e8f0',bodyColor:'#7a7a9a',borderColor:'#2a2a4a',borderWidth:2,titleFont:{family:'"Exo 2"',size:12},bodyFont:{family:'"Exo 2"',size:11}}},
-                        scales:{x:{display:true,ticks:{color:'#7a7a9a',maxTicksLimit:6,font:{family:'"Exo 2"',size:10}},grid:{color:'rgba(42,42,74,0.3)'}},y:{display:true,ticks:{color:'#7a7a9a',font:{family:'"Exo 2"',size:10},callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(42,42,74,0.3)'}}}}});
+                    datasets:[{label:'報酬率',data:sampled.map(p=>((parseFloat(p.equity)-initEquity)/initEquity*100)),borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.1)',borderWidth:2,fill:true,tension:0,pointRadius:0,stepped:'before'}]},
+                    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#16213e',titleColor:'#e8e8f0',bodyColor:'#7a7a9a',borderColor:'#2a2a4a',borderWidth:2,titleFont:{family:'"Exo 2"',size:12},bodyFont:{family:'"Exo 2"',size:11},callbacks:{label:ctx=>ctx.parsed.y.toFixed(2)+'%'}}},
+                        scales:{x:{display:true,ticks:{color:'#7a7a9a',maxTicksLimit:6,font:{family:'"Exo 2"',size:10}},grid:{color:'rgba(42,42,74,0.3)'}},y:{display:true,ticks:{color:'#7a7a9a',font:{family:'"Exo 2"',size:10},callback:v=>v.toFixed(1)+'%'},grid:{color:'rgba(42,42,74,0.3)'}}}}});
             },
             showMsg(m,t) { this.message=m; this.messageType=t; setTimeout(()=>{this.message='';},4000); },
             // ── 幣對搜尋方法 ──
