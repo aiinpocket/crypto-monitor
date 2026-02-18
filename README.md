@@ -117,6 +117,9 @@ Spring Boot 4.0.2 + Java 21 多用戶加密貨幣交易策略平台，支援歷�
 - **WebSocket 認證**：Handshake 階段驗證 Session，未登入連線直接拒絕
 - **WebSocket CORS**：限制允許來源（localhost + 生產域名），非白名單來源無法連線
 - **資源授權檢查**：通知管道、策略模板等操作均驗證用戶所有權
+- **Actuator 端點保護**：僅暴露 `/actuator/health`，其餘端點需認證
+- **全域幣對保護**：移除危險的 DELETE 端點，防止用戶影響全域資料
+- **回測並行鎖定**：`@Transactional` 內檢查 PENDING+RUNNING 雙重狀態，防止 race condition
 - **輸入驗證**：回測參數範圍限制、通知管道 configJson 格式檢查、幣對新增時 Binance ExchangeInfo 即時驗證
 - **全域異常處理**：`@RestControllerAdvice` 統一攔截異常，回傳一致的 JSON 錯誤格式
 - **錯誤訊息保護**：API 僅回傳使用者友善錯誤，不暴露內部實作細節（過濾 SQL/Exception 關鍵字）
@@ -268,7 +271,7 @@ Google Console 設定 Redirect URI：`http://localhost:8080/login/oauth2/code/go
 | Method | Path | 說明 |
 |--------|------|------|
 | POST | `/api/backtest/run` | 系統回測 |
-| GET/POST/DELETE | `/api/symbols` | 全域幣對管理 |
+| GET/POST | `/api/symbols` | 全域幣對查詢/新增 |
 | GET | `/api/symbols/validate` | 幣對即時驗證（Binance ExchangeInfo） |
 | WS | `/ws/trades` | WebSocket 即時推送 |
 | GET | `/actuator/health` | 健康檢查 |
