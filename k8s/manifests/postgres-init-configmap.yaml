@@ -5,18 +5,8 @@ metadata:
   namespace: app
 data:
   init.sql: |
-    -- Create database and user if not exists
-    SELECT 'CREATE DATABASE btctrade'
-    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'btctrade')\gexec
-
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'btctrade') THEN
-        CREATE ROLE btctrade WITH LOGIN PASSWORD '${DB_PASSWORD}';
-      END IF;
-    END
-    $$;
-
+    -- Database and user are created automatically by POSTGRES_DB / POSTGRES_USER env vars.
+    -- This script only handles additional grants.
     GRANT ALL PRIVILEGES ON DATABASE btctrade TO btctrade;
 
     \c btctrade

@@ -11,3 +11,5 @@ data:
   DB_NAME: "btctrade"
   DB_USERNAME: "btctrade"
   SERVER_PORT: "8080"
+  GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+  APP_WEBSOCKET_ALLOWED_ORIGINS: "http://localhost:8080,https://crypto-monitor.kubeinpocket.com"

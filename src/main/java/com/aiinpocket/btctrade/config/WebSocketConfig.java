@@ -16,7 +16,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     private final TradeWebSocketHandler handler;
 
-    @Value("${app.websocket.allowed-origins:http://localhost:8080,https://crypto-monitor.kubeinpocket.com}")
+    @Value("${app.websocket.allowed-origins:http://localhost:8080}")
     private String allowedOrigins;
 
     @Override
