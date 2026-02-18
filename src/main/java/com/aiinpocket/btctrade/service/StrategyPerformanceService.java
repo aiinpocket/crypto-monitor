@@ -8,6 +8,7 @@ import com.aiinpocket.btctrade.model.entity.StrategyTemplate;
 import com.aiinpocket.btctrade.model.enums.PerformancePeriod;
 import com.aiinpocket.btctrade.repository.StrategyPerformanceRepository;
 import com.aiinpocket.btctrade.repository.StrategyTemplateRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -33,6 +34,7 @@ public class StrategyPerformanceService {
     private final BacktestService backtestService;
     private final StrategyTemplateRepository templateRepo;
     private final StrategyPerformanceRepository perfRepo;
+    private final EntityManager entityManager;
 
     /**
      * 計算單個模板在所有時段的績效，upsert 到 DB。
@@ -63,7 +65,7 @@ public class StrategyPerformanceService {
                 StrategyPerformance perf = perfRepo
                         .findByStrategyTemplateIdAndPeriodKeyAndSymbol(templateId, period.name(), BENCHMARK_SYMBOL)
                         .orElseGet(() -> StrategyPerformance.builder()
-                                .strategyTemplate(template)
+                                .strategyTemplate(templateRepo.getReferenceById(templateId))
                                 .symbol(BENCHMARK_SYMBOL)
                                 .periodKey(period.name())
                                 .periodLabel(period.getLabel())
@@ -82,14 +84,16 @@ public class StrategyPerformanceService {
                 perf.setComputedAt(Instant.now());
 
                 perfRepo.save(perf);
+                entityManager.flush();
+                entityManager.clear();
                 successCount++;
             } catch (Exception e) {
                 log.warn("[績效計算] 模板 {} 時段 {} 計算失敗: {}", templateId, period.name(), e.getMessage());
             }
         }
 
-        log.info("[績效計算] 模板 {} ({}) 完成，成功 {}/{} 個時段",
-                templateId, template.getName(), successCount, PerformancePeriod.values().length);
+        log.info("[績效計算] 模板 {} 完成，成功 {}/{} 個時段",
+                templateId, successCount, PerformancePeriod.values().length);
     }
 
     /**

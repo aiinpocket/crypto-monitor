@@ -26,4 +26,9 @@ USER app
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-XX:+UseG1GC", "-jar", "app.jar"]
+ENTRYPOINT ["java", \
+    "-XX:MaxRAMPercentage=50.0", \
+    "-XX:+UseG1GC", \
+    "-XX:G1PeriodicGCInterval=15000", \
+    "-XX:+ExitOnOutOfMemoryError", \
+    "-jar", "app.jar"]
