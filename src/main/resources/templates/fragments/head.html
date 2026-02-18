@@ -43,7 +43,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Exo 2', sans-serif; font-size: 14px; image-rendering: pixelated; }
+        /* 防止頁面切換閃爍（FOUC）：初始隱藏，Tailwind 處理完後顯示 */
+        body { font-family: 'Exo 2', sans-serif; font-size: 14px; image-rendering: pixelated; opacity: 0; transition: opacity 0.12s ease-in; }
+        body.page-ready { opacity: 1; }
+        [x-cloak] { display: none !important; }
         * { image-rendering: pixelated; }
         .font-heading { font-family: 'Press Start 2P', monospace; }
 
@@ -234,6 +237,16 @@
         }
     </style>
     <script>
+        /* 防止 FOUC：等 Tailwind CDN 處理完再顯示頁面 */
+        (function() {
+            function reveal() { document.body.classList.add('page-ready'); }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() { requestAnimationFrame(reveal); });
+            } else { requestAnimationFrame(reveal); }
+            /* 安全閥：最多等 500ms，避免 CDN 問題導致永久白屏 */
+            setTimeout(function() { if (document.body) document.body.classList.add('page-ready'); }, 500);
+        })();
+
         /* 全域像素確認彈窗（取代 browser confirm） */
         window.pixelConfirm = function(msg) {
             return new Promise(resolve => {
