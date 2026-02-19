@@ -39,7 +39,6 @@ public class StrategyPerformanceService {
     /**
      * 計算單個模板在所有時段的績效，upsert 到 DB。
      */
-    @Transactional
     public void computePerformance(Long templateId) {
         StrategyTemplate template = templateRepo.findById(templateId).orElse(null);
         if (template == null) {
@@ -84,7 +83,6 @@ public class StrategyPerformanceService {
                 perf.setComputedAt(Instant.now());
 
                 perfRepo.save(perf);
-                entityManager.flush();
                 entityManager.clear();
                 successCount++;
             } catch (Exception e) {
