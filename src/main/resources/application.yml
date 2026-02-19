@@ -1,5 +1,5 @@
 app:
-  version: v1.0.8
+  version: v1.0.9
 
 spring:
   application:
@@ -81,7 +81,7 @@ binance:
     klines-path: /api/v3/klines
     default-symbol: BTCUSDT
     rate-limit-ms: 200
-    ws-base-url: wss://stream.binance.com:9443
+    ws-base-url: wss://stream.binance.com:443
     default-interval: 5m
     exchange-info-path: /api/v3/exchangeInfo
     delist-error-threshold: 3
