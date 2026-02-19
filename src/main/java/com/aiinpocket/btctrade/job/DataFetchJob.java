@@ -5,6 +5,7 @@ import com.aiinpocket.btctrade.model.entity.TrackedSymbol;
 import com.aiinpocket.btctrade.service.BinanceApiService;
 import com.aiinpocket.btctrade.service.BinanceExchangeInfoService;
 import com.aiinpocket.btctrade.service.BinanceStreamManager;
+import com.aiinpocket.btctrade.service.BinanceWebSocketClient;
 import com.aiinpocket.btctrade.service.TrackedSymbolService;
 import com.aiinpocket.btctrade.websocket.TradeWebSocketHandler;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class DataFetchJob extends QuartzJobBean {
     private final TrackedSymbolService trackedSymbolService;
     private final BinanceExchangeInfoService exchangeInfoService;
     private final BinanceStreamManager binanceStreamManager;
+    private final BinanceWebSocketClient binanceWebSocketClient;
     private final TradeWebSocketHandler wsHandler;
 
     @Override
@@ -43,7 +45,13 @@ public class DataFetchJob extends QuartzJobBean {
         log.debug("DataFetchJob: 開始處理 {} 個幣對", symbols.size());
 
         for (TrackedSymbol ts : symbols) {
-            fetchForSymbol(ts.getSymbol());
+            String symbol = ts.getSymbol();
+            // WebSocket 已連線的幣對由即時串流處理，DataFetchJob 只補充缺失
+            if (binanceWebSocketClient.isConnected(symbol)) {
+                log.debug("DataFetch 跳過 {}: WebSocket 已連線", symbol);
+                continue;
+            }
+            fetchForSymbol(symbol);
         }
     }
 
