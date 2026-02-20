@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head th:replace="~{fragments/head :: head('BtcTrade - 冒險小隊')}"></head>
+<body class="bg-bg-dark text-text-main min-h-screen">
+
+<div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+<div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
+
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-7xl mx-auto" x-data="partyApp()">
+
+    <!-- 頁面標題 -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="font-heading text-lg text-primary glow-gold">&#9876; 冒險小隊</h1>
+            <p class="text-text-muted text-[13px] mt-1">招募同伴組建你的冒險隊伍</p>
+        </div>
+        <div class="text-right">
+            <div class="text-xs text-text-muted">隊伍人數</div>
+            <div class="text-sm font-heading">
+                <span class="text-primary" x-text="activeMembers.length"></span>
+                <span class="text-text-muted">/</span>
+                <span class="text-cta" x-text="maxSlots"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 載入指示 -->
+    <div x-show="loading" class="text-center py-8">
+        <span class="text-sm text-primary anim-flash">&#9876; 載入中...</span>
+    </div>
+
+    <!-- ===== 隊伍成員 ===== -->
+    <div x-show="!loading" class="mb-8">
+        <h2 class="font-heading text-sm text-text-heading mb-3">&#128101; 目前隊伍</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- 已有成員 -->
+            <template x-for="m in activeMembers" :key="m.id">
+                <div class="pixel-card p-4 text-center relative">
+                    <!-- 種族像素圖 -->
+                    <div class="relative w-[48px] h-[48px] mx-auto mb-2">
+                        <div class="absolute top-0 left-0 anim-idle" :class="m.pixelCssClass"></div>
+                    </div>
+                    <div class="font-heading text-sm text-text-heading" x-text="m.name"></div>
+                    <div class="text-xs text-primary mt-0.5" x-text="m.speciesName"></div>
+                    <div class="flex justify-center gap-1 mt-1">
+                        <span class="text-[10px] px-1.5 py-0.5 bg-cta/20 text-cta" x-text="m.characterClass"></span>
+                        <span class="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary" x-text="m.gender === 'MALE' ? '♂' : '♀'"></span>
+                    </div>
+                    <div class="text-[10px] text-text-muted mt-1" x-text="'Slot ' + m.slot"></div>
+                    <!-- 解散按鈕 -->
+                    <button @click="dismissMember(m.id, m.name)"
+                            class="absolute top-2 right-2 text-xs text-negative/60 hover:text-negative cursor-pointer bg-transparent border-none p-0"
+                            title="解散">&#10005;</button>
+                </div>
+            </template>
+
+            <!-- 空欄位 -->
+            <template x-for="i in emptySlots" :key="'empty-' + i">
+                <button @click="openRecruit()"
+                        class="pixel-card p-4 text-center border-2 border-dashed border-border-main hover:border-primary cursor-pointer transition-colors bg-transparent">
+                    <div class="text-3xl text-text-muted/30 mb-2">&#10133;</div>
+                    <div class="text-xs text-text-muted">招募同伴</div>
+                    <div class="text-[10px] text-text-muted/60 mt-0.5" x-text="'解鎖: Lv.' + slotUnlockLevel(activeMembers.length + i)">Lv.?</div>
+                </button>
+            </template>
+
+            <!-- 鎖定欄位 -->
+            <template x-for="i in lockedSlots" :key="'locked-' + i">
+                <div class="pixel-card p-4 text-center opacity-40">
+                    <div class="text-3xl text-text-muted/20 mb-2">&#128274;</div>
+                    <div class="text-xs text-text-muted">尚未解鎖</div>
+                    <div class="text-[10px] text-text-muted/60 mt-0.5" x-text="'需要 Lv.' + slotUnlockLevel(maxSlots + i)"></div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- ===== 種族圖鑑 ===== -->
+    <div x-show="!loading">
+        <h2 class="font-heading text-sm text-text-heading mb-3">&#128214; 種族圖鑑</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+            <template x-for="s in species" :key="s.id">
+                <div class="pixel-card p-3 text-center"
+                     :class="s.unlocked ? '' : 'opacity-40'">
+                    <div class="relative w-[48px] h-[48px] mx-auto mb-2">
+                        <template x-if="s.unlocked">
+                            <div class="absolute top-0 left-0 anim-idle" :class="s.pixelCssClass"></div>
+                        </template>
+                        <template x-if="!s.unlocked">
+                            <div class="text-2xl text-text-muted/30 pt-2">&#10068;</div>
+                        </template>
+                    </div>
+                    <div class="text-[11px] font-heading" :class="s.unlocked ? 'text-text-heading' : 'text-text-muted'" x-text="s.name"></div>
+                    <div class="text-[10px] mt-0.5"
+                         :class="s.unlocked ? 'text-positive' : 'text-text-muted'"
+                         x-text="s.unlocked ? '✓ 已解鎖' : 'Lv.' + s.unlockLevel"></div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- ===== 招募對話框 ===== -->
+    <div x-show="showRecruit" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+         @click.self="showRecruit = false">
+        <div class="pixel-card p-5 w-full max-w-md">
+            <h3 class="font-heading text-sm text-primary mb-4">&#10133; 招募新同伴</h3>
+
+            <!-- 名稱 -->
+            <div class="mb-3">
+                <label class="text-xs text-text-muted block mb-1">同伴名稱</label>
+                <input x-model="recruitForm.name" type="text" maxlength="30" placeholder="輸入名稱..."
+                       class="w-full bg-bg-dark text-text-main text-sm p-2 border border-border-main focus:border-primary outline-none">
+            </div>
+
+            <!-- 種族選擇 -->
+            <div class="mb-3">
+                <label class="text-xs text-text-muted block mb-1">種族</label>
+                <div class="grid grid-cols-4 gap-1 max-h-[180px] overflow-y-auto">
+                    <template x-for="s in species.filter(s => s.unlocked)" :key="'recruit-' + s.id">
+                        <button @click="recruitForm.speciesId = s.id; recruitForm.speciesName = s.name; recruitForm.pixelCssClass = s.pixelCssClass"
+                                class="pixel-card p-2 text-center cursor-pointer transition-colors bg-transparent border-none"
+                                :class="recruitForm.speciesId === s.id ? 'ring-2 ring-primary' : ''">
+                            <div class="relative w-[48px] h-[48px] mx-auto">
+                                <div class="absolute top-0 left-0 anim-idle" :class="s.pixelCssClass"></div>
+                            </div>
+                            <div class="text-[10px] text-text-heading mt-1" x-text="s.name"></div>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- 性別 -->
+            <div class="mb-3">
+                <label class="text-xs text-text-muted block mb-1">性別</label>
+                <div class="flex gap-2">
+                    <button @click="recruitForm.gender = 'MALE'"
+                            class="pixel-btn text-xs py-1.5 px-4 cursor-pointer"
+                            :class="recruitForm.gender === 'MALE' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#9794; 男</button>
+                    <button @click="recruitForm.gender = 'FEMALE'"
+                            class="pixel-btn text-xs py-1.5 px-4 cursor-pointer"
+                            :class="recruitForm.gender === 'FEMALE' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#9792; 女</button>
+                </div>
+            </div>
+
+            <!-- 職業 -->
+            <div class="mb-4">
+                <label class="text-xs text-text-muted block mb-1">職業</label>
+                <div class="grid grid-cols-4 gap-1">
+                    <button @click="recruitForm.characterClass = 'WARRIOR'"
+                            class="pixel-btn text-[10px] py-1.5 px-2 cursor-pointer"
+                            :class="recruitForm.characterClass === 'WARRIOR' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#128737; 戰士</button>
+                    <button @click="recruitForm.characterClass = 'MAGE'"
+                            class="pixel-btn text-[10px] py-1.5 px-2 cursor-pointer"
+                            :class="recruitForm.characterClass === 'MAGE' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#128302; 法師</button>
+                    <button @click="recruitForm.characterClass = 'RANGER'"
+                            class="pixel-btn text-[10px] py-1.5 px-2 cursor-pointer"
+                            :class="recruitForm.characterClass === 'RANGER' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#127993; 遊俠</button>
+                    <button @click="recruitForm.characterClass = 'ASSASSIN'"
+                            class="pixel-btn text-[10px] py-1.5 px-2 cursor-pointer"
+                            :class="recruitForm.characterClass === 'ASSASSIN' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#128481; 刺客</button>
+                </div>
+            </div>
+
+            <!-- 預覽 + 送出 -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2" x-show="recruitForm.speciesId">
+                    <div class="relative w-[48px] h-[48px]">
+                        <div class="absolute top-0 left-0 anim-idle" :class="recruitForm.pixelCssClass"></div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-text-heading" x-text="recruitForm.name || '???'"></div>
+                        <div class="text-[10px] text-text-muted" x-text="recruitForm.speciesName + ' ' + (recruitForm.gender === 'MALE' ? '♂' : '♀')"></div>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button @click="showRecruit = false" class="pixel-btn pixel-btn-purple text-xs py-1.5 px-4 cursor-pointer">取消</button>
+                    <button @click="doRecruit()" :disabled="recruiting"
+                            class="pixel-btn pixel-btn-gold text-xs py-1.5 px-4 cursor-pointer"
+                            :class="recruiting && 'opacity-50'">
+                        <span x-show="!recruiting">招募</span>
+                        <span x-show="recruiting" class="anim-flash">招募中...</span>
+                    </button>
+                </div>
+            </div>
+            <div x-show="recruitError" class="text-xs text-negative mt-2" x-text="recruitError"></div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+function partyApp() {
+    return {
+        loading: true,
+        members: [],
+        species: [],
+        maxSlots: 1,
+        userLevel: 1,
+        showRecruit: false,
+        recruiting: false,
+        recruitError: '',
+        recruitForm: { name: '', speciesId: null, speciesName: '', pixelCssClass: '', gender: 'MALE', characterClass: 'WARRIOR' },
+
+        get activeMembers() {
+            return this.members;
+        },
+        get emptySlots() {
+            const empty = this.maxSlots - this.members.length;
+            return empty > 0 ? Array.from({length: empty}, (_, i) => i + 1) : [];
+        },
+        get lockedSlots() {
+            const locked = 4 - this.maxSlots;
+            return locked > 0 ? Array.from({length: locked}, (_, i) => i + 1) : [];
+        },
+
+        slotUnlockLevel(slotNumber) {
+            const levels = {2: 5, 3: 15, 4: 30};
+            return levels[slotNumber] || '?';
+        },
+
+        async init() {
+            await Promise.all([this.loadParty(), this.loadSpecies()]);
+            this.loading = false;
+        },
+
+        async loadParty() {
+            try {
+                const resp = await fetch('/api/user/party');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.members = data.members || [];
+                    this.maxSlots = data.maxSlots || 1;
+                    this.userLevel = data.userLevel || 1;
+                }
+            } catch (e) { console.error('Failed to load party', e); }
+        },
+
+        async loadSpecies() {
+            try {
+                const resp = await fetch('/api/user/party/species');
+                if (resp.ok) this.species = await resp.json();
+            } catch (e) { console.error('Failed to load species', e); }
+        },
+
+        openRecruit() {
+            this.recruitForm = { name: '', speciesId: null, speciesName: '', pixelCssClass: '', gender: 'MALE', characterClass: 'WARRIOR' };
+            this.recruitError = '';
+            this.showRecruit = true;
+        },
+
+        async doRecruit() {
+            if (!this.recruitForm.name.trim()) { this.recruitError = '請輸入同伴名稱'; return; }
+            if (!this.recruitForm.speciesId) { this.recruitError = '請選擇種族'; return; }
+            this.recruiting = true;
+            this.recruitError = '';
+            try {
+                const resp = await fetch('/api/user/party/recruit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.recruitForm)
+                });
+                if (resp.ok) {
+                    this.showRecruit = false;
+                    await this.loadParty();
+                } else {
+                    const err = await resp.json();
+                    this.recruitError = err.error || '招募失敗';
+                }
+            } catch (e) {
+                this.recruitError = '網路錯誤，請重試';
+            } finally {
+                this.recruiting = false;
+            }
+        },
+
+        async dismissMember(id, name) {
+            if (!confirm('確定要解散「' + name + '」嗎？')) return;
+            try {
+                const resp = await fetch('/api/user/party/' + id, { method: 'DELETE' });
+                if (resp.ok) await this.loadParty();
+            } catch (e) { console.error('Failed to dismiss', e); }
+        }
+    };
+}
+</script>
+
+</body>
+</html>

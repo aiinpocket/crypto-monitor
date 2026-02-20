@@ -811,6 +811,216 @@
             50% { transform: translateY(-2px); }
         }
         .anim-idle { animation: pixelIdle 1.5s steps(2) infinite; }
+
+        /* ===== 16 種族像素圖（8x8 grid, 6px/pixel = 48×48px） ===== */
+        /* Human - 均衡棕褐色人形，藍色眼睛 */
+        .pixel-race-human {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                12px 0 0 #c8a47a, 18px 0 0 #deb887, 24px 0 0 #c8a47a,
+                12px 6px 0 #deb887, 18px 6px 0 #f5deb3, 24px 6px 0 #deb887,
+                6px 12px 0 #4a90d9, 12px 12px 0 #deb887, 18px 12px 0 #f5deb3, 24px 12px 0 #deb887, 30px 12px 0 #4a90d9,
+                12px 18px 0 #8b6914, 18px 18px 0 #deb887, 24px 18px 0 #8b6914,
+                6px 24px 0 #a0522d, 12px 24px 0 #cd853f, 18px 24px 0 #cd853f, 24px 24px 0 #cd853f, 30px 24px 0 #a0522d,
+                6px 30px 0 #a0522d, 12px 30px 0 #cd853f, 18px 30px 0 #a0522d, 24px 30px 0 #cd853f, 30px 30px 0 #a0522d,
+                12px 36px 0 #8b6914, 24px 36px 0 #8b6914,
+                12px 42px 0 #6b4f10, 24px 42px 0 #6b4f10;
+        }
+        /* Elf - 纖細翠綠，尖耳隱約可見 */
+        .pixel-race-elf {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                18px 0 0 #c8f5c8,
+                6px 6px 0 #10b981, 12px 6px 0 #d1fae5, 18px 6px 0 #ecfdf5, 24px 6px 0 #d1fae5, 30px 6px 0 #10b981,
+                12px 12px 0 #34d399, 18px 12px 0 #ecfdf5, 24px 12px 0 #34d399,
+                18px 18px 0 #6ee7b7,
+                12px 24px 0 #059669, 18px 24px 0 #34d399, 24px 24px 0 #059669,
+                6px 30px 0 #065f46, 12px 30px 0 #059669, 18px 30px 0 #10b981, 24px 30px 0 #059669, 30px 30px 0 #065f46,
+                12px 36px 0 #047857, 24px 36px 0 #047857,
+                18px 42px 0 #065f46;
+        }
+        /* Dwarf - 矮胖，橙棕色，突出的鬍鬚 */
+        .pixel-race-dwarf {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                12px 0 0 #b8731a, 18px 0 0 #d4882a, 24px 0 0 #b8731a,
+                6px 6px 0 #b8731a, 12px 6px 0 #e8a040, 18px 6px 0 #f5c060, 24px 6px 0 #e8a040, 30px 6px 0 #b8731a,
+                6px 12px 0 #d4882a, 12px 12px 0 #f5c060, 18px 12px 0 #f5c060, 24px 12px 0 #f5c060, 30px 12px 0 #d4882a,
+                0 18px 0 #c8852a, 6px 18px 0 #e8a040, 12px 18px 0 #fff8e0, 18px 18px 0 #e8a040, 24px 18px 0 #fff8e0, 30px 18px 0 #e8a040, 36px 18px 0 #c8852a,
+                6px 24px 0 #9e6018, 12px 24px 0 #c8852a, 18px 24px 0 #9e6018, 24px 24px 0 #c8852a, 30px 24px 0 #9e6018,
+                6px 30px 0 #7a4810, 12px 30px 0 #9e6018, 18px 30px 0 #c8852a, 24px 30px 0 #9e6018, 30px 30px 0 #7a4810,
+                6px 36px 0 #6b3a0a, 12px 36px 0 #7a4810, 24px 36px 0 #7a4810, 30px 36px 0 #6b3a0a,
+                6px 42px 0 #4a2806, 30px 42px 0 #4a2806;
+        }
+        /* Orc - 肌肉發達，暗綠色皮膚，獠牙 */
+        .pixel-race-orc {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                6px 0 0 #3d6b2a, 30px 0 0 #3d6b2a,
+                12px 6px 0 #4a8030, 18px 6px 0 #56963a, 24px 6px 0 #4a8030,
+                6px 12px 0 #3d6b2a, 12px 12px 0 #56963a, 18px 12px 0 #6db048, 24px 12px 0 #56963a, 30px 12px 0 #3d6b2a,
+                6px 18px 0 #4a8030, 12px 18px 0 #6db048, 18px 18px 0 #f5f5f5, 24px 18px 0 #6db048, 30px 18px 0 #4a8030,
+                0 24px 0 #2f5220, 6px 24px 0 #3d6b2a, 12px 24px 0 #4a8030, 18px 24px 0 #56963a, 24px 24px 0 #4a8030, 30px 24px 0 #3d6b2a, 36px 24px 0 #2f5220,
+                6px 30px 0 #3d6b2a, 12px 30px 0 #4a8030, 18px 30px 0 #3d6b2a, 24px 30px 0 #4a8030, 30px 30px 0 #3d6b2a,
+                12px 36px 0 #2f5220, 24px 36px 0 #2f5220,
+                12px 42px 0 #1e3a15, 18px 42px 0 #1e3a15, 24px 42px 0 #1e3a15;
+        }
+        /* Fairy - 嬌小可愛，粉紅洋紅色，翅膀可見 */
+        .pixel-race-fairy {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                0 0 0 #f9a8d4, 36px 0 0 #f9a8d4,
+                0 6px 0 #f472b6, 6px 6px 0 #fce7f3, 18px 6px 0 #fbcfe8, 24px 6px 0 #fce7f3, 30px 6px 0 #f9a8d4, 36px 6px 0 #f472b6,
+                6px 12px 0 #ec4899, 12px 12px 0 #fce7f3, 18px 12px 0 #fdf2f8, 24px 12px 0 #fce7f3, 30px 12px 0 #ec4899,
+                18px 18px 0 #f9a8d4,
+                12px 24px 0 #db2777, 18px 24px 0 #ec4899, 24px 24px 0 #db2777,
+                12px 30px 0 #be185d, 18px 30px 0 #db2777, 24px 30px 0 #be185d,
+                18px 36px 0 #9d174d,
+                12px 42px 0 #831843, 24px 42px 0 #831843;
+        }
+        /* Dragonborn - 深紅緋紅，龍角，尾巴暗示 */
+        .pixel-race-dragonborn {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                6px 0 0 #991b1b, 30px 0 0 #991b1b,
+                12px 6px 0 #dc2626, 18px 6px 0 #ef4444, 24px 6px 0 #dc2626,
+                6px 12px 0 #b91c1c, 12px 12px 0 #ef4444, 18px 12px 0 #fca5a5, 24px 12px 0 #ef4444, 30px 12px 0 #b91c1c,
+                12px 18px 0 #b91c1c, 18px 18px 0 #dc2626, 24px 18px 0 #b91c1c,
+                0 24px 0 #7f1d1d, 6px 24px 0 #991b1b, 12px 24px 0 #b91c1c, 18px 24px 0 #dc2626, 24px 24px 0 #b91c1c, 30px 24px 0 #991b1b, 36px 24px 0 #7f1d1d,
+                6px 30px 0 #7f1d1d, 12px 30px 0 #991b1b, 18px 30px 0 #7f1d1d, 24px 30px 0 #991b1b,
+                12px 36px 0 #6b1010, 24px 36px 0 #6b1010, 36px 36px 0 #7f1d1d,
+                12px 42px 0 #450a0a, 24px 42px 0 #450a0a;
+        }
+        /* Halfspirit - 幽靈般的淡藍白，半透明感 */
+        .pixel-race-halfspirit {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                18px 0 0 #e0f2fe,
+                12px 6px 0 #bae6fd, 18px 6px 0 #f0f9ff, 24px 6px 0 #bae6fd,
+                6px 12px 0 #7dd3fc, 12px 12px 0 #bae6fd, 18px 12px 0 #f0f9ff, 24px 12px 0 #bae6fd, 30px 12px 0 #7dd3fc,
+                18px 18px 0 #e0f2fe,
+                6px 24px 0 #38bdf8, 12px 24px 0 #7dd3fc, 18px 24px 0 #bae6fd, 24px 24px 0 #7dd3fc, 30px 24px 0 #38bdf8,
+                12px 30px 0 #38bdf8, 18px 30px 0 #7dd3fc, 24px 30px 0 #38bdf8,
+                6px 36px 0 #0284c7, 18px 36px 0 #38bdf8, 30px 36px 0 #0284c7,
+                12px 42px 0 #0369a1, 24px 42px 0 #0369a1;
+        }
+        /* Merfolk - 水藍青色，魚鱗紋 */
+        .pixel-race-merfolk {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                18px 0 0 #67e8f9,
+                12px 6px 0 #22d3ee, 18px 6px 0 #a5f3fc, 24px 6px 0 #22d3ee,
+                6px 12px 0 #06b6d4, 12px 12px 0 #67e8f9, 18px 12px 0 #cffafe, 24px 12px 0 #67e8f9, 30px 12px 0 #06b6d4,
+                12px 18px 0 #0891b2, 18px 18px 0 #22d3ee, 24px 18px 0 #0891b2,
+                6px 24px 0 #0e7490, 12px 24px 0 #0891b2, 18px 24px 0 #06b6d4, 24px 24px 0 #0891b2, 30px 24px 0 #0e7490,
+                12px 30px 0 #164e63, 18px 30px 0 #0e7490, 24px 30px 0 #164e63,
+                6px 36px 0 #164e63, 12px 36px 0 #0e7490, 24px 36px 0 #0e7490, 30px 36px 0 #164e63,
+                6px 42px 0 #0c4a6e, 30px 42px 0 #0c4a6e;
+        }
+        /* Angel - 純白金色，翅膀/光暈 */
+        .pixel-race-angel {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                12px 0 0 #fef9c3, 18px 0 0 #fef3c7, 24px 0 0 #fef9c3,
+                0 6px 0 #fef9c3, 6px 6px 0 #fffbeb, 12px 6px 0 #ffffff, 18px 6px 0 #ffffff, 24px 6px 0 #ffffff, 30px 6px 0 #fffbeb, 36px 6px 0 #fef9c3,
+                0 12px 0 #fde68a, 6px 12px 0 #ffffff, 12px 12px 0 #ffffff, 18px 12px 0 #fffbeb, 24px 12px 0 #ffffff, 30px 12px 0 #ffffff, 36px 12px 0 #fde68a,
+                12px 18px 0 #e2b714, 18px 18px 0 #fef3c7, 24px 18px 0 #e2b714,
+                6px 24px 0 #fef9c3, 12px 24px 0 #ffffff, 18px 24px 0 #fffbeb, 24px 24px 0 #ffffff, 30px 24px 0 #fef9c3,
+                12px 30px 0 #fde68a, 18px 30px 0 #fef9c3, 24px 30px 0 #fde68a,
+                12px 36px 0 #e2b714, 24px 36px 0 #e2b714,
+                12px 42px 0 #b8960f, 24px 42px 0 #b8960f;
+        }
+        /* Demon - 暗紅紫，角，暗黑氣場 */
+        .pixel-race-demon {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                6px 0 0 #7f1d1d, 30px 0 0 #7f1d1d,
+                12px 6px 0 #991b1b, 18px 6px 0 #b91c1c, 24px 6px 0 #991b1b,
+                6px 12px 0 #4c1d95, 12px 12px 0 #b91c1c, 18px 12px 0 #ef4444, 24px 12px 0 #b91c1c, 30px 12px 0 #4c1d95,
+                12px 18px 0 #6d28d9, 18px 18px 0 #7c3aed, 24px 18px 0 #6d28d9,
+                0 24px 0 #2e1065, 6px 24px 0 #4c1d95, 12px 24px 0 #6d28d9, 18px 24px 0 #581c87, 24px 24px 0 #6d28d9, 30px 24px 0 #4c1d95, 36px 24px 0 #2e1065,
+                6px 30px 0 #3b0764, 12px 30px 0 #4c1d95, 18px 30px 0 #3b0764, 24px 30px 0 #4c1d95, 30px 30px 0 #3b0764,
+                12px 36px 0 #2e1065, 18px 36px 0 #3b0764, 24px 36px 0 #2e1065,
+                12px 42px 0 #1a0533, 24px 42px 0 #1a0533;
+        }
+        /* Automaton - 銀灰金屬，機械關節 */
+        .pixel-race-automaton {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                12px 0 0 #9ca3af, 18px 0 0 #d1d5db, 24px 0 0 #9ca3af,
+                6px 6px 0 #6b7280, 12px 6px 0 #d1d5db, 18px 6px 0 #f3f4f6, 24px 6px 0 #d1d5db, 30px 6px 0 #6b7280,
+                6px 12px 0 #374151, 12px 12px 0 #9ca3af, 18px 12px 0 #22d3ee, 24px 12px 0 #9ca3af, 30px 12px 0 #374151,
+                12px 18px 0 #4b5563, 18px 18px 0 #6b7280, 24px 18px 0 #4b5563,
+                0 24px 0 #374151, 6px 24px 0 #4b5563, 12px 24px 0 #6b7280, 18px 24px 0 #9ca3af, 24px 24px 0 #6b7280, 30px 24px 0 #4b5563, 36px 24px 0 #374151,
+                6px 30px 0 #1f2937, 12px 30px 0 #374151, 18px 30px 0 #4b5563, 24px 30px 0 #374151, 30px 30px 0 #1f2937,
+                12px 36px 0 #374151, 24px 36px 0 #374151,
+                6px 42px 0 #1f2937, 12px 42px 0 #374151, 24px 42px 0 #374151, 30px 42px 0 #1f2937;
+        }
+        /* Vampire - 蒼白皮膚，紅色點綴，披風 */
+        .pixel-race-vampire {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                18px 0 0 #f0f0f0,
+                12px 6px 0 #e8e8e8, 18px 6px 0 #f8f8f8, 24px 6px 0 #e8e8e8,
+                6px 12px 0 #dc2626, 12px 12px 0 #f0f0f0, 18px 12px 0 #f8f8f8, 24px 12px 0 #f0f0f0, 30px 12px 0 #dc2626,
+                12px 18px 0 #d0d0d0, 18px 18px 0 #f0f0f0, 24px 18px 0 #d0d0d0,
+                0 24px 0 #1a0000, 6px 24px 0 #2d0000, 12px 24px 0 #d0d0d0, 18px 24px 0 #e8e8e8, 24px 24px 0 #d0d0d0, 30px 24px 0 #2d0000, 36px 24px 0 #1a0000,
+                0 30px 0 #1a0000, 6px 30px 0 #2d0000, 12px 30px 0 #3f0000, 18px 30px 0 #d0d0d0, 24px 30px 0 #3f0000, 30px 30px 0 #2d0000, 36px 30px 0 #1a0000,
+                6px 36px 0 #1a0000, 12px 36px 0 #2d0000, 24px 36px 0 #2d0000, 30px 36px 0 #1a0000,
+                12px 42px 0 #b0b0b0, 24px 42px 0 #b0b0b0;
+        }
+        /* Phantom - 紫色幽靈，飄渺感 */
+        .pixel-race-phantom {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                18px 0 0 #c4b5fd,
+                12px 6px 0 #a78bfa, 18px 6px 0 #ddd6fe, 24px 6px 0 #a78bfa,
+                6px 12px 0 #7c3aed, 12px 12px 0 #a78bfa, 18px 12px 0 #ede9fe, 24px 12px 0 #a78bfa, 30px 12px 0 #7c3aed,
+                18px 18px 0 #c4b5fd,
+                6px 24px 0 #6d28d9, 12px 24px 0 #7c3aed, 18px 24px 0 #a78bfa, 24px 24px 0 #7c3aed, 30px 24px 0 #6d28d9,
+                12px 30px 0 #5b21b6, 18px 30px 0 #6d28d9, 24px 30px 0 #5b21b6,
+                6px 36px 0 #4c1d95, 18px 36px 0 #5b21b6, 30px 36px 0 #4c1d95,
+                12px 42px 0 #3b0764, 24px 42px 0 #3b0764;
+        }
+        /* Giant - 棕灰色，寬大比例 */
+        .pixel-race-giant {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                6px 0 0 #78716c, 12px 0 0 #a8a29e, 18px 0 0 #d6d3d1, 24px 0 0 #a8a29e, 30px 0 0 #78716c,
+                0 6px 0 #57534e, 6px 6px 0 #a8a29e, 12px 6px 0 #d6d3d1, 18px 6px 0 #f5f5f4, 24px 6px 0 #d6d3d1, 30px 6px 0 #a8a29e, 36px 6px 0 #57534e,
+                0 12px 0 #57534e, 6px 12px 0 #78716c, 12px 12px 0 #a8a29e, 18px 12px 0 #d6d3d1, 24px 12px 0 #a8a29e, 30px 12px 0 #78716c, 36px 12px 0 #57534e,
+                6px 18px 0 #57534e, 12px 18px 0 #78716c, 18px 18px 0 #a8a29e, 24px 18px 0 #78716c, 30px 18px 0 #57534e,
+                0 24px 0 #44403c, 6px 24px 0 #57534e, 12px 24px 0 #78716c, 18px 24px 0 #57534e, 24px 24px 0 #78716c, 30px 24px 0 #57534e, 36px 24px 0 #44403c,
+                6px 30px 0 #44403c, 12px 30px 0 #57534e, 18px 30px 0 #44403c, 24px 30px 0 #57534e, 30px 30px 0 #44403c,
+                6px 36px 0 #3c3735, 12px 36px 0 #44403c, 24px 36px 0 #44403c, 30px 36px 0 #3c3735,
+                6px 42px 0 #292524, 12px 42px 0 #3c3735, 24px 42px 0 #3c3735, 30px 42px 0 #292524;
+        }
+        /* Elderdragon - 金琥珀色，龍形全身 */
+        .pixel-race-elderdragon {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                0 0 0 #fbbf24, 6px 0 0 #f59e0b, 30px 0 0 #f59e0b, 36px 0 0 #fbbf24,
+                0 6px 0 #d97706, 6px 6px 0 #fbbf24, 12px 6px 0 #fcd34d, 18px 6px 0 #fde68a, 24px 6px 0 #fcd34d, 30px 6px 0 #fbbf24, 36px 6px 0 #d97706,
+                6px 12px 0 #b45309, 12px 12px 0 #d97706, 18px 12px 0 #fbbf24, 24px 12px 0 #d97706, 30px 12px 0 #b45309,
+                12px 18px 0 #92400e, 18px 18px 0 #b45309, 24px 18px 0 #d97706,
+                0 24px 0 #78350f, 6px 24px 0 #92400e, 12px 24px 0 #b45309, 18px 24px 0 #d97706, 24px 24px 0 #b45309, 30px 24px 0 #92400e, 36px 24px 0 #78350f,
+                6px 30px 0 #78350f, 12px 30px 0 #92400e, 18px 30px 0 #78350f, 24px 30px 0 #92400e, 30px 30px 0 #78350f,
+                0 36px 0 #451a03, 6px 36px 0 #78350f, 12px 36px 0 #92400e, 24px 36px 0 #92400e, 30px 36px 0 #78350f, 36px 36px 0 #451a03,
+                6px 42px 0 #451a03, 12px 42px 0 #78350f, 24px 42px 0 #78350f, 30px 42px 0 #451a03;
+        }
+        /* Divine - 純白金，輻射光芒 */
+        .pixel-race-divine {
+            width: 6px; height: 6px; background: transparent;
+            box-shadow:
+                18px 0 0 #fffbeb,
+                6px 6px 0 #fef9c3, 12px 6px 0 #fef3c7, 18px 6px 0 #ffffff, 24px 6px 0 #fef3c7, 30px 6px 0 #fef9c3,
+                0 12px 0 #fef9c3, 6px 12px 0 #fef3c7, 12px 12px 0 #ffffff, 18px 12px 0 #ffffff, 24px 12px 0 #ffffff, 30px 12px 0 #fef3c7, 36px 12px 0 #fef9c3,
+                6px 18px 0 #fde68a, 12px 18px 0 #e2b714, 18px 18px 0 #ffffff, 24px 18px 0 #e2b714, 30px 18px 0 #fde68a,
+                6px 24px 0 #fef9c3, 12px 24px 0 #ffffff, 18px 24px 0 #fffbeb, 24px 24px 0 #ffffff, 30px 24px 0 #fef9c3,
+                0 30px 0 #fde68a, 6px 30px 0 #fef3c7, 12px 30px 0 #e2b714, 18px 30px 0 #fef9c3, 24px 30px 0 #e2b714, 30px 30px 0 #fef3c7, 36px 30px 0 #fde68a,
+                12px 36px 0 #b8960f, 18px 36px 0 #e2b714, 24px 36px 0 #b8960f,
+                12px 42px 0 #8a6d0a, 24px 42px 0 #8a6d0a;
+        }
     </style>
     <script>
         /* 防止 FOUC：等 Tailwind CDN 處理完再顯示頁面 */
