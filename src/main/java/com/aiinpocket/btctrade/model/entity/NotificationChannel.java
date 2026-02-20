@@ -51,7 +51,7 @@ public class NotificationChannel {
     /** 是否啟用此管道 */
     @Column(nullable = false)
     @Builder.Default
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     /** 是否在進場訊號時發送通知 */
     @Column(name = "notify_on_entry", nullable = false)

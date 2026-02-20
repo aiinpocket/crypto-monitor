@@ -263,9 +263,9 @@
                 { key: 'ASSASSIN', name: '刺客', desc: '快進快出短線高手' }
             ],
             achievements: [],
-            discord: { id: null, enabled: true, webhookUrl: '', notifyOnEntry: true, notifyOnExit: true },
-            gmail: { id: null, enabled: true, recipientEmail: '', notifyOnEntry: true, notifyOnExit: true },
-            telegram: { id: null, enabled: true, botToken: '', chatId: '', notifyOnEntry: true, notifyOnExit: true },
+            discord: { id: null, enabled: false, webhookUrl: '', notifyOnEntry: true, notifyOnExit: true },
+            gmail: { id: null, enabled: false, recipientEmail: '', notifyOnEntry: true, notifyOnExit: true },
+            telegram: { id: null, enabled: false, botToken: '', chatId: '', notifyOnEntry: true, notifyOnExit: true },
 
             async init() {
                 await Promise.all([this.loadProfile(), this.loadChannels()]);
@@ -353,9 +353,9 @@
                 try {
                     const r = await fetch(`/api/user/notifications/${cid}`, { method: 'DELETE' });
                     if (r.ok) {
-                        if (type==='DISCORD') this.discord={id:null,enabled:true,webhookUrl:'',notifyOnEntry:true,notifyOnExit:true};
-                        else if (type==='GMAIL') this.gmail={id:null,enabled:true,recipientEmail:'',notifyOnEntry:true,notifyOnExit:true};
-                        else this.telegram={id:null,enabled:true,botToken:'',chatId:'',notifyOnEntry:true,notifyOnExit:true};
+                        if (type==='DISCORD') this.discord={id:null,enabled:false,webhookUrl:'',notifyOnEntry:true,notifyOnExit:true};
+                        else if (type==='GMAIL') this.gmail={id:null,enabled:false,recipientEmail:'',notifyOnEntry:true,notifyOnExit:true};
+                        else this.telegram={id:null,enabled:false,botToken:'',chatId:'',notifyOnEntry:true,notifyOnExit:true};
                         this.showMsg('已刪除', 'success');
                     }
                 } catch (e) { this.showMsg('刪除失敗', 'error'); }
