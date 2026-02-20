@@ -82,7 +82,7 @@
                 <p class="text-text-muted text-xs mt-0.5">基準: BTCUSDT | 每 4 小時更新</p>
             </div>
             <div class="flex items-center gap-2">
-                <span x-show="perfLoading" class="text-xs text-text-muted anim-flash">計算中...</span>
+                <span x-show="perfLoading" class="text-xs text-text-muted anim-flash" x-text="computeStatus || '計算中...'"></span>
                 <button @click="refreshAllPerformance()" :disabled="perfLoading"
                         class="pixel-btn pixel-btn-purple text-xs py-1 px-2 disabled:opacity-50">&#9889; 重新計算</button>
             </div>
@@ -198,7 +198,7 @@
     function strategiesApp() {
         return {
             templates: [], showEditor: false, editing: {}, message: '', messageType: 'success',
-            loading: true,
+            loading: true, computeStatus: '',
             perfSummaries: [], perfLoading: false, selectedMetric: 'totalReturn', lastComputedTime: '',
             metricOptions: [
                 { key: 'totalReturn', label: '累計報酬' }, { key: 'annualizedReturn', label: '年化報酬' },
@@ -251,29 +251,34 @@
                 const pct=(Number(p.unrealizedPnlPct)*100).toFixed(2); const dir=p.unrealizedDirection==='LONG'?'L':'S'; const sign=Number(p.unrealizedPnlPct)>=0?'+':''; return `${dir} ${sign}${pct}%`; },
             async refreshAllPerformance() {
                 this.perfLoading=true;
-                const startTime = this.lastComputedTime || '';
+                this.computeStatus='啟動計算中...';
                 try {
                     const r=await fetch('/api/user/strategies/refresh-all-performance',{method:'POST'});
                     if(r.ok){
-                        this.showMsg('績效計算中，請稍候...','success');
-                        let attempts = 0;
-                        const maxAttempts = 36;
-                        const poll = async () => {
-                            attempts++;
-                            await this.loadPerformance();
-                            if (this.lastComputedTime && this.lastComputedTime !== startTime) {
-                                this.perfLoading = false;
-                                this.showMsg('績效計算完成','success');
-                            } else if (attempts < maxAttempts) {
-                                setTimeout(poll, 5000);
-                            } else {
-                                this.perfLoading = false;
-                                this.showMsg('計算可能仍在進行中，請稍後手動重新整理','info');
-                            }
+                        const pollProgress = async () => {
+                            try {
+                                const sr=await fetch('/api/user/strategies/performance/status');
+                                if(!sr.ok){this.perfLoading=false;this.computeStatus='';this.showMsg('查詢進度失敗','error');return;}
+                                const st=await sr.json();
+                                if(st.computing){
+                                    this.computeStatus='計算中 '+st.completed+'/'+st.total+(st.failed>0?' (失敗'+st.failed+')':'');
+                                    await this.loadPerformance();
+                                    setTimeout(pollProgress,3000);
+                                } else {
+                                    await this.loadPerformance();
+                                    this.perfLoading=false;
+                                    this.computeStatus='';
+                                    if(st.failed>0){
+                                        this.showMsg('計算完成（'+st.failed+' 項失敗），如持續異常請回報 Issue','error');
+                                    } else {
+                                        this.showMsg('績效計算完成！','success');
+                                    }
+                                }
+                            } catch(e){this.perfLoading=false;this.computeStatus='';this.showMsg('網路錯誤，請重新整理頁面','error');}
                         };
-                        setTimeout(poll, 8000);
-                    } else {this.perfLoading=false;this.showMsg('觸發失敗','error');}
-                } catch(e){this.perfLoading=false;this.showMsg('網路錯誤','error');}
+                        setTimeout(pollProgress,3000);
+                    } else {this.perfLoading=false;this.computeStatus='';this.showMsg('觸發失敗','error');}
+                } catch(e){this.perfLoading=false;this.computeStatus='';this.showMsg('網路錯誤','error');}
             },
             async cloneTemplate(id) { const name=await pixelPrompt('請輸入新卷軸名稱:'); if(!name)return; try { const r=await fetch('/api/user/strategies/clone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sourceId:id,name})}); if(r.ok){const result=await r.json();this.showMsg('已複製卷軸「'+result.name+'」！','success');await this.loadTemplates();await this.loadPerformance();}else{const e=await r.json();this.showMsg(e.error||'克隆失敗','error');}} catch(e){this.showMsg('網路錯誤','error');} },
             openEditor(t) { this.editing=JSON.parse(JSON.stringify(t)); this.showEditor=true; },

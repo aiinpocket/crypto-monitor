@@ -142,8 +142,23 @@ public class StrategyTemplateController {
         log.info("[策略API] 用戶 {} 觸發所有模板績效重算", principal.getUserId());
         var templateIds = templateService.getTemplatesForUser(principal.getUserId())
                 .stream().map(t -> t.getId()).toList();
-        performanceService.computeMultiplePerformancesAsync(templateIds);
+        performanceService.computeMultiplePerformancesAsync(templateIds, principal.getUserId());
         return ResponseEntity.ok(Map.of("message", "已排入 " + templateIds.size() + " 個模板的績效計算（逐一執行）"));
+    }
+
+    /** 查詢績效計算進度 */
+    @GetMapping("/performance/status")
+    public ResponseEntity<?> getPerformanceStatus(
+            @AuthenticationPrincipal AppUserPrincipal principal) {
+        var progress = performanceService.getComputeProgress(principal.getUserId());
+        if (progress == null) {
+            return ResponseEntity.ok(Map.of("computing", false));
+        }
+        return ResponseEntity.ok(Map.of(
+                "computing", progress.isRunning(),
+                "completed", progress.getCompleted(),
+                "total", progress.getTotal(),
+                "failed", progress.getFailed()));
     }
 
     /** 刪除用戶自訂模板（系統預設不可刪除） */

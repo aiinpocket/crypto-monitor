@@ -1,5 +1,6 @@
 package com.aiinpocket.btctrade.service;
 
+import com.aiinpocket.btctrade.config.TradingStrategyProperties;
 import com.aiinpocket.btctrade.model.dto.BacktestResultWithUnrealized;
 import com.aiinpocket.btctrade.model.dto.StrategyPerformanceSummary;
 import com.aiinpocket.btctrade.model.dto.StrategyPerformanceSummary.PeriodMetric;
@@ -13,10 +14,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +39,27 @@ public class StrategyPerformanceService {
     private final StrategyPerformanceRepository perfRepo;
     private final EntityManager entityManager;
 
+    /** 每位用戶的計算進度追蹤（記憶體內，不需持久化） */
+    private final ConcurrentHashMap<Long, ComputeProgress> progressMap = new ConcurrentHashMap<>();
+
+    public static class ComputeProgress {
+        private final AtomicInteger completed = new AtomicInteger(0);
+        private final AtomicInteger failed = new AtomicInteger(0);
+        private final int total;
+        private volatile boolean running = true;
+
+        public ComputeProgress(int total) { this.total = total; }
+        public int getCompleted() { return completed.get(); }
+        public int getFailed() { return failed.get(); }
+        public int getTotal() { return total; }
+        public boolean isRunning() { return running; }
+    }
+
+    /** 查詢指定用戶的計算進度 */
+    public ComputeProgress getComputeProgress(Long userId) {
+        return progressMap.get(userId);
+    }
+
     /**
      * 計算單個模板在所有時段的績效，upsert 到 DB。
      */
@@ -53,37 +77,7 @@ public class StrategyPerformanceService {
         for (PerformancePeriod period : PerformancePeriod.values()) {
             try {
                 Instant start = period.computeStartDate(now);
-                Instant end = now;
-
-                BacktestResultWithUnrealized result = backtestService.runBacktestForPerformance(
-                        BENCHMARK_SYMBOL, start, end, customProps);
-
-                var report = result.report();
-
-                // Upsert: 查找已有記錄或新建
-                StrategyPerformance perf = perfRepo
-                        .findByStrategyTemplateIdAndPeriodKeyAndSymbol(templateId, period.name(), BENCHMARK_SYMBOL)
-                        .orElseGet(() -> StrategyPerformance.builder()
-                                .strategyTemplate(templateRepo.getReferenceById(templateId))
-                                .symbol(BENCHMARK_SYMBOL)
-                                .periodKey(period.name())
-                                .periodLabel(period.getLabel())
-                                .build());
-
-                perf.setPeriodStart(start);
-                perf.setPeriodEnd(end);
-                perf.setWinRate(report.winRate());
-                perf.setTotalReturn(report.totalReturn());
-                perf.setAnnualizedReturn(report.annualizedReturn());
-                perf.setMaxDrawdown(report.maxDrawdown());
-                perf.setSharpeRatio(report.sharpeRatio());
-                perf.setTotalTrades(report.totalTrades());
-                perf.setUnrealizedPnlPct(result.unrealizedPnlPct());
-                perf.setUnrealizedDirection(result.unrealizedDirection());
-                perf.setComputedAt(Instant.now());
-
-                perfRepo.save(perf);
-                entityManager.clear();
+                upsertPerformance(templateId, period, start, now, customProps);
                 successCount++;
             } catch (Exception e) {
                 log.warn("[績效計算] 模板 {} 時段 {} 計算失敗: {}", templateId, period.name(), e.getMessage());
@@ -92,6 +86,42 @@ public class StrategyPerformanceService {
 
         log.info("[績效計算] 模板 {} 完成，成功 {}/{} 個時段",
                 templateId, successCount, PerformancePeriod.values().length);
+    }
+
+    /**
+     * 單一時段的回測 + upsert（共用邏輯）。
+     */
+    private void upsertPerformance(Long templateId, PerformancePeriod period,
+                                    Instant start, Instant end,
+                                    com.aiinpocket.btctrade.config.TradingStrategyProperties customProps) {
+        BacktestResultWithUnrealized result = backtestService.runBacktestForPerformance(
+                BENCHMARK_SYMBOL, start, end, customProps);
+
+        var report = result.report();
+
+        StrategyPerformance perf = perfRepo
+                .findByStrategyTemplateIdAndPeriodKeyAndSymbol(templateId, period.name(), BENCHMARK_SYMBOL)
+                .orElseGet(() -> StrategyPerformance.builder()
+                        .strategyTemplate(templateRepo.getReferenceById(templateId))
+                        .symbol(BENCHMARK_SYMBOL)
+                        .periodKey(period.name())
+                        .periodLabel(period.getLabel())
+                        .build());
+
+        perf.setPeriodStart(start);
+        perf.setPeriodEnd(end);
+        perf.setWinRate(report.winRate());
+        perf.setTotalReturn(report.totalReturn());
+        perf.setAnnualizedReturn(report.annualizedReturn());
+        perf.setMaxDrawdown(report.maxDrawdown());
+        perf.setSharpeRatio(report.sharpeRatio());
+        perf.setTotalTrades(report.totalTrades());
+        perf.setUnrealizedPnlPct(result.unrealizedPnlPct());
+        perf.setUnrealizedDirection(result.unrealizedDirection());
+        perf.setComputedAt(Instant.now());
+
+        perfRepo.save(perf);
+        entityManager.clear();
     }
 
     /**
@@ -105,20 +135,60 @@ public class StrategyPerformanceService {
     /**
      * 非同步逐一計算多個模板的績效（避免多個大型回測同時執行導致 OOM）。
      * 單一 async 任務內順序執行，確保同一時間只有一個回測在跑。
+     * 透過 progressMap 追蹤進度，供前端輪詢。
      */
     @Async("backtestExecutor")
-    public void computeMultiplePerformancesAsync(List<Long> templateIds) {
-        log.info("[績效計算] 開始逐一計算 {} 個模板的績效", templateIds.size());
-        int completed = 0;
+    public void computeMultiplePerformancesAsync(List<Long> templateIds, Long userId) {
+        int totalSteps = templateIds.size() * PerformancePeriod.values().length;
+        ComputeProgress progress = new ComputeProgress(totalSteps);
+        progressMap.put(userId, progress);
+
+        log.info("[績效計算] 開始逐一計算 {} 個模板的績效（共 {} 個時段）",
+                templateIds.size(), totalSteps);
+
+        int completedTemplates = 0;
         for (Long templateId : templateIds) {
             try {
-                computePerformance(templateId);
-                completed++;
+                computePerformanceWithProgress(templateId, progress);
+                completedTemplates++;
             } catch (Exception e) {
                 log.error("[績效計算] 模板 {} 計算失敗: {}", templateId, e.getMessage());
             }
         }
-        log.info("[績效計算] 完成 {}/{} 個模板", completed, templateIds.size());
+
+        progress.running = false;
+        log.info("[績效計算] 完成 {}/{} 個模板（成功 {}/失敗 {} 個時段）",
+                completedTemplates, templateIds.size(),
+                progress.getCompleted(), progress.getFailed());
+    }
+
+    /**
+     * 計算單個模板的績效並更新進度追蹤器。
+     */
+    private void computePerformanceWithProgress(Long templateId, ComputeProgress progress) {
+        StrategyTemplate template = templateRepo.findById(templateId).orElse(null);
+        if (template == null) {
+            log.warn("[績效計算] 模板不存在: id={}", templateId);
+            for (int i = 0; i < PerformancePeriod.values().length; i++) {
+                progress.failed.incrementAndGet();
+            }
+            return;
+        }
+
+        Instant now = Instant.now();
+        var customProps = template.toProperties();
+
+        for (PerformancePeriod period : PerformancePeriod.values()) {
+            try {
+                Instant start = period.computeStartDate(now);
+                upsertPerformance(templateId, period, start, now, customProps);
+                progress.completed.incrementAndGet();
+            } catch (Exception e) {
+                progress.failed.incrementAndGet();
+                log.warn("[績效計算] 模板 {} 時段 {} 計算失敗: {}",
+                        templateId, period.name(), e.getMessage());
+            }
+        }
     }
 
     /**
