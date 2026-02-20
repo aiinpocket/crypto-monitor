@@ -139,6 +139,13 @@ public class StrategyTemplateController {
     @PostMapping("/refresh-all-performance")
     public ResponseEntity<?> refreshAllPerformance(
             @AuthenticationPrincipal AppUserPrincipal principal) {
+        // 防呆：檢查是否已有進行中的計算
+        var existing = performanceService.getComputeProgress(principal.getUserId());
+        if (existing != null && existing.isRunning()) {
+            return ResponseEntity.ok(Map.of(
+                    "message", "計算已在進行中（" + existing.getCompleted() + "/" + existing.getTotal() + "），請等待完成"));
+        }
+
         log.info("[策略API] 用戶 {} 觸發所有模板績效重算", principal.getUserId());
         var templateIds = templateService.getTemplatesForUser(principal.getUserId())
                 .stream().map(t -> t.getId()).toList();
