@@ -3,6 +3,7 @@ package com.aiinpocket.btctrade.service;
 import com.aiinpocket.btctrade.config.TradingStrategyProperties;
 import com.aiinpocket.btctrade.model.entity.AppUser;
 import com.aiinpocket.btctrade.model.entity.StrategyTemplate;
+import com.aiinpocket.btctrade.repository.BacktestRunRepository;
 import com.aiinpocket.btctrade.repository.StrategyPerformanceRepository;
 import com.aiinpocket.btctrade.repository.StrategyTemplateRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class StrategyTemplateService {
 
     private final StrategyTemplateRepository templateRepo;
     private final StrategyPerformanceRepository perfRepo;
+    private final BacktestRunRepository backtestRunRepo;
     private final TradingStrategyProperties defaultProps;
     private final StrategyPerformanceService performanceService;
     private final GamificationService gamificationService;
@@ -100,12 +102,13 @@ public class StrategyTemplateService {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void ensureDefaultTemplate() {
-        // 遷移：如果存在舊版單一預設模板，刪除它（連同績效資料）
+        // 遷移：如果存在舊版單一預設模板，刪除它（連同績效資料和回測紀錄）
         templateRepo.findAllBySystemDefaultTrue().stream()
                 .filter(t -> "系統預設策略".equals(t.getName()))
                 .forEach(old -> {
                     log.info("[策略模板] 偵測到舊版預設模板 '{}' (id={})，將遷移為四職業版本",
                             old.getName(), old.getId());
+                    backtestRunRepo.deleteByStrategyTemplateId(old.getId());
                     perfRepo.deleteByStrategyTemplateId(old.getId());
                     templateRepo.delete(old);
                 });
@@ -287,7 +290,8 @@ public class StrategyTemplateService {
             throw new IllegalArgumentException("無權刪除此策略模板");
         }
 
-        // 先清理績效資料再刪除模板
+        // 先清理關聯資料再刪除模板
+        backtestRunRepo.deleteByStrategyTemplateId(templateId);
         perfRepo.deleteByStrategyTemplateId(templateId);
         templateRepo.delete(template);
         log.info("[策略模板] 用戶 {} 刪除模板 {} (id={})", userId, template.getName(), templateId);

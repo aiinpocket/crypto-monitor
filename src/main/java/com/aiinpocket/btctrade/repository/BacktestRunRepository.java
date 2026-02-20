@@ -43,4 +43,7 @@ public interface BacktestRunRepository extends JpaRepository<BacktestRun, Long> 
 
     /** 查詢多種狀態的回測（啟動時清理卡住的 RUNNING/PENDING） */
     List<BacktestRun> findByStatusIn(List<BacktestRunStatus> statuses);
+
+    /** 刪除指定策略模板的所有回測紀錄（模板遷移/刪除時用） */
+    void deleteByStrategyTemplateId(Long strategyTemplateId);
 }
