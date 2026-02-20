@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head th:replace="~{fragments/head :: head('BtcTrade - 冒險者公會')}"></head>
+<body class="bg-bg-dark text-text-main min-h-screen">
+
+<div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+<div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
+
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-7xl mx-auto"
+      x-data="communityApp()" th:data-username="${user.displayName}">
+
+    <!-- 頁面標題 -->
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+            <h1 class="font-heading text-lg text-primary glow-gold">&#127760; 冒險者公會</h1>
+            <p class="text-text-muted text-[13px] mt-1">分享你的策略、評價他人、發現好策略</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-xs text-text-muted" x-text="'額度: ' + quota.used + '/' + quota.total"></span>
+            <button @click="showShareModal = true" class="pixel-btn pixel-btn-gold text-xs py-1.5 px-4 cursor-pointer">
+                &#10010; 分享策略
+            </button>
+        </div>
+    </div>
+
+    <!-- 分頁 -->
+    <div class="flex gap-2 mb-4">
+        <button @click="tab = 'browse'" class="pixel-btn text-xs py-1 px-3 cursor-pointer"
+                :class="tab === 'browse' ? 'pixel-btn-gold' : 'pixel-btn-dark'">
+            &#128270; 瀏覽全部
+        </button>
+        <button @click="tab = 'mine'" class="pixel-btn text-xs py-1 px-3 cursor-pointer"
+                :class="tab === 'mine' ? 'pixel-btn-gold' : 'pixel-btn-dark'">
+            &#128221; 我的分享
+        </button>
+    </div>
+
+    <!-- 載入指示 -->
+    <div x-show="loading" class="text-center py-8">
+        <span class="text-sm text-primary anim-flash">&#9876; 載入中...</span>
+    </div>
+
+    <!-- 空狀態 -->
+    <div x-show="!loading && currentList.length === 0" class="text-center py-12 pixel-card p-6">
+        <div class="text-3xl mb-3" x-text="tab === 'browse' ? '&#127760;' : '&#128221;'"></div>
+        <p class="text-text-muted text-sm" x-text="tab === 'browse' ? '還沒有冒險者分享策略，成為第一個！' : '你還沒分享任何策略到公會'"></p>
+    </div>
+
+    <!-- 社群模板列表 -->
+    <div x-show="!loading" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <template x-for="ct in currentList" :key="ct.id">
+            <div class="pixel-card p-4" :class="ct.status === 'HIDDEN' ? 'opacity-60' : ''">
+                <!-- 標題列 -->
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-sm text-text-heading truncate" x-text="ct.displayName"></h3>
+                        <div class="flex items-center gap-2 mt-1">
+                            <img x-show="ct.submitterAvatarUrl" :src="ct.submitterAvatarUrl"
+                                 class="w-4 h-4 border border-border-main" style="image-rendering: pixelated;" alt="">
+                            <span class="text-xs text-text-muted" x-text="ct.submitterName"></span>
+                            <span x-show="ct.status === 'HIDDEN'" class="text-xs px-1.5 py-0.5 bg-negative/20 text-negative pixel-border">
+                                &#128683; 已下架
+                            </span>
+                        </div>
+                    </div>
+                    <!-- 刪除按鈕（僅自己的） -->
+                    <button x-show="ct.isMine && tab === 'mine'"
+                            @click="deleteSubmission(ct.id)"
+                            class="text-[13px] text-negative hover:text-red-300 cursor-pointer px-1 shrink-0">
+                        &#10005;
+                    </button>
+                </div>
+
+                <!-- 描述 -->
+                <p x-show="ct.description" class="text-xs text-text-muted mb-3 leading-relaxed line-clamp-2" x-text="ct.description"></p>
+
+                <!-- 統計 -->
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="text-xs">
+                        <span class="text-text-muted">使用</span>
+                        <span class="text-primary font-heading ml-1" x-text="ct.usageCount"></span>
+                    </div>
+                    <div class="text-xs">
+                        <span class="text-positive">&#128077;</span>
+                        <span class="text-text-main ml-0.5" x-text="ct.upvoteCount"></span>
+                    </div>
+                    <div class="text-xs">
+                        <span class="text-negative">&#128078;</span>
+                        <span class="text-text-main ml-0.5" x-text="ct.downvoteCount"></span>
+                    </div>
+                    <div class="text-xs text-text-muted ml-auto" x-text="formatDate(ct.createdAt)"></div>
+                </div>
+
+                <!-- 操作按鈕 -->
+                <div class="flex items-center gap-2" x-show="ct.status === 'ACTIVE'">
+                    <!-- 投票按鈕（不能給自己投） -->
+                    <template x-if="!ct.isMine">
+                        <div class="flex gap-1">
+                            <button @click="vote(ct.id, true)"
+                                    class="pixel-btn text-xs py-0.5 px-2 cursor-pointer"
+                                    :class="ct.myVote === true ? 'pixel-btn-gold' : 'pixel-btn-dark'">
+                                &#128077; 讚
+                            </button>
+                            <button @click="vote(ct.id, false)"
+                                    class="pixel-btn text-xs py-0.5 px-2 cursor-pointer"
+                                    :class="ct.myVote === false ? 'bg-negative/30 text-negative' : 'pixel-btn-dark'">
+                                &#128078; 噓
+                            </button>
+                        </div>
+                    </template>
+                    <span x-show="ct.isMine" class="text-xs text-text-muted">&#128100; 你的策略</span>
+
+                    <!-- 使用按鈕 -->
+                    <button x-show="!ct.isMine" @click="useTemplate(ct.id)"
+                            class="pixel-btn pixel-btn-purple text-xs py-0.5 px-3 ml-auto cursor-pointer">
+                        &#128229; 使用
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- 分享彈窗 -->
+    <div x-show="showShareModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         @click.self="showShareModal = false">
+        <div class="fixed inset-0 bg-black/50"></div>
+        <div class="pixel-card p-6 w-full max-w-md relative z-10">
+            <h2 class="font-heading text-sm text-primary mb-4">&#10010; 分享策略到公會</h2>
+
+            <!-- 選擇模板 -->
+            <div class="mb-3">
+                <label class="text-xs text-text-muted block mb-1">選擇你的策略模板</label>
+                <select x-model="shareForm.templateId" class="w-full bg-bg-input text-text-main text-sm p-2 pixel-border-dark">
+                    <option value="">-- 請選擇 --</option>
+                    <template x-for="t in myTemplates" :key="t.id">
+                        <option :value="t.id" x-text="t.name" :disabled="t.systemDefault || t.alreadyShared"></option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- 自訂名稱 -->
+            <div class="mb-4">
+                <label class="text-xs text-text-muted block mb-1">策略名稱（選填）</label>
+                <input x-model="shareForm.name" type="text" maxlength="50" placeholder="留空使用原名"
+                       class="w-full bg-bg-input text-text-main text-sm p-2 pixel-border-dark">
+                <p class="text-xs text-text-muted mt-1" x-text="'顯示為: ' + userName + '/' + (shareForm.name || '(原名)')"></p>
+            </div>
+
+            <!-- 錯誤訊息 -->
+            <div x-show="shareError" class="text-xs text-negative mb-3 bg-negative/10 p-2 pixel-border-dark" x-text="shareError"></div>
+
+            <div class="flex justify-end gap-2">
+                <button @click="showShareModal = false" class="pixel-btn pixel-btn-dark text-xs py-1.5 px-4 cursor-pointer">取消</button>
+                <button @click="submitShare()" :disabled="!shareForm.templateId || sharing"
+                        class="pixel-btn pixel-btn-gold text-xs py-1.5 px-4 cursor-pointer disabled:opacity-50">
+                    <span x-show="!sharing">&#10003; 分享</span>
+                    <span x-show="sharing" class="anim-flash">分享中...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+function communityApp() {
+    return {
+        tab: 'browse',
+        loading: true,
+        templates: [],
+        mySubmissions: [],
+        myTemplates: [],
+        quota: { used: 0, total: 3, base: 3, bonus: 0 },
+        showShareModal: false,
+        shareForm: { templateId: '', name: '' },
+        shareError: '',
+        sharing: false,
+        userName: document.querySelector('[data-username]')?.dataset.username || '',
+
+        get currentList() {
+            return this.tab === 'browse' ? this.templates : this.mySubmissions;
+        },
+
+        async init() {
+            this.userName = this.$el.closest('[data-username]')?.dataset.username || '';
+            await Promise.all([this.loadTemplates(), this.loadQuota(), this.loadMyTemplates()]);
+            this.loading = false;
+        },
+
+        async loadTemplates() {
+            try {
+                const [browseResp, mineResp] = await Promise.all([
+                    fetch('/api/community/templates'),
+                    fetch('/api/community/my-submissions')
+                ]);
+                if (browseResp.ok) this.templates = await browseResp.json();
+                if (mineResp.ok) this.mySubmissions = await mineResp.json();
+            } catch (e) { console.error('載入社群模板失敗', e); }
+        },
+
+        async loadQuota() {
+            try {
+                const resp = await fetch('/api/community/quota');
+                if (resp.ok) this.quota = await resp.json();
+            } catch (e) { /* 靜默 */ }
+        },
+
+        async loadMyTemplates() {
+            try {
+                const resp = await fetch('/api/user/strategies');
+                if (resp.ok) {
+                    const all = await resp.json();
+                    // 只顯示自訂模板（非系統預設），並標記已分享的
+                    const sharedIds = new Set(this.mySubmissions.map(s => s.strategyTemplateId));
+                    this.myTemplates = all
+                        .filter(t => !t.systemDefault)
+                        .map(t => ({ ...t, alreadyShared: sharedIds.has(t.id) }));
+                }
+            } catch (e) { /* 靜默 */ }
+        },
+
+        async submitShare() {
+            this.shareError = '';
+            this.sharing = true;
+            try {
+                const resp = await fetch('/api/community/share', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        strategyTemplateId: parseInt(this.shareForm.templateId),
+                        name: this.shareForm.name || null
+                    })
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    this.showShareModal = false;
+                    this.shareForm = { templateId: '', name: '' };
+                    await this.loadTemplates();
+                    await this.loadQuota();
+                    await this.loadMyTemplates();
+                } else {
+                    this.shareError = data.error || '分享失敗';
+                }
+            } catch (e) {
+                this.shareError = '網路錯誤，請稍後重試';
+            } finally {
+                this.sharing = false;
+            }
+        },
+
+        async vote(communityTemplateId, thumbsUp) {
+            try {
+                const resp = await fetch('/api/community/vote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ communityTemplateId, thumbsUp })
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    // 更新本地狀態
+                    const ct = this.templates.find(t => t.id === communityTemplateId);
+                    if (ct) {
+                        ct.upvoteCount = data.upvoteCount;
+                        ct.downvoteCount = data.downvoteCount;
+                        ct.status = data.status;
+                        ct.myVote = thumbsUp;
+                    }
+                    // 如果被下架，從列表移除
+                    if (data.status === 'HIDDEN') {
+                        this.templates = this.templates.filter(t => t.id !== communityTemplateId);
+                    }
+                } else {
+                    alert(data.error || '投票失敗');
+                }
+            } catch (e) { alert('網路錯誤'); }
+        },
+
+        async useTemplate(communityTemplateId) {
+            if (!confirm('確定要將此社群策略加入你的策略列表嗎？')) return;
+            try {
+                const resp = await fetch('/api/community/use', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ communityTemplateId })
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    alert(data.message || '已加入你的策略列表');
+                    // 更新使用人數
+                    const ct = this.templates.find(t => t.id === communityTemplateId);
+                    if (ct) ct.usageCount++;
+                } else {
+                    alert(data.error || '使用失敗');
+                }
+            } catch (e) { alert('網路錯誤'); }
+        },
+
+        async deleteSubmission(communityTemplateId) {
+            if (!confirm('確定要從公會撤回此策略？')) return;
+            try {
+                const resp = await fetch('/api/community/' + communityTemplateId, { method: 'DELETE' });
+                if (resp.ok) {
+                    this.mySubmissions = this.mySubmissions.filter(t => t.id !== communityTemplateId);
+                    this.templates = this.templates.filter(t => t.id !== communityTemplateId);
+                    await this.loadQuota();
+                    await this.loadMyTemplates();
+                } else {
+                    const data = await resp.json();
+                    alert(data.error || '刪除失敗');
+                }
+            } catch (e) { alert('網路錯誤'); }
+        },
+
+        formatDate(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            return d.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
+        }
+    };
+}
+</script>
+
+</body>
+</html>
