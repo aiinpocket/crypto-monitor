@@ -91,8 +91,11 @@ public class StrategyTemplateService {
      * 應用啟動時確保四個職業預設模板存在。
      * 逐一檢查各職業模板是否已建立，缺少的才建立（冪等操作）。
      * 若偵測到舊版單一預設模板（"系統預設策略"），自動遷移為四職業版本。
+     *
+     * <p>需要 @Transactional 因為遷移舊模板涉及 delete 操作。
      */
     @PostConstruct
+    @Transactional
     void ensureDefaultTemplate() {
         // 遷移：如果存在舊版單一預設模板，刪除它（連同績效資料）
         templateRepo.findAllBySystemDefaultTrue().stream()
