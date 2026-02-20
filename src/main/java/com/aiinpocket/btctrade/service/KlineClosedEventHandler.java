@@ -44,6 +44,10 @@ public class KlineClosedEventHandler {
     private final UserWatchlistRepository watchlistRepo;
     private final AppUserRepository userRepo;
     private final StrategyTemplateRepository templateRepo;
+    private final DistributedLockService lockService;
+
+    /** Advisory lock ID 基底：策略評估用 1_000_000 + symbol hash */
+    private static final long EVAL_LOCK_BASE = 1_000_000L;
 
     @EventListener
     public void onKlineClosed(KlineClosed event) {
@@ -56,6 +60,12 @@ public class KlineClosedEventHandler {
             return;
         }
 
+        // Phase 3: 分散式鎖，多 Pod 環境下只有一個 Pod 執行此幣對的策略評估
+        long lockId = EVAL_LOCK_BASE + Math.abs(symbol.hashCode());
+        lockService.executeWithLock(lockId, "策略評估-" + symbol, () -> evaluateSymbol(event, symbol));
+    }
+
+    private void evaluateSymbol(KlineClosed event, String symbol) {
         try {
             // 載入最近 N 根 K 線（足夠計算指標即可）
             int lookback = Math.max(props.strategy().emaLong() * 3, 200);
@@ -98,7 +108,7 @@ public class KlineClosedEventHandler {
         } catch (Exception e) {
             log.error("策略評估失敗 for {}: {}", symbol, e.getMessage(), e);
         }
-    }
+    }  // end evaluateSymbol
 
     private void evaluateForUser(Long userId, String symbol, BarSeries series) {
         // 1. 查詢用戶的啟用策略模板

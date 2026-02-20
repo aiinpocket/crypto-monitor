@@ -1,5 +1,6 @@
 package com.aiinpocket.btctrade.job;
 
+import com.aiinpocket.btctrade.service.DistributedLockService;
 import com.aiinpocket.btctrade.service.StrategyPerformanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,14 +18,20 @@ import org.springframework.stereotype.Component;
 public class PerformanceComputeJob extends QuartzJobBean {
 
     private final StrategyPerformanceService performanceService;
+    private final DistributedLockService lockService;
+
+    /** Advisory lock ID: PerformanceComputeJob 專用 */
+    private static final long PERF_COMPUTE_LOCK_ID = 2_000_003L;
 
     @Override
     protected void executeInternal(JobExecutionContext context) {
-        log.info("[績效排程] 開始執行績效計算排程任務");
-        try {
-            performanceService.computeAllPerformances();
-        } catch (Exception e) {
-            log.error("[績效排程] 執行失敗: {}", e.getMessage(), e);
-        }
+        lockService.executeWithLock(PERF_COMPUTE_LOCK_ID, "PerformanceComputeJob", () -> {
+            log.info("[績效排程] 開始執行績效計算排程任務");
+            try {
+                performanceService.computeAllPerformances();
+            } catch (Exception e) {
+                log.error("[績效排程] 執行失敗: {}", e.getMessage(), e);
+            }
+        });
     }
 }

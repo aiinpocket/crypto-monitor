@@ -9,6 +9,7 @@ import com.aiinpocket.btctrade.model.entity.TradePosition;
 import com.aiinpocket.btctrade.model.enums.*;
 import com.aiinpocket.btctrade.repository.KlineRepository;
 import com.aiinpocket.btctrade.repository.TradePositionRepository;
+import com.aiinpocket.btctrade.service.DistributedLockService;
 import com.aiinpocket.btctrade.service.*;
 import com.aiinpocket.btctrade.websocket.TradeWebSocketHandler;
 import lombok.RequiredArgsConstructor;
@@ -38,9 +39,18 @@ public class TradingEvaluationJob extends QuartzJobBean {
     private final BinanceApiProperties apiProperties;
     private final IntervalParams intervalParams;
     private final TradeWebSocketHandler wsHandler;
+    private final DistributedLockService lockService;
+
+    /** Advisory lock ID: TradingEvaluationJob 專用 */
+    private static final long TRADING_EVAL_LOCK_ID = 2_000_001L;
 
     @Override
     protected void executeInternal(JobExecutionContext context) {
+        // 分散式鎖：多 Pod 環境下只有一個 Pod 執行此排程任務
+        lockService.executeWithLock(TRADING_EVAL_LOCK_ID, "TradingEvaluationJob", this::doEvaluate);
+    }
+
+    private void doEvaluate() {
         try {
             String symbol = apiProperties.defaultSymbol();
 

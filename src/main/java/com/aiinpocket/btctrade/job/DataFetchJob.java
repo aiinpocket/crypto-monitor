@@ -6,6 +6,7 @@ import com.aiinpocket.btctrade.service.BinanceApiService;
 import com.aiinpocket.btctrade.service.BinanceExchangeInfoService;
 import com.aiinpocket.btctrade.service.BinanceStreamManager;
 import com.aiinpocket.btctrade.service.BinanceWebSocketClient;
+import com.aiinpocket.btctrade.service.DistributedLockService;
 import com.aiinpocket.btctrade.service.TrackedSymbolService;
 import com.aiinpocket.btctrade.websocket.TradeWebSocketHandler;
 import lombok.RequiredArgsConstructor;
@@ -33,9 +34,17 @@ public class DataFetchJob extends QuartzJobBean {
     private final BinanceStreamManager binanceStreamManager;
     private final BinanceWebSocketClient binanceWebSocketClient;
     private final TradeWebSocketHandler wsHandler;
+    private final DistributedLockService lockService;
+
+    /** Advisory lock ID: DataFetchJob 專用 */
+    private static final long DATA_FETCH_LOCK_ID = 2_000_002L;
 
     @Override
     protected void executeInternal(JobExecutionContext context) {
+        lockService.executeWithLock(DATA_FETCH_LOCK_ID, "DataFetchJob", this::doFetch);
+    }
+
+    private void doFetch() {
         List<TrackedSymbol> symbols = trackedSymbolService.getSchedulableSymbols();
         if (symbols.isEmpty()) {
             log.debug("DataFetchJob: 無可排程的幣對");
