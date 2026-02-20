@@ -156,37 +156,6 @@
         </div>
     </div>
 
-    <!-- 回測歷史 -->
-    <div class="mt-6" x-show="history.length > 0">
-        <h2 class="text-sm text-text-heading mb-3">&#128218; 歷史紀錄</h2>
-        <div class="pixel-card overflow-hidden">
-            <table class="w-full text-[13px]">
-                <thead>
-                <tr class="text-text-muted text-xs border-b border-border-main">
-                    <th class="py-2 px-3 text-left">交易對</th><th class="py-2 px-3 text-left">策略</th>
-                    <th class="py-2 px-3 text-left">狀態</th><th class="py-2 px-3 text-left">時間</th>
-                    <th class="py-2 px-3 text-right">操作</th>
-                </tr>
-                </thead>
-                <tbody>
-                <template x-for="run in history" :key="run.id">
-                    <tr class="border-b border-border-main/50 hover:bg-white/5">
-                        <td class="py-2 px-3 font-heading text-primary" x-text="run.symbol"></td>
-                        <td class="py-2 px-3 text-text-muted" x-text="run.templateName"></td>
-                        <td class="py-2 px-3">
-                            <span class="text-xs" :class="{'text-positive': run.status==='COMPLETED','text-warning anim-flash': run.status==='RUNNING','text-negative': run.status==='FAILED','text-text-muted': run.status==='PENDING'}" x-text="run.status"></span>
-                        </td>
-                        <td class="py-2 px-3 text-xs text-text-muted" x-text="new Date(run.createdAt).toLocaleString()"></td>
-                        <td class="py-2 px-3 text-right">
-                            <button x-show="run.status==='COMPLETED'" @click="loadResult(run.id)" class="text-xs text-cta hover:text-cta-hover cursor-pointer">查看</button>
-                        </td>
-                    </tr>
-                </template>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
     <div x-show="message" x-cloak x-transition class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[13px] z-50"
          :class="messageType === 'success' ? 'text-positive' : 'text-negative'" x-text="message"></div>
 </main>
@@ -197,7 +166,7 @@
     function backtestApp() {
         return {
             form: { templateId: '', symbol: readySymbolList[0] || 'BTCUSDT', years: 5 },
-            allTemplates: [], running: false, result: null, history: [],
+            allTemplates: [], running: false, result: null,
             equityChart: null, message: '', messageType: 'success', pollPct: 0,
             tradePage: 1, tradesPerPage: 50,
             get pagedTrades() { const t = this.result?.trades || []; const s = (this.tradePage-1)*this.tradesPerPage; return t.slice(s, s+this.tradesPerPage); },
@@ -206,9 +175,8 @@
             symQuery: readySymbolList[0] || 'BTCUSDT',
             symMatches: [], symShowDrop: false, symValidating: false,
             symCustomValid: false, symCustomChecked: false,
-            async init() { await Promise.all([this.loadTemplates(), this.loadHistory()]); },
+            async init() { await this.loadTemplates(); },
             async loadTemplates() { try { const r=await fetch('/api/user/strategies'); if(r.ok) this.allTemplates=await r.json(); else this.showMsg('載入策略列表失敗','error'); } catch(e){ this.showMsg('網路異常','error'); } },
-            async loadHistory() { try { const r=await fetch('/api/user/backtest/history'); if(r.ok) this.history=await r.json(); } catch(e){ this.showMsg('載入歷史紀錄失敗','error'); } },
             async submitBacktest() {
                 if(!this.form.templateId) return; this.running=true; this.result=null;
                 try {
@@ -223,12 +191,11 @@
                     try{const r=await fetch(`/api/user/backtest/${runId}`);if(!r.ok)continue;const d=await r.json();
                         if(d.status==='COMPLETED'){this.pollPct=100;this.result=JSON.parse(d.resultJson);this.running=false;
                             this.showMsg(this.result.passed?'&#127942; 挑戰成功！':'&#128128; 挑戰失敗','success');
-                            await this.loadHistory();this.$nextTick(()=>this.renderChart());return;}
-                        else if(d.status==='FAILED'){this.running=false;this.pollPct=0;this.showMsg('回測失敗','error');await this.loadHistory();return;}
+                            this.$nextTick(()=>this.renderChart());return;}
+                        else if(d.status==='FAILED'){this.running=false;this.pollPct=0;this.showMsg('回測失敗','error');return;}
                     }catch(e){}}
                 this.running=false;this.pollPct=0;this.showMsg('超時','error');
             },
-            async loadResult(runId) { try{const r=await fetch(`/api/user/backtest/${runId}`);if(!r.ok)return;const d=await r.json();if(d.status==='COMPLETED'&&d.resultJson){this.result=JSON.parse(d.resultJson);this.$nextTick(()=>this.renderChart());}}catch(e){this.showMsg('載入失敗','error');} },
             renderChart() {
                 const canvas=document.getElementById('equityChart');if(!canvas||!this.result?.equityCurve)return;
                 if(this.equityChart)this.equityChart.destroy();

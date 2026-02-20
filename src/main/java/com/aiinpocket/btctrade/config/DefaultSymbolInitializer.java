@@ -24,7 +24,7 @@ import java.util.Optional;
 @Slf4j
 public class DefaultSymbolInitializer implements ApplicationRunner {
 
-    private static final String DEFAULT_SYMBOL = "BTCUSDT";
+    private static final List<String> DEFAULT_SYMBOLS = List.of("BTCUSDT", "ETHUSDT");
 
     private final TrackedSymbolService trackedSymbolService;
     private final TrackedSymbolRepository trackedSymbolRepo;
@@ -32,17 +32,19 @@ public class DefaultSymbolInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        ensureDefaultSymbol();
+        ensureDefaultSymbols();
         recoverStuckSyncs();
     }
 
-    private void ensureDefaultSymbol() {
-        Optional<TrackedSymbol> existing = trackedSymbolService.getBySymbol(DEFAULT_SYMBOL);
-        if (existing.isEmpty()) {
-            TrackedSymbol saved = trackedSymbolService.addSymbol(DEFAULT_SYMBOL, null);
-            log.info("[預設幣對] 已自動新增 {}，開始歷史資料同步", DEFAULT_SYMBOL);
-            if (saved.getSyncStatus() == SyncStatus.PENDING) {
-                historicalSyncService.syncHistoricalData(DEFAULT_SYMBOL);
+    private void ensureDefaultSymbols() {
+        for (String symbol : DEFAULT_SYMBOLS) {
+            Optional<TrackedSymbol> existing = trackedSymbolService.getBySymbol(symbol);
+            if (existing.isEmpty()) {
+                TrackedSymbol saved = trackedSymbolService.addSymbol(symbol, null);
+                log.info("[預設幣對] 已自動新增 {}，開始歷史資料同步", symbol);
+                if (saved.getSyncStatus() == SyncStatus.PENDING) {
+                    historicalSyncService.syncHistoricalData(symbol);
+                }
             }
         }
     }
