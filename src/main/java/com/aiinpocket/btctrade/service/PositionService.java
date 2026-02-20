@@ -24,6 +24,7 @@ public class PositionService {
     private final TradePositionRepository positionRepo;
     private final TradeSignalRepository signalRepo;
     private final TradingStrategyProperties props;
+    private final BattleService battleService;
 
     @Transactional
     public TradePosition openPosition(
@@ -61,6 +62,17 @@ public class PositionService {
 
         log.info("Opened {} position: price={}, qty={}, stopLoss={}",
                 direction, price, quantity, stopLoss);
+
+        // 非回測交易觸發怪物遭遇（遊戲化）
+        if (!isBacktest) {
+            try {
+                // 使用 ATR 概念：(high-low)/close 近似波動率，此處用停損比例作為簡易代理
+                battleService.startEncounters(symbol, slPct, time);
+            } catch (Exception e) {
+                log.warn("[戰鬥] 觸發遭遇失敗，不影響交易: {}", e.getMessage());
+            }
+        }
+
         return position;
     }
 
@@ -95,6 +107,16 @@ public class PositionService {
         log.info("Closed {} position: exitPrice={}, PnL={}, return={}%",
                 position.getDirection(), exitPrice, pnl,
                 returnPct.multiply(BigDecimal.valueOf(100)));
+
+        // 非回測交易結算怪物遭遇（遊戲化）
+        if (!position.isBacktest()) {
+            try {
+                battleService.resolveEncounters(position.getSymbol(), returnPct, exitTime);
+            } catch (Exception e) {
+                log.warn("[戰鬥] 結算遭遇失敗，不影響交易: {}", e.getMessage());
+            }
+        }
+
         return position;
     }
 

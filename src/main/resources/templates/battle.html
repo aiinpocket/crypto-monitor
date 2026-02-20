@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head th:replace="~{fragments/head :: head('BtcTrade - 冒險大廳')}"></head>
+<body class="bg-bg-dark text-text-main min-h-screen">
+
+<div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+<div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
+
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-7xl mx-auto" x-data="battleApp()">
+
+    <!-- 頁面標題 -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="font-heading text-lg text-primary glow-gold">&#9876; 冒險大廳</h1>
+            <p class="text-text-muted text-[13px] mt-1">交易即冒險 — 每筆信號觸發怪物遭遇</p>
+        </div>
+        <!-- 切換 tab -->
+        <div class="flex gap-1">
+            <button @click="tab = 'encounters'" class="pixel-btn text-xs py-1.5 px-3 cursor-pointer"
+                    :class="tab === 'encounters' ? 'pixel-btn-gold' : 'pixel-btn-purple'">
+                &#128481; 戰鬥紀錄
+            </button>
+            <button @click="tab = 'bestiary'" class="pixel-btn text-xs py-1.5 px-3 cursor-pointer"
+                    :class="tab === 'bestiary' ? 'pixel-btn-gold' : 'pixel-btn-purple'">
+                &#128214; 怪物圖鑑
+            </button>
+        </div>
+    </div>
+
+    <!-- 戰鬥統計 -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div class="pixel-card p-3 text-center">
+            <div class="text-xl font-heading text-primary" x-text="stats.total">0</div>
+            <div class="text-[11px] text-text-muted">總遭遇</div>
+        </div>
+        <div class="pixel-card p-3 text-center">
+            <div class="text-xl font-heading text-positive" x-text="stats.victories">0</div>
+            <div class="text-[11px] text-text-muted">討伐成功</div>
+        </div>
+        <div class="pixel-card p-3 text-center">
+            <div class="text-xl font-heading text-negative" x-text="stats.defeats">0</div>
+            <div class="text-[11px] text-text-muted">戰鬥失敗</div>
+        </div>
+        <div class="pixel-card p-3 text-center">
+            <div class="text-xl font-heading text-cta" x-text="stats.winRate.toFixed(1) + '%'">0%</div>
+            <div class="text-[11px] text-text-muted">勝率</div>
+        </div>
+    </div>
+
+    <!-- 載入指示 -->
+    <div x-show="loading" class="text-center py-8">
+        <span class="text-sm text-primary anim-flash">&#9876; 載入中...</span>
+    </div>
+
+    <!-- ===== 戰鬥紀錄 Tab ===== -->
+    <div x-show="tab === 'encounters' && !loading'">
+        <div x-show="encounters.length === 0" class="text-center py-12">
+            <div class="text-4xl mb-3">&#128481;</div>
+            <p class="text-text-muted text-sm">尚無戰鬥紀錄</p>
+            <p class="text-text-muted text-xs mt-1">將幣對加入觀察清單後，交易信號觸發時會自動出現怪物</p>
+        </div>
+
+        <div class="space-y-2">
+            <template x-for="enc in encounters" :key="enc.id">
+                <div class="pixel-card p-3 flex items-center gap-4">
+                    <!-- 怪物像素圖 -->
+                    <div class="relative w-[48px] h-[48px] shrink-0">
+                        <div class="absolute top-0 left-0 anim-monster" :class="enc.monsterCssClass"></div>
+                    </div>
+                    <!-- 怪物資訊 -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-heading text-text-heading" x-text="enc.monsterName"></span>
+                            <span class="text-xs text-text-muted" x-text="'Lv.' + enc.monsterLevel"></span>
+                            <span class="text-[10px] px-1.5 py-0.5"
+                                  :class="{
+                                      'bg-positive/20 text-positive': enc.riskTier === 'LOW',
+                                      'bg-primary/20 text-primary': enc.riskTier === 'MEDIUM',
+                                      'bg-cta/20 text-cta': enc.riskTier === 'HIGH',
+                                      'bg-negative/20 text-negative': enc.riskTier === 'EXTREME'
+                                  }"
+                                  x-text="enc.riskTier"></span>
+                        </div>
+                        <div class="text-xs text-text-muted mt-0.5" x-text="enc.symbol + ' · ' + formatTime(enc.startedAt)"></div>
+                    </div>
+                    <!-- 結果 -->
+                    <div class="text-right shrink-0">
+                        <template x-if="enc.result === 'VICTORY'">
+                            <div>
+                                <div class="text-sm font-heading text-positive">&#9989; 討伐成功</div>
+                                <div class="text-xs text-positive" x-text="'+' + enc.expGained + ' EXP · +' + enc.goldGained + ' G'"></div>
+                                <div class="text-[10px] text-text-muted" x-text="'+' + (enc.profitPct * 100).toFixed(2) + '%'"></div>
+                            </div>
+                        </template>
+                        <template x-if="enc.result === 'DEFEAT'">
+                            <div>
+                                <div class="text-sm font-heading text-negative">&#10060; 戰鬥失敗</div>
+                                <div class="text-xs text-negative" x-text="'-' + enc.goldLost + ' G'"></div>
+                                <div class="text-[10px] text-text-muted" x-text="(enc.profitPct * 100).toFixed(2) + '%'"></div>
+                            </div>
+                        </template>
+                        <template x-if="enc.result === 'IN_PROGRESS'">
+                            <div>
+                                <div class="text-sm font-heading text-primary anim-flash">&#9876; 戰鬥中...</div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- ===== 怪物圖鑑 Tab ===== -->
+    <div x-show="tab === 'bestiary' && !loading">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <template x-for="m in bestiary" :key="m.id">
+                <div class="pixel-card p-4 text-center">
+                    <!-- 怪物像素圖（大） -->
+                    <div class="relative w-[48px] h-[48px] mx-auto mb-3">
+                        <div class="absolute top-0 left-0 anim-monster" :class="m.pixelCssClass"></div>
+                    </div>
+                    <!-- 名稱和等級 -->
+                    <div class="font-heading text-sm text-text-heading" x-text="m.name"></div>
+                    <div class="text-xs mt-1 mb-2"
+                         :class="{
+                             'text-positive': m.riskTier === 'LOW',
+                             'text-primary': m.riskTier === 'MEDIUM',
+                             'text-cta': m.riskTier === 'HIGH',
+                             'text-negative': m.riskTier === 'EXTREME'
+                         }"
+                         x-text="'Lv.' + m.level + ' · ' + m.riskTier"></div>
+                    <p class="text-[11px] text-text-muted mb-3 leading-relaxed" x-text="m.description"></p>
+                    <!-- 屬性 -->
+                    <div class="grid grid-cols-3 gap-1 text-[10px]">
+                        <div class="pixel-card p-1">
+                            <span class="text-negative">HP</span>
+                            <div class="text-text-heading font-heading" x-text="m.hp"></div>
+                        </div>
+                        <div class="pixel-card p-1">
+                            <span class="text-primary">ATK</span>
+                            <div class="text-text-heading font-heading" x-text="m.atk"></div>
+                        </div>
+                        <div class="pixel-card p-1">
+                            <span class="text-cta">DEF</span>
+                            <div class="text-text-heading font-heading" x-text="m.def"></div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-primary mt-2" x-text="'&#127775; ' + m.expReward + ' EXP'"></div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+</main>
+
+<script>
+function battleApp() {
+    return {
+        tab: 'bestiary',
+        loading: true,
+        encounters: [],
+        bestiary: [],
+        stats: { total: 0, victories: 0, defeats: 0, winRate: 0 },
+
+        async init() {
+            await Promise.all([
+                this.loadEncounters(),
+                this.loadBestiary(),
+                this.loadStats()
+            ]);
+            this.loading = false;
+        },
+
+        async loadEncounters() {
+            try {
+                const resp = await fetch('/api/user/battle/encounters');
+                if (resp.ok) this.encounters = await resp.json();
+            } catch (e) { console.error('Failed to load encounters', e); }
+        },
+
+        async loadBestiary() {
+            try {
+                const resp = await fetch('/api/user/battle/bestiary');
+                if (resp.ok) this.bestiary = await resp.json();
+            } catch (e) { console.error('Failed to load bestiary', e); }
+        },
+
+        async loadStats() {
+            try {
+                const resp = await fetch('/api/user/battle/stats');
+                if (resp.ok) this.stats = await resp.json();
+            } catch (e) { console.error('Failed to load stats', e); }
+        },
+
+        formatTime(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            return d.toLocaleDateString('zh-TW') + ' ' + d.toLocaleTimeString('zh-TW', {hour: '2-digit', minute: '2-digit'});
+        }
+    };
+}
+</script>
+
+</body>
+</html>

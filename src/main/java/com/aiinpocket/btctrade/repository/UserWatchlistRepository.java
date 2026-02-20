@@ -21,4 +21,7 @@ public interface UserWatchlistRepository extends JpaRepository<UserWatchlist, Lo
     List<Long> findUserIdsBySymbol(String symbol);
 
     long countByUserId(Long userId);
+
+    /** 查找觀察某幣對的所有觀察清單（含用戶關聯） */
+    List<UserWatchlist> findBySymbol(String symbol);
 }
