@@ -88,17 +88,17 @@ public class AppUser {
     // ===== 怪物戰鬥系統欄位 =====
 
     /** 遊戲幣餘額（賣裝備獲得，用於擴充倉庫/資遣隊員） */
-    @Column(name = "game_currency", nullable = false)
+    @Column(name = "game_currency", nullable = false, columnDefinition = "bigint default 0")
     @Builder.Default
     private Long gameCurrency = 0L;
 
     /** 倉庫欄位數（起始 100，每次擴充 +5） */
-    @Column(name = "inventory_slots", nullable = false)
+    @Column(name = "inventory_slots", nullable = false, columnDefinition = "integer default 100")
     @Builder.Default
     private Integer inventorySlots = 100;
 
     /** 隊伍人數上限（透過等級解鎖，最多 4） */
-    @Column(name = "max_party_size", nullable = false)
+    @Column(name = "max_party_size", nullable = false, columnDefinition = "integer default 1")
     @Builder.Default
     private Integer maxPartySize = 1;
 
