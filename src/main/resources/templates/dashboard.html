@@ -18,8 +18,8 @@
             <div class="flex items-center justify-between flex-wrap gap-3">
                 <div class="flex items-center gap-3">
                     <!-- 像素角色 -->
-                    <div class="relative w-12 h-12 shrink-0">
-                        <div :class="'pixel-char-' + charClass.toLowerCase()"></div>
+                    <div class="relative w-[48px] h-[48px] shrink-0">
+                        <div class="absolute top-0 left-0 anim-idle" :class="'pixel-char-' + charClass.toLowerCase()"></div>
                     </div>
                     <div>
                         <div class="flex items-center gap-2">

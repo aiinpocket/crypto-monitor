@@ -38,9 +38,9 @@
                     <button @click="selectClass(cls.key)"
                             class="pixel-card p-3 text-center cursor-pointer transition-all duration-100"
                             :class="selectedClass === cls.key ? 'pixel-border ring-2 ring-primary' : 'hover:bg-white/5'">
-                        <div class="flex justify-center mb-2">
-                            <div class="relative w-12 h-12 flex items-center justify-center">
-                                <div :class="'pixel-char-' + cls.key.toLowerCase()"></div>
+                        <div class="flex justify-center mb-3">
+                            <div class="relative w-[48px] h-[48px]">
+                                <div class="absolute top-0 left-0 anim-idle" :class="'pixel-char-' + cls.key.toLowerCase()"></div>
                             </div>
                         </div>
                         <div class="text-[13px] font-heading" :class="selectedClass === cls.key ? 'text-primary' : 'text-text-heading'" x-text="cls.name"></div>

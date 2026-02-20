@@ -192,80 +192,63 @@
 
         /* ===== 像素角色（8x8 grid, 6px/pixel = 48px） ===== */
         .pixel-character { width: 48px; height: 48px; image-rendering: pixelated; }
-        /* 戰士 - 金色系: 頭盔+寬肩甲+盾牌(左)+劍(右) */
+        /* 戰士 - 金色身體, 藍鋼盾牌, 白銀劍 */
         .pixel-char-warrior {
             width: 6px; height: 6px; background: transparent;
             box-shadow:
-                /* 頭盔 (row 0-1) */
                 18px 0 0 #ffd642,
                 12px 6px 0 #e2b714, 18px 6px 0 #e2b714, 24px 6px 0 #e2b714,
-                /* 面部 (row 2) */
                 12px 12px 0 #e2b714, 18px 12px 0 #ffd642, 24px 12px 0 #e2b714,
-                /* 寬肩甲 (row 3) */
                 6px 18px 0 #ffd642, 12px 18px 0 #e2b714, 18px 18px 0 #e2b714, 24px 18px 0 #e2b714, 30px 18px 0 #ffd642,
-                /* 盾牌+身體+劍 (row 4) */
-                0 24px 0 #8a6d0a, 12px 24px 0 #e2b714, 18px 24px 0 #e2b714, 24px 24px 0 #e2b714, 42px 24px 0 #c0c0c0,
-                /* 盾牌+腰+劍 (row 5) */
-                0 30px 0 #8a6d0a, 18px 30px 0 #e2b714, 42px 30px 0 #c0c0c0,
-                /* 腿 (row 6-7) */
+                0 24px 0 #4a90d9, 6px 24px 0 #3a7bc8, 12px 24px 0 #e2b714, 18px 24px 0 #e2b714, 24px 24px 0 #e2b714, 42px 24px 0 #ffffff,
+                0 30px 0 #4a90d9, 6px 30px 0 #3a7bc8, 18px 30px 0 #e2b714, 42px 30px 0 #e0e0e0,
                 12px 36px 0 #e2b714, 24px 36px 0 #e2b714,
                 12px 42px 0 #8a6d0a, 24px 42px 0 #8a6d0a;
         }
-        /* 法師 - 紫色系: 尖帽+長袍+法杖(右) */
+        /* 法師 - 紫色身體, 青色法杖+火球 */
         .pixel-char-mage {
             width: 6px; height: 6px; background: transparent;
             box-shadow:
-                /* 尖帽 (row 0-2) */
                 18px 0 0 #c084fc,
                 12px 6px 0 #c084fc, 18px 6px 0 #a855f7, 24px 6px 0 #c084fc,
                 6px 12px 0 #c084fc, 12px 12px 0 #a855f7, 18px 12px 0 #a855f7, 24px 12px 0 #a855f7, 30px 12px 0 #c084fc,
-                /* 面部 (row 3) */
                 12px 18px 0 #a855f7, 18px 18px 0 #c084fc, 24px 18px 0 #a855f7,
-                /* 長袍+法杖 (row 4-6) */
-                18px 24px 0 #a855f7, 42px 24px 0 #c084fc,
-                12px 30px 0 #a855f7, 18px 30px 0 #6b21a8, 24px 30px 0 #a855f7, 42px 30px 0 #c084fc,
-                12px 36px 0 #a855f7, 24px 36px 0 #a855f7, 42px 36px 0 #c084fc,
-                /* 袍裾展開 (row 7) */
+                18px 24px 0 #a855f7, 42px 24px 0 #fbbf24,
+                12px 30px 0 #a855f7, 18px 30px 0 #6b21a8, 24px 30px 0 #a855f7, 42px 30px 0 #22d3ee,
+                12px 36px 0 #a855f7, 24px 36px 0 #a855f7, 42px 36px 0 #22d3ee,
                 6px 42px 0 #6b21a8, 12px 42px 0 #a855f7, 24px 42px 0 #a855f7, 30px 42px 0 #6b21a8;
         }
-        /* 遊俠 - 綠色系: 兜帽+修長身形+弓(右) */
+        /* 遊俠 - 綠色身體, 棕木弓 */
         .pixel-char-ranger {
             width: 6px; height: 6px; background: transparent;
             box-shadow:
-                /* 圓頂兜帽 (row 0-1) */
                 12px 0 0 #86efac, 18px 0 0 #86efac, 24px 0 0 #86efac,
                 6px 6px 0 #86efac, 12px 6px 0 #4ade80, 18px 6px 0 #4ade80, 24px 6px 0 #4ade80, 30px 6px 0 #86efac,
-                /* 面部在帽內 (row 2) */
                 12px 12px 0 #4ade80, 18px 12px 0 #86efac, 24px 12px 0 #4ade80,
-                /* 身體+弓上段 (row 3) */
-                18px 18px 0 #4ade80, 36px 18px 0 #86efac,
-                /* 身體+弓中段 (row 4) */
-                12px 24px 0 #4ade80, 18px 24px 0 #4ade80, 24px 24px 0 #4ade80, 42px 24px 0 #86efac,
-                /* 腰+弓下段 (row 5) */
-                18px 30px 0 #4ade80, 36px 30px 0 #86efac,
-                /* 腿 (row 6-7) */
+                18px 18px 0 #4ade80, 36px 18px 0 #a0522d,
+                12px 24px 0 #4ade80, 18px 24px 0 #4ade80, 24px 24px 0 #4ade80, 42px 24px 0 #cd853f,
+                18px 30px 0 #4ade80, 36px 30px 0 #a0522d,
                 12px 36px 0 #4ade80, 24px 36px 0 #4ade80,
                 12px 42px 0 #16a34a, 24px 42px 0 #16a34a;
         }
-        /* 刺客 - 紅色系: 面罩+低姿態+雙匕首 */
+        /* 刺客 - 紅色身體, 亮白雙匕首 */
         .pixel-char-assassin {
             width: 6px; height: 6px; background: transparent;
             box-shadow:
-                /* 面罩 (row 1) */
                 12px 6px 0 #b91c1c, 18px 6px 0 #b91c1c, 24px 6px 0 #b91c1c,
-                /* 雙眼 (row 2) */
                 12px 12px 0 #ef4444, 18px 12px 0 #fca5a5, 24px 12px 0 #ef4444,
-                /* 雙匕首+身體 (row 3) */
-                0 18px 0 #c0c0c0, 12px 18px 0 #ef4444, 18px 18px 0 #ef4444, 24px 18px 0 #ef4444, 42px 18px 0 #c0c0c0,
-                /* 匕首柄+身體 (row 4) */
-                6px 24px 0 #b91c1c, 18px 24px 0 #ef4444, 36px 24px 0 #b91c1c,
-                /* 蹲伏身體 (row 5) */
+                0 18px 0 #ffffff, 12px 18px 0 #ef4444, 18px 18px 0 #ef4444, 24px 18px 0 #ef4444, 42px 18px 0 #ffffff,
+                6px 24px 0 #e0e0e0, 18px 24px 0 #ef4444, 36px 24px 0 #e0e0e0,
                 12px 30px 0 #ef4444, 18px 30px 0 #b91c1c, 24px 30px 0 #ef4444,
-                /* 蹲伏腿 (row 6) */
                 12px 36px 0 #ef4444, 24px 36px 0 #ef4444,
-                /* 寬步距靴 (row 7) */
                 6px 42px 0 #b91c1c, 12px 42px 0 #b91c1c, 24px 42px 0 #b91c1c, 30px 42px 0 #b91c1c;
         }
+        /* 待機動畫：微幅上下晃動 */
+        @keyframes pixelIdle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+        }
+        .anim-idle { animation: pixelIdle 1.5s steps(2) infinite; }
     </style>
     <script>
         /* 防止 FOUC：等 Tailwind CDN 處理完再顯示頁面 */
