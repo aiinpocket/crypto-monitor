@@ -161,18 +161,18 @@
 </main>
 
 <script th:inline="javascript">
-    const readySymbolList = /*[[${readySymbols}]]*/ ['BTCUSDT'];
+    const watchlistSymbolList = /*[[${watchlistSymbols}]]*/ ['BTCUSDT'];
     let _symDebounce = null;
     function backtestApp() {
         return {
-            form: { templateId: '', symbol: readySymbolList[0] || 'BTCUSDT', years: 5 },
+            form: { templateId: '', symbol: watchlistSymbolList[0] || 'BTCUSDT', years: 5 },
             allTemplates: [], running: false, result: null,
             equityChart: null, message: '', messageType: 'success', pollPct: 0,
             tradePage: 1, tradesPerPage: 50,
             get pagedTrades() { const t = this.result?.trades || []; const s = (this.tradePage-1)*this.tradesPerPage; return t.slice(s, s+this.tradesPerPage); },
             get totalTradePages() { return Math.ceil((this.result?.trades?.length || 0) / this.tradesPerPage); },
             // 幣對搜尋
-            symQuery: readySymbolList[0] || 'BTCUSDT',
+            symQuery: watchlistSymbolList[0] || 'BTCUSDT',
             symMatches: [], symShowDrop: false, symValidating: false,
             symCustomValid: false, symCustomChecked: false,
             async init() { await this.loadTemplates(); },
@@ -212,9 +212,9 @@
             symSearch() {
                 const q = this.symQuery.toUpperCase().trim();
                 this.symCustomValid = false; this.symCustomChecked = false;
-                if (!q) { this.symMatches = readySymbolList.slice(0, 20); return; }
-                this.symMatches = readySymbolList.filter(s => s.includes(q)).slice(0, 20);
-                if (readySymbolList.includes(q)) { this.form.symbol = q; return; }
+                if (!q) { this.symMatches = watchlistSymbolList.slice(0, 20); return; }
+                this.symMatches = watchlistSymbolList.filter(s => s.includes(q)).slice(0, 20);
+                if (watchlistSymbolList.includes(q)) { this.form.symbol = q; return; }
                 if (q.length >= 3 && this.symMatches.length === 0) {
                     clearTimeout(_symDebounce);
                     _symDebounce = setTimeout(() => this.symValidateCustom(q), 500);
@@ -235,13 +235,13 @@
                     const r = await fetch('/api/symbols', { method: 'POST', headers: {'Content-Type':'application/json'},
                         body: JSON.stringify({ symbol: symbol, displayName: symbol.replace('USDT','') + '/USDT' }) });
                     if (r.ok) {
-                        readySymbolList.push(symbol);
+                        watchlistSymbolList.push(symbol);
                         this.form.symbol = symbol; this.symShowDrop = false;
                         toast('已新增 ' + symbol + '，資料同步中...', 'success');
                     } else {
                         const d = await r.json();
                         if (d.error?.includes('已在追蹤')) {
-                            if (!readySymbolList.includes(symbol)) readySymbolList.push(symbol);
+                            if (!watchlistSymbolList.includes(symbol)) watchlistSymbolList.push(symbol);
                             this.form.symbol = symbol; this.symShowDrop = false;
                             toast(symbol + ' 已在追蹤中', 'info');
                         } else { toast(d.error || '新增失敗', 'error'); }
