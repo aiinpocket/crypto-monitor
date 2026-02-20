@@ -135,11 +135,12 @@ public class NotificationController {
 
         return switch (type) {
             case DISCORD -> {
-                String botToken = textValue(cfg, "botToken");
-                String channelId = textValue(cfg, "channelId");
-                if (botToken.isEmpty()) yield "Discord Bot Token 為必填";
-                if (channelId.isEmpty()) yield "Discord Channel ID 為必填";
-                if (!channelId.matches("\\d{17,20}")) yield "Discord Channel ID 格式不正確（應為數字）";
+                String webhookUrl = textValue(cfg, "webhookUrl");
+                if (webhookUrl.isEmpty()) yield "Discord Webhook URL 為必填";
+                if (!webhookUrl.startsWith("https://discord.com/api/webhooks/")
+                        && !webhookUrl.startsWith("https://discordapp.com/api/webhooks/")) {
+                    yield "Webhook URL 格式不正確（須以 https://discord.com/api/webhooks/ 開頭）";
+                }
                 yield null;
             }
             case GMAIL -> {
@@ -171,8 +172,7 @@ public class NotificationController {
             Map<String, Object> masked = new HashMap<>();
             switch (type) {
                 case DISCORD -> {
-                    masked.put("botToken", maskToken(textValue(cfg, "botToken")));
-                    masked.put("channelId", textValue(cfg, "channelId"));
+                    masked.put("webhookUrl", maskToken(textValue(cfg, "webhookUrl")));
                 }
                 case GMAIL -> masked.put("recipientEmail", textValue(cfg, "recipientEmail"));
                 case TELEGRAM -> {
@@ -195,8 +195,14 @@ public class NotificationController {
     private String restoreMaskedTokens(Long userId, ChannelType type, String configJson) {
         try {
             JsonNode cfg = objectMapper.readTree(configJson);
-            String botToken = textValue(cfg, "botToken");
-            if (!botToken.startsWith(MASK_PREFIX)) return configJson;
+
+            // 根據管道類型檢查需要恢復的欄位
+            String maskedField = switch (type) {
+                case DISCORD -> textValue(cfg, "webhookUrl");
+                case TELEGRAM -> textValue(cfg, "botToken");
+                default -> "";
+            };
+            if (!maskedField.startsWith(MASK_PREFIX)) return configJson;
 
             // 從既有管道取回完整 token
             var existing = channelService.getChannelByUserAndType(userId, type);
@@ -205,10 +211,7 @@ public class NotificationController {
             JsonNode existCfg = objectMapper.readTree(existing.getConfigJson());
             Map<String, Object> restored = new HashMap<>();
             switch (type) {
-                case DISCORD -> {
-                    restored.put("botToken", textValue(existCfg, "botToken"));
-                    restored.put("channelId", textValue(cfg, "channelId"));
-                }
+                case DISCORD -> restored.put("webhookUrl", textValue(existCfg, "webhookUrl"));
                 case TELEGRAM -> {
                     restored.put("botToken", textValue(existCfg, "botToken"));
                     restored.put("chatId", textValue(cfg, "chatId"));

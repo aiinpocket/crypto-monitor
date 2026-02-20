@@ -81,7 +81,7 @@
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h2 class="text-sm text-text-heading">&#128172; Discord 通知</h2>
-                    <p class="text-text-muted text-xs mt-0.5">使用 Discord Bot 發送交易訊號</p>
+                    <p class="text-text-muted text-xs mt-0.5">使用 Discord Webhook 發送交易訊號</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" x-model="discord.enabled" class="sr-only peer">
@@ -94,15 +94,10 @@
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs text-text-muted mb-1">Bot Token</label>
-                    <input type="password" x-model="discord.botToken" placeholder="Discord Bot Token"
+                    <label class="block text-xs text-text-muted mb-1">Webhook URL</label>
+                    <input type="password" x-model="discord.webhookUrl" placeholder="https://discord.com/api/webhooks/..."
                            class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
-                    <p class="text-xs text-text-muted mt-0.5">Discord Developer Portal 取得</p>
-                </div>
-                <div>
-                    <label class="block text-xs text-text-muted mb-1">Channel ID</label>
-                    <input type="text" x-model="discord.channelId" placeholder="頻道 ID"
-                           class="w-full px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
+                    <p class="text-xs text-text-muted mt-0.5">伺服器設定 &#8594; 整合 &#8594; Webhook &#8594; 複製 URL</p>
                 </div>
                 <div class="flex gap-4 pt-1">
                     <label class="flex items-center gap-1.5 cursor-pointer text-xs">
@@ -268,7 +263,7 @@
                 { key: 'ASSASSIN', name: '刺客', desc: '快進快出短線高手' }
             ],
             achievements: [],
-            discord: { id: null, enabled: true, botToken: '', channelId: '', notifyOnEntry: true, notifyOnExit: true },
+            discord: { id: null, enabled: true, webhookUrl: '', notifyOnEntry: true, notifyOnExit: true },
             gmail: { id: null, enabled: true, recipientEmail: '', notifyOnEntry: true, notifyOnExit: true },
             telegram: { id: null, enabled: true, botToken: '', chatId: '', notifyOnEntry: true, notifyOnExit: true },
 
@@ -309,7 +304,7 @@
                     (await r.json()).forEach(ch => {
                         let cfg = {};
                         try { cfg = JSON.parse(ch.configJson || '{}'); } catch(_) { cfg = {}; }
-                        if (ch.channelType === 'DISCORD') this.discord = { id: ch.id, enabled: ch.enabled, botToken: cfg.botToken||'', channelId: cfg.channelId||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };
+                        if (ch.channelType === 'DISCORD') this.discord = { id: ch.id, enabled: ch.enabled, webhookUrl: cfg.webhookUrl||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };
                         else if (ch.channelType === 'GMAIL') this.gmail = { id: ch.id, enabled: ch.enabled, recipientEmail: cfg.recipientEmail||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };
                         else if (ch.channelType === 'TELEGRAM') this.telegram = { id: ch.id, enabled: ch.enabled, botToken: cfg.botToken||'', chatId: cfg.chatId||'', notifyOnEntry: ch.notifyOnEntry, notifyOnExit: ch.notifyOnExit };
                     });
@@ -358,7 +353,7 @@
                 try {
                     const r = await fetch(`/api/user/notifications/${cid}`, { method: 'DELETE' });
                     if (r.ok) {
-                        if (type==='DISCORD') this.discord={id:null,enabled:true,botToken:'',channelId:'',notifyOnEntry:true,notifyOnExit:true};
+                        if (type==='DISCORD') this.discord={id:null,enabled:true,webhookUrl:'',notifyOnEntry:true,notifyOnExit:true};
                         else if (type==='GMAIL') this.gmail={id:null,enabled:true,recipientEmail:'',notifyOnEntry:true,notifyOnExit:true};
                         else this.telegram={id:null,enabled:true,botToken:'',chatId:'',notifyOnEntry:true,notifyOnExit:true};
                         this.showMsg('已刪除', 'success');
@@ -367,7 +362,7 @@
             },
             buildPayload(type) {
                 let cfg, form;
-                if (type==='DISCORD') { form=this.discord; cfg=JSON.stringify({botToken:form.botToken,channelId:form.channelId}); }
+                if (type==='DISCORD') { form=this.discord; cfg=JSON.stringify({webhookUrl:form.webhookUrl}); }
                 else if (type==='GMAIL') { form=this.gmail; cfg=JSON.stringify({recipientEmail:form.recipientEmail}); }
                 else if (type==='TELEGRAM') { form=this.telegram; cfg=JSON.stringify({botToken:form.botToken,chatId:form.chatId}); }
                 else return null;
