@@ -34,6 +34,10 @@
                :class="path === '/battle' && 'ring-2 ring-cta brightness-125'">
                 &#9876; 戰鬥
             </a>
+            <a href="/inventory" class="pixel-btn pixel-btn-gold text-xs py-1.5 px-3"
+               :class="path === '/inventory' && 'ring-2 ring-primary brightness-125'">
+                &#127890; 背包
+            </a>
             <a href="/backtest" class="pixel-btn pixel-btn-gold text-xs py-1.5 px-3"
                :class="path === '/backtest' && 'ring-2 ring-primary brightness-125'">
                 &#9889; 回測
@@ -76,6 +80,7 @@
         <a href="/strategies" class="block px-3 py-2 text-sm" :class="path === '/strategies' ? 'text-cta font-bold' : 'text-text-muted hover:text-primary'">&#128214; 策略</a>
         <a href="/community" class="block px-3 py-2 text-sm" :class="path === '/community' ? 'text-primary font-bold' : 'text-text-muted hover:text-primary'">&#127760; 社群</a>
         <a href="/battle" class="block px-3 py-2 text-sm" :class="path === '/battle' ? 'text-cta font-bold' : 'text-text-muted hover:text-primary'">&#9876; 戰鬥</a>
+        <a href="/inventory" class="block px-3 py-2 text-sm" :class="path === '/inventory' ? 'text-primary font-bold' : 'text-text-muted hover:text-primary'">&#127890; 背包</a>
         <a href="/backtest" class="block px-3 py-2 text-sm" :class="path === '/backtest' ? 'text-primary font-bold' : 'text-text-muted hover:text-primary'">&#9889; 回測</a>
         <a href="/settings" class="block px-3 py-2 text-sm" :class="path === '/settings' ? 'text-cta font-bold' : 'text-text-muted hover:text-primary'">&#9881; 設定</a>
         <div class="flex items-center justify-between px-3 py-2 border-t border-border-main mt-1 pt-2">

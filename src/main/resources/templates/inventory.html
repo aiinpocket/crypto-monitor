@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head th:replace="~{fragments/head :: head('BtcTrade - 冒險背包')}"></head>
+<body class="bg-bg-dark text-text-main min-h-screen">
+
+<div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+<div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
+
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-7xl mx-auto" x-data="inventoryApp()">
+
+    <!-- 頁面標題 -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="font-heading text-lg text-primary glow-gold">&#127890; 冒險背包</h1>
+            <p class="text-text-muted text-[13px] mt-1">管理裝備 — 穿戴、賣出、擴充倉庫</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="pixel-card px-3 py-1.5 text-sm">
+                <span class="text-primary font-heading" x-text="summary.gameCurrency + ' G'">0 G</span>
+            </div>
+            <div class="pixel-card px-3 py-1.5 text-sm">
+                <span class="text-text-muted" x-text="summary.itemCount + '/' + summary.maxSlots">0/100</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 載入指示 -->
+    <div x-show="loading" class="text-center py-8">
+        <span class="text-sm text-primary anim-flash">&#127890; 載入中...</span>
+    </div>
+
+    <div x-show="!loading" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- 左側：角色裝備展示 -->
+        <div class="lg:col-span-4">
+            <div class="pixel-card p-4">
+                <h2 class="font-heading text-sm text-primary mb-3">&#128100; 角色裝備</h2>
+
+                <!-- 角色像素圖 + 裝備名稱 -->
+                <div class="flex flex-col items-center mb-4">
+                    <div class="relative w-[48px] h-[48px] mb-2">
+                        <div class="absolute top-0 left-0 anim-idle"
+                             :class="'pixel-char-' + charClass.toLowerCase()"></div>
+                    </div>
+                    <span class="text-xs text-text-muted" x-text="charLabel"></span>
+                </div>
+
+                <!-- 武器欄 -->
+                <div class="space-y-2">
+                    <div class="flex items-center gap-3 pixel-card p-2"
+                         :class="summary.equippedWeaponCss ? 'rarity-bg-rare' : ''">
+                        <div class="w-6 h-6 flex items-center justify-center text-text-muted shrink-0">
+                            <template x-if="summary.equippedWeaponCss">
+                                <div class="pixel-equip" :class="summary.equippedWeaponCss"></div>
+                            </template>
+                            <template x-if="!summary.equippedWeaponCss">
+                                <span class="text-lg">&#9876;</span>
+                            </template>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[10px] text-text-muted">武器</div>
+                            <div class="text-xs text-text-heading truncate"
+                                 x-text="summary.equippedWeaponName || '— 空 —'"></div>
+                        </div>
+                    </div>
+
+                    <!-- 防具欄 -->
+                    <div class="flex items-center gap-3 pixel-card p-2"
+                         :class="summary.equippedArmorCss ? 'rarity-bg-rare' : ''">
+                        <div class="w-6 h-6 flex items-center justify-center text-text-muted shrink-0">
+                            <template x-if="summary.equippedArmorCss">
+                                <div class="pixel-equip" :class="summary.equippedArmorCss"></div>
+                            </template>
+                            <template x-if="!summary.equippedArmorCss">
+                                <span class="text-lg">&#128737;</span>
+                            </template>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[10px] text-text-muted">防具</div>
+                            <div class="text-xs text-text-heading truncate"
+                                 x-text="summary.equippedArmorName || '— 空 —'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 擴充背包 -->
+                <div class="mt-4 pt-3 border-t border-border-main">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-[11px] text-text-muted">背包格數</div>
+                            <div class="text-sm" x-text="summary.itemCount + ' / ' + summary.maxSlots"></div>
+                        </div>
+                        <button @click="expandInventory()" class="pixel-btn pixel-btn-gold text-[11px] py-1 px-2 cursor-pointer"
+                                :disabled="summary.gameCurrency < summary.expandCost">
+                            <span x-text="'擴充 +5 (' + summary.expandCost + 'G)'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：背包物品列表 -->
+        <div class="lg:col-span-8">
+            <div class="pixel-card p-4">
+                <!-- 篩選欄 -->
+                <div class="flex items-center gap-2 mb-3 flex-wrap">
+                    <h2 class="font-heading text-sm text-primary">&#128188; 物品列表</h2>
+                    <div class="flex gap-1 ml-auto">
+                        <button @click="filter = 'all'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                                :class="filter === 'all' ? 'pixel-btn-gold' : 'pixel-btn-purple'">全部</button>
+                        <button @click="filter = 'WEAPON'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                                :class="filter === 'WEAPON' ? 'pixel-btn-gold' : 'pixel-btn-purple'">武器</button>
+                        <button @click="filter = 'ARMOR'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                                :class="filter === 'ARMOR' ? 'pixel-btn-gold' : 'pixel-btn-purple'">防具</button>
+                        <button @click="filter = 'equipped'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                                :class="filter === 'equipped' ? 'pixel-btn-gold' : 'pixel-btn-purple'">已裝備</button>
+                    </div>
+                </div>
+
+                <!-- 空背包提示 -->
+                <div x-show="filteredItems.length === 0" class="text-center py-8">
+                    <div class="text-3xl mb-2">&#127890;</div>
+                    <p class="text-text-muted text-sm">背包空空如也</p>
+                    <p class="text-text-muted text-xs mt-1">擊敗怪物有機會獲得裝備掉落</p>
+                </div>
+
+                <!-- 物品 Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <template x-for="item in filteredItems" :key="item.id">
+                        <div class="pixel-card p-3 border-l-2 transition-all duration-200"
+                             :class="rarityBorderClass(item.rarity) + ' ' + (item.equipped ? 'ring-1 ring-primary/50' : '')">
+                            <div class="flex items-start gap-3">
+                                <!-- 裝備像素圖 -->
+                                <div class="w-[24px] h-[24px] shrink-0 relative">
+                                    <div class="pixel-equip" :class="item.pixelCssClass"></div>
+                                </div>
+                                <!-- 裝備資訊 -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-xs font-heading text-text-heading truncate" x-text="item.name"></span>
+                                        <span class="text-[9px] px-1 py-0.5"
+                                              :class="rarityBadgeClass(item.rarity)"
+                                              x-text="rarityLabel(item.rarity)"></span>
+                                    </div>
+                                    <div class="text-[10px] text-text-muted mt-0.5" x-text="item.description"></div>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="text-[10px]"
+                                              :class="item.equipmentType === 'WEAPON' ? 'text-negative' : 'text-cta'"
+                                              x-text="item.equipmentType === 'WEAPON' ? '&#9876; 武器' : '&#128737; 防具'"></span>
+                                        <span class="text-[10px] text-primary" x-text="item.sellPrice + ' G'"></span>
+                                        <template x-if="item.classRestriction">
+                                            <span class="text-[10px] text-text-muted" x-text="'限 ' + classLabel(item.classRestriction)"></span>
+                                        </template>
+                                        <template x-if="item.equipped">
+                                            <span class="text-[10px] text-positive font-heading">&#9989; 穿戴中</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <!-- 操作按鈕 -->
+                                <div class="flex flex-col gap-1 shrink-0">
+                                    <template x-if="!item.equipped">
+                                        <button @click="equipItem(item.id)" class="pixel-btn pixel-btn-gold text-[10px] py-0.5 px-1.5 cursor-pointer">穿戴</button>
+                                    </template>
+                                    <template x-if="item.equipped">
+                                        <button @click="unequipItem(item.id)" class="pixel-btn pixel-btn-purple text-[10px] py-0.5 px-1.5 cursor-pointer">卸下</button>
+                                    </template>
+                                    <template x-if="!item.equipped">
+                                        <button @click="sellItem(item)" class="pixel-btn text-[10px] py-0.5 px-1.5 cursor-pointer text-negative border-negative/30 hover:bg-negative/10">賣出</button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast 通知 -->
+    <div x-show="toast.show" x-transition
+         class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pixel-card px-4 py-2 text-sm"
+         :class="toast.success ? 'text-positive' : 'text-negative'">
+        <span x-text="toast.message"></span>
+    </div>
+
+</main>
+
+<script>
+function inventoryApp() {
+    return {
+        loading: true,
+        items: [],
+        filter: 'all',
+        charClass: 'WARRIOR',
+        charLabel: '戰士',
+        summary: {
+            itemCount: 0, maxSlots: 100, gameCurrency: 0, expandCost: 50,
+            equippedWeaponName: null, equippedArmorName: null,
+            equippedWeaponCss: null, equippedArmorCss: null
+        },
+        toast: { show: false, message: '', success: true },
+
+        get filteredItems() {
+            if (this.filter === 'all') return this.items;
+            if (this.filter === 'equipped') return this.items.filter(i => i.equipped);
+            return this.items.filter(i => i.equipmentType === this.filter);
+        },
+
+        async init() {
+            await Promise.all([this.loadInventory(), this.loadSummary(), this.loadCharClass()]);
+            this.loading = false;
+        },
+
+        async loadInventory() {
+            try {
+                const resp = await fetch('/api/user/equipment/inventory');
+                if (resp.ok) this.items = await resp.json();
+            } catch (e) { console.error('Failed to load inventory', e); }
+        },
+
+        async loadSummary() {
+            try {
+                const resp = await fetch('/api/user/equipment/summary');
+                if (resp.ok) this.summary = await resp.json();
+            } catch (e) { console.error('Failed to load summary', e); }
+        },
+
+        async loadCharClass() {
+            try {
+                const resp = await fetch('/api/user/gamification/profile');
+                if (!resp.ok) return;
+                const p = await resp.json();
+                this.charClass = p.characterClass || 'WARRIOR';
+                this.charLabel = this.classLabel(this.charClass);
+            } catch (e) { /* silent */ }
+        },
+
+        async equipItem(id) {
+            try {
+                const resp = await fetch(`/api/user/equipment/${id}/equip`, { method: 'POST' });
+                const result = await resp.json();
+                this.showToast(result.message, result.success);
+                if (result.success) { await this.loadInventory(); await this.loadSummary(); }
+            } catch (e) { this.showToast('操作失敗', false); }
+        },
+
+        async unequipItem(id) {
+            try {
+                const resp = await fetch(`/api/user/equipment/${id}/unequip`, { method: 'POST' });
+                const result = await resp.json();
+                this.showToast(result.message, result.success);
+                if (result.success) { await this.loadInventory(); await this.loadSummary(); }
+            } catch (e) { this.showToast('操作失敗', false); }
+        },
+
+        async sellItem(item) {
+            const confirmed = await pixelConfirm(`確定賣出「${item.name}」？\n可獲得 ${item.sellPrice} G`);
+            if (!confirmed) return;
+            try {
+                const resp = await fetch(`/api/user/equipment/${item.id}/sell`, { method: 'POST' });
+                const result = await resp.json();
+                this.showToast(result.message, result.success);
+                if (result.success) {
+                    await this.loadInventory();
+                    await this.loadSummary();
+                }
+            } catch (e) { this.showToast('操作失敗', false); }
+        },
+
+        async expandInventory() {
+            const confirmed = await pixelConfirm(`擴充背包 +5 格？\n費用：${this.summary.expandCost} G`);
+            if (!confirmed) return;
+            try {
+                const resp = await fetch('/api/user/equipment/expand', { method: 'POST' });
+                const result = await resp.json();
+                this.showToast(result.message, result.success);
+                if (result.success) await this.loadSummary();
+            } catch (e) { this.showToast('操作失敗', false); }
+        },
+
+        showToast(msg, success) {
+            this.toast = { show: true, message: msg, success };
+            setTimeout(() => { this.toast.show = false; }, 2500);
+        },
+
+        rarityBorderClass(rarity) {
+            const map = { COMMON: 'border-[#9ca3af]', RARE: 'border-[#3b82f6]', EPIC: 'border-[#a855f7]', LEGENDARY: 'border-[#fbbf24]' };
+            return map[rarity] || '';
+        },
+        rarityBadgeClass(rarity) {
+            const map = {
+                COMMON: 'bg-gray-500/20 text-gray-400',
+                RARE: 'bg-blue-500/20 text-blue-400',
+                EPIC: 'bg-purple-500/20 text-purple-400',
+                LEGENDARY: 'bg-yellow-500/20 text-yellow-400'
+            };
+            return map[rarity] || '';
+        },
+        rarityLabel(rarity) {
+            const map = { COMMON: '普通', RARE: '稀有', EPIC: '史詩', LEGENDARY: '傳說' };
+            return map[rarity] || rarity;
+        },
+        classLabel(cls) {
+            const map = { WARRIOR: '戰士', MAGE: '法師', RANGER: '遊俠', ASSASSIN: '刺客' };
+            return map[cls] || cls;
+        }
+    };
+}
+</script>
+
+</body>
+</html>

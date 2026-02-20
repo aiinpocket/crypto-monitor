@@ -46,6 +46,11 @@ public class UserEquipment {
     @JoinColumn(name = "source_encounter_id")
     private MonsterEncounter sourceEncounter;
 
+    /** 是否裝備在用戶角色身上（P2 簡化版，P4 隊伍系統前使用） */
+    @Column(name = "equipped_by_user", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean equippedByUser = false;
+
     /** 取得時間 */
     @Column(name = "acquired_at", nullable = false)
     private Instant acquiredAt;
