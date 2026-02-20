@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,9 @@ public class StrategyPerformanceService {
 
     /** 每位用戶的計算進度追蹤（記憶體內，不需持久化） */
     private final ConcurrentHashMap<Long, ComputeProgress> progressMap = new ConcurrentHashMap<>();
+
+    /** 全域計算鎖：防止 Quartz Job 和用戶 API 同時執行大量回測導致 OOM */
+    private final AtomicBoolean globalComputeLock = new AtomicBoolean(false);
 
     public static class ComputeProgress {
         private final AtomicInteger completed = new AtomicInteger(0);
@@ -132,6 +136,11 @@ public class StrategyPerformanceService {
         computePerformance(templateId);
     }
 
+    /** 檢查是否有全域計算正在進行中 */
+    public boolean isGlobalComputeRunning() {
+        return globalComputeLock.get();
+    }
+
     /**
      * 非同步逐一計算多個模板的績效（避免多個大型回測同時執行導致 OOM）。
      * 單一 async 任務內順序執行，確保同一時間只有一個回測在跑。
@@ -139,27 +148,39 @@ public class StrategyPerformanceService {
      */
     @Async("backtestExecutor")
     public void computeMultiplePerformancesAsync(List<Long> templateIds, Long userId) {
-        int totalSteps = templateIds.size() * PerformancePeriod.values().length;
-        ComputeProgress progress = new ComputeProgress(totalSteps);
-        progressMap.put(userId, progress);
-
-        log.info("[績效計算] 開始逐一計算 {} 個模板的績效（共 {} 個時段）",
-                templateIds.size(), totalSteps);
-
-        int completedTemplates = 0;
-        for (Long templateId : templateIds) {
-            try {
-                computePerformanceWithProgress(templateId, progress);
-                completedTemplates++;
-            } catch (Exception e) {
-                log.error("[績效計算] 模板 {} 計算失敗: {}", templateId, e.getMessage());
-            }
+        if (!globalComputeLock.compareAndSet(false, true)) {
+            log.warn("[績效計算] 全域計算鎖已佔用（可能有 Quartz Job 正在執行），跳過用戶 {} 的計算請求", userId);
+            ComputeProgress skipped = new ComputeProgress(0);
+            skipped.running = false;
+            progressMap.put(userId, skipped);
+            return;
         }
 
-        progress.running = false;
-        log.info("[績效計算] 完成 {}/{} 個模板（成功 {}/失敗 {} 個時段）",
-                completedTemplates, templateIds.size(),
-                progress.getCompleted(), progress.getFailed());
+        try {
+            int totalSteps = templateIds.size() * PerformancePeriod.values().length;
+            ComputeProgress progress = new ComputeProgress(totalSteps);
+            progressMap.put(userId, progress);
+
+            log.info("[績效計算] 開始逐一計算 {} 個模板的績效（共 {} 個時段）",
+                    templateIds.size(), totalSteps);
+
+            int completedTemplates = 0;
+            for (Long templateId : templateIds) {
+                try {
+                    computePerformanceWithProgress(templateId, progress);
+                    completedTemplates++;
+                } catch (Exception e) {
+                    log.error("[績效計算] 模板 {} 計算失敗: {}", templateId, e.getMessage());
+                }
+            }
+
+            progress.running = false;
+            log.info("[績效計算] 完成 {}/{} 個模板（成功 {}/失敗 {} 個時段）",
+                    completedTemplates, templateIds.size(),
+                    progress.getCompleted(), progress.getFailed());
+        } finally {
+            globalComputeLock.set(false);
+        }
     }
 
     /**
@@ -192,24 +213,33 @@ public class StrategyPerformanceService {
     }
 
     /**
-     * 逐一計算所有模板的績效（供 Quartz Job 和前端「重新計算」呼叫）。
-     * 改為逐一順序執行，避免多個大型回測同時佔用記憶體導致 OOM。
+     * 逐一計算所有模板的績效（供 Quartz Job 呼叫）。
+     * 透過全域鎖確保不會與用戶觸發的計算同時執行。
      */
     public void computeAllPerformances() {
-        List<StrategyTemplate> allTemplates = templateRepo.findAll();
-        log.info("[績效排程] 開始逐一計算 {} 個模板的績效", allTemplates.size());
-
-        int completed = 0;
-        for (StrategyTemplate template : allTemplates) {
-            try {
-                computePerformance(template.getId());
-                completed++;
-            } catch (Exception e) {
-                log.error("[績效排程] 模板 {} ({}) 計算失敗: {}",
-                        template.getId(), template.getName(), e.getMessage());
-            }
+        if (!globalComputeLock.compareAndSet(false, true)) {
+            log.info("[績效排程] 全域計算鎖已佔用（可能有用戶正在計算），本次排程跳過");
+            return;
         }
-        log.info("[績效排程] 完成 {}/{} 個模板的績效計算", completed, allTemplates.size());
+
+        try {
+            List<StrategyTemplate> allTemplates = templateRepo.findAll();
+            log.info("[績效排程] 開始逐一計算 {} 個模板的績效", allTemplates.size());
+
+            int completed = 0;
+            for (StrategyTemplate template : allTemplates) {
+                try {
+                    computePerformance(template.getId());
+                    completed++;
+                } catch (Exception e) {
+                    log.error("[績效排程] 模板 {} ({}) 計算失敗: {}",
+                            template.getId(), template.getName(), e.getMessage());
+                }
+            }
+            log.info("[績效排程] 完成 {}/{} 個模板的績效計算", completed, allTemplates.size());
+        } finally {
+            globalComputeLock.set(false);
+        }
     }
 
     /**

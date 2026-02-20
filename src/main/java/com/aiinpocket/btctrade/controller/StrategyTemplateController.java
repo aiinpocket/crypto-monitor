@@ -139,11 +139,16 @@ public class StrategyTemplateController {
     @PostMapping("/refresh-all-performance")
     public ResponseEntity<?> refreshAllPerformance(
             @AuthenticationPrincipal AppUserPrincipal principal) {
-        // 防呆：檢查是否已有進行中的計算
+        // 防呆：檢查是否已有進行中的計算（per-user）
         var existing = performanceService.getComputeProgress(principal.getUserId());
         if (existing != null && existing.isRunning()) {
             return ResponseEntity.ok(Map.of(
                     "message", "計算已在進行中（" + existing.getCompleted() + "/" + existing.getTotal() + "），請等待完成"));
+        }
+        // 防呆：檢查全域計算鎖（Quartz Job 或其他用戶正在計算）
+        if (performanceService.isGlobalComputeRunning()) {
+            return ResponseEntity.ok(Map.of(
+                    "message", "系統正在進行排程計算，請稍後再試"));
         }
 
         log.info("[策略API] 用戶 {} 觸發所有模板績效重算", principal.getUserId());
