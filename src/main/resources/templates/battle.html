@@ -112,8 +112,22 @@
 
     <!-- ===== 怪物圖鑑 Tab ===== -->
     <div x-show="tab === 'bestiary' && !loading">
+        <!-- 風險等級篩選 -->
+        <div class="flex gap-1 mb-4 flex-wrap">
+            <button @click="tierFilter = 'ALL'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                    :class="tierFilter === 'ALL' ? 'pixel-btn-gold' : 'pixel-btn-purple'">全部</button>
+            <button @click="tierFilter = 'LOW'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                    :class="tierFilter === 'LOW' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#127807; LOW</button>
+            <button @click="tierFilter = 'MEDIUM'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                    :class="tierFilter === 'MEDIUM' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#9876; MEDIUM</button>
+            <button @click="tierFilter = 'HIGH'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                    :class="tierFilter === 'HIGH' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#128293; HIGH</button>
+            <button @click="tierFilter = 'EXTREME'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                    :class="tierFilter === 'EXTREME' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#128128; EXTREME</button>
+            <span class="text-[10px] text-text-muted self-center ml-2" x-text="filteredBestiary.length + ' 隻怪物'"></span>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <template x-for="m in bestiary" :key="m.id">
+            <template x-for="m in filteredBestiary" :key="m.id">
                 <div class="pixel-card p-4 text-center">
                     <!-- 怪物像素圖（大） -->
                     <div class="relative w-[48px] h-[48px] mx-auto mb-3">
@@ -157,10 +171,16 @@
 function battleApp() {
     return {
         tab: 'bestiary',
+        tierFilter: 'ALL',
         loading: true,
         encounters: [],
         bestiary: [],
         stats: { total: 0, victories: 0, defeats: 0, winRate: 0 },
+
+        get filteredBestiary() {
+            if (this.tierFilter === 'ALL') return this.bestiary;
+            return this.bestiary.filter(m => m.riskTier === this.tierFilter);
+        },
 
         async init() {
             await Promise.all([
