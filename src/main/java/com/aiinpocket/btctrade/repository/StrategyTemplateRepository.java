@@ -27,8 +27,11 @@ public interface StrategyTemplateRepository extends JpaRepository<StrategyTempla
     /** 查詢是否存在系統預設模板（應用啟動時用於初始化檢查） */
     boolean existsBySystemDefaultTrue();
 
-    /** 查詢系統預設模板 */
-    Optional<StrategyTemplate> findBySystemDefaultTrue();
+    /** 查詢系統預設模板（可能有多個） */
+    List<StrategyTemplate> findAllBySystemDefaultTrue();
+
+    /** 按名稱查詢系統預設模板是否存在 */
+    boolean existsByNameAndSystemDefaultTrue(String name);
 
     /** 查詢用戶自建的所有模板（不含系統預設） */
     List<StrategyTemplate> findByUserIdAndSystemDefaultFalse(Long userId);

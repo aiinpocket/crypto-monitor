@@ -1,5 +1,5 @@
 app:
-  version: v1.0.15
+  version: v1.0.16
 
 spring:
   application:
@@ -98,16 +98,16 @@ trading:
     donchian-entry: 20
     donchian-exit: 10
   risk:
-    stop-loss-pct: 0.02
-    max-holding-days: 3
+    stop-loss-pct: 0.04
+    max-holding-days: 5
     initial-capital: 10000.00
     max-trades-per-day: 5
     leverage: 1
-    trailing-activate-pct: 0.015
-    trailing-offset-pct: 0.003
-    time-stop-days: 1
+    trailing-activate-pct: 0.02
+    trailing-offset-pct: 0.001
+    time-stop-days: 2
     cooldown-days: 0
-    position-size-pct: 1.0
+    position-size-pct: 0.8
   rsi:
     long-entry-min: 30
     long-entry-max: 65
