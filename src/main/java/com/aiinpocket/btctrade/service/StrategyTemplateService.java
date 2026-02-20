@@ -5,9 +5,10 @@ import com.aiinpocket.btctrade.model.entity.AppUser;
 import com.aiinpocket.btctrade.model.entity.StrategyTemplate;
 import com.aiinpocket.btctrade.repository.StrategyPerformanceRepository;
 import com.aiinpocket.btctrade.repository.StrategyTemplateRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,11 +93,13 @@ public class StrategyTemplateService {
      * 逐一檢查各職業模板是否已建立，缺少的才建立（冪等操作）。
      * 若偵測到舊版單一預設模板（"系統預設策略"），自動遷移為四職業版本。
      *
-     * <p>需要 @Transactional 因為遷移舊模板涉及 delete 操作。
+     * <p>使用 @EventListener 而非 @PostConstruct，因為 @PostConstruct 在 AOP proxy
+     * 建立之前執行，導致 @Transactional 無效。ApplicationReadyEvent 觸發時 proxy
+     * 已就緒，事務管理正常運作。
      */
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     @Transactional
-    void ensureDefaultTemplate() {
+    public void ensureDefaultTemplate() {
         // 遷移：如果存在舊版單一預設模板，刪除它（連同績效資料）
         templateRepo.findAllBySystemDefaultTrue().stream()
                 .filter(t -> "系統預設策略".equals(t.getName()))
