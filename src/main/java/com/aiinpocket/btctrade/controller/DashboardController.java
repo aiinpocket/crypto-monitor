@@ -6,6 +6,7 @@ import com.aiinpocket.btctrade.model.entity.TrackedSymbol;
 import com.aiinpocket.btctrade.model.enums.SyncStatus;
 import com.aiinpocket.btctrade.security.AppUserPrincipal;
 import com.aiinpocket.btctrade.service.DashboardService;
+import com.aiinpocket.btctrade.service.StrategyTemplateService;
 import com.aiinpocket.btctrade.service.UserWatchlistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
     private final BinanceApiProperties apiProperties;
     private final UserWatchlistService watchlistService;
+    private final StrategyTemplateService templateService;
 
     @GetMapping("/")
     public String dashboard(
@@ -78,6 +80,10 @@ public class DashboardController {
                 .anyMatch(ts -> ts.getSymbol().equals(activeSymbol)
                         && ts.getSyncStatus() == SyncStatus.DELISTED);
         model.addAttribute("activeSymbolDelisted", activeSymbolDelisted);
+
+        // 活躍策略資訊
+        var activeStrategy = templateService.getActiveStrategy(user.getId());
+        model.addAttribute("activeStrategy", activeStrategy);
 
         return "dashboard";
     }

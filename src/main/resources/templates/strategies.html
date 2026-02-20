@@ -31,9 +31,15 @@
                         <h3 class="text-sm text-text-heading" x-text="tmpl.name"></h3>
                         <span x-show="tmpl.systemDefault" class="text-xs px-1.5 py-0.5 bg-primary/20 text-primary pixel-border">傳說</span>
                     </div>
-                    <div class="flex gap-1">
-                        <button @click="cloneTemplate(tmpl.id)" class="pixel-btn pixel-btn-purple text-xs py-0.5 px-2">複製卷軸</button>
-                        <button x-show="!tmpl.systemDefault" @click="openEditor(tmpl)" class="pixel-btn pixel-btn-gold text-xs py-0.5 px-2">&#9998;</button>
+                    <div class="flex gap-1 items-center">
+                        <button @click="activateStrategy(tmpl.id, tmpl.name)"
+                                class="pixel-btn text-xs py-0.5 px-2"
+                                :class="activeStrategyId === tmpl.id ? 'pixel-btn-gold opacity-60 cursor-default' : 'pixel-btn-gold cursor-pointer'"
+                                :disabled="activeStrategyId === tmpl.id">
+                            <span x-text="activeStrategyId === tmpl.id ? '&#9876; 使用中' : '&#9876; 啟用'"></span>
+                        </button>
+                        <button @click="cloneTemplate(tmpl.id)" class="pixel-btn pixel-btn-purple text-xs py-0.5 px-2 cursor-pointer">複製卷軸</button>
+                        <button x-show="!tmpl.systemDefault" @click="openEditor(tmpl)" class="pixel-btn pixel-btn-gold text-xs py-0.5 px-2 cursor-pointer">&#9998;</button>
                         <button x-show="!tmpl.systemDefault" @click="deleteTemplate(tmpl.id)"
                                 class="text-[13px] text-negative hover:text-red-300 cursor-pointer px-1">&#10005;</button>
                     </div>
@@ -198,7 +204,7 @@
     function strategiesApp() {
         return {
             templates: [], showEditor: false, editing: {}, message: '', messageType: 'success',
-            loading: true, computeStatus: '',
+            loading: true, computeStatus: '', activeStrategyId: null,
             perfSummaries: [], perfLoading: false, selectedMetric: 'totalReturn', lastComputedTime: '',
             metricOptions: [
                 { key: 'totalReturn', label: '累計報酬' }, { key: 'annualizedReturn', label: '年化報酬' },
@@ -229,7 +235,9 @@
                 { key: 'rsiShortEntryMin', label: '做空 RSI 下限' }, { key: 'rsiShortEntryMax', label: '做空 RSI 上限' },
                 { key: 'rsiLongExitExtreme', label: '做多出場極端' }, { key: 'rsiShortExitExtreme', label: '做空出場極端' },
             ],
-            async init() { try { await this.loadTemplates(); await this.loadPerformance(); await this.checkActiveCompute(); } finally { this.loading = false; } },
+            async init() { try { await Promise.all([this.loadTemplates(), this.loadActiveStrategy()]); await this.loadPerformance(); await this.checkActiveCompute(); } finally { this.loading = false; } },
+            async loadActiveStrategy() { try { const r = await fetch('/api/user/strategies/active'); if (r.ok) { const s = await r.json(); if (s.active) this.activeStrategyId = s.id; } } catch(e){} },
+            async activateStrategy(id, name) { if (this.activeStrategyId === id) return; try { const r = await fetch('/api/user/strategies/' + id + '/activate', { method: 'POST' }); if (r.ok) { this.activeStrategyId = id; this.showMsg('已啟用策略: ' + name, 'success'); } else { const e = await r.json(); this.showMsg(e.error || '啟用失敗', 'error'); } } catch(e) { this.showMsg('網路錯誤', 'error'); } },
             async checkActiveCompute() {
                 try {
                     const r=await fetch('/api/user/strategies/performance/status');

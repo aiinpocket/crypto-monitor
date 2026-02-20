@@ -35,6 +35,11 @@
                             </div>
                             <span class="text-xs text-text-muted" x-text="currentExp + '/' + expToNext"></span>
                         </div>
+                        <!-- 活躍策略 -->
+                        <div class="flex items-center gap-1 mt-1" x-show="activeStrategyName">
+                            <span class="text-[10px] text-text-muted">&#9876; 策略:</span>
+                            <span class="text-[10px] text-cta" x-text="activeStrategyName"></span>
+                        </div>
                     </div>
                 </div>
                 <!-- 每日獎勵按鈕 -->
@@ -272,20 +277,28 @@
         function characterBar() {
             return {
                 level: 1, currentExp: 0, expToNext: 50, expPct: 0, charClass: 'WARRIOR', dailyClaimed: false,
-                charLabel: '戰士',
+                charLabel: '戰士', activeStrategyName: '',
                 classLabels: { WARRIOR: '戰士', MAGE: '法師', RANGER: '遊俠', ASSASSIN: '刺客' },
                 async load() {
                     try {
-                        const resp = await fetch('/api/user/gamification/profile');
-                        if (!resp.ok) return;
-                        const p = await resp.json();
-                        this.level = p.level;
-                        this.currentExp = p.currentExp;
-                        this.expToNext = p.currentExp + p.expToNextLevel;
-                        this.expPct = Math.min(100, p.expProgressPct);
-                        this.charClass = p.characterClass || 'WARRIOR';
-                        this.dailyClaimed = p.dailyRewardClaimed;
-                        this.charLabel = this.classLabels[this.charClass] || this.charClass;
+                        const [profileResp, strategyResp] = await Promise.all([
+                            fetch('/api/user/gamification/profile'),
+                            fetch('/api/user/strategies/active')
+                        ]);
+                        if (profileResp.ok) {
+                            const p = await profileResp.json();
+                            this.level = p.level;
+                            this.currentExp = p.currentExp;
+                            this.expToNext = p.currentExp + p.expToNextLevel;
+                            this.expPct = Math.min(100, p.expProgressPct);
+                            this.charClass = p.characterClass || 'WARRIOR';
+                            this.dailyClaimed = p.dailyRewardClaimed;
+                            this.charLabel = this.classLabels[this.charClass] || this.charClass;
+                        }
+                        if (strategyResp.ok) {
+                            const s = await strategyResp.json();
+                            if (s.active) this.activeStrategyName = s.name;
+                        }
                     } catch (e) { /* 靜默 */ }
                 },
                 async claimDaily() {

@@ -85,6 +85,10 @@ public class AppUser {
     @Builder.Default
     private String characterClass = "WARRIOR";
 
+    /** 當前啟用的策略模板 ID（null 表示尚未選擇，需強制引導至角色創建頁面） */
+    @Column(name = "active_strategy_template_id")
+    private Long activeStrategyTemplateId;
+
     // ===== 怪物戰鬥系統欄位 =====
 
     /** 遊戲幣餘額（賣裝備獲得，用於擴充倉庫/資遣隊員） */

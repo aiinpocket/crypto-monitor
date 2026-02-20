@@ -259,6 +259,7 @@ public class GamificationService {
 
     /**
      * 更換角色職業。
+     * 同時檢查：若用戶沒有自訂策略（使用系統預設），則自動切換為新職業的預設策略。
      */
     @Transactional
     public void changeCharacterClass(Long userId, String characterClass) {
@@ -267,7 +268,33 @@ public class GamificationService {
             throw new IllegalArgumentException("無效的角色職業: " + characterClass);
         }
         user.setCharacterClass(characterClass);
+
+        // 若當前活躍策略是系統預設模板，自動切換為新職業的預設策略
+        if (user.getActiveStrategyTemplateId() != null) {
+            templateRepo.findById(user.getActiveStrategyTemplateId()).ifPresent(current -> {
+                if (current.isSystemDefault()) {
+                    templateRepo.findFirstByNameStartingWithAndSystemDefaultTrue(
+                            getClassPrefix(characterClass)
+                    ).ifPresent(newDefault -> {
+                        user.setActiveStrategyTemplateId(newDefault.getId());
+                        log.info("[遊戲化] 用戶 {} 換職業 {} → 活躍策略自動切換為 '{}'",
+                                userId, characterClass, newDefault.getName());
+                    });
+                }
+            });
+        }
+
         userRepo.save(user);
+    }
+
+    private String getClassPrefix(String characterClass) {
+        return switch (characterClass) {
+            case "WARRIOR" -> "⚔️ 戰士";
+            case "MAGE" -> "🔮 法師";
+            case "RANGER" -> "🏹 遊俠";
+            case "ASSASSIN" -> "🗡️ 刺客";
+            default -> "";
+        };
     }
 
     // ===== 內部方法 =====

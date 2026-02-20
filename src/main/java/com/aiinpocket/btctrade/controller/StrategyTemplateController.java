@@ -173,6 +173,44 @@ public class StrategyTemplateController {
                 "failed", progress.getFailed()));
     }
 
+    /** 啟用指定策略模板為活躍策略 */
+    @PostMapping("/{id}/activate")
+    public ResponseEntity<?> activateStrategy(
+            @AuthenticationPrincipal AppUserPrincipal principal,
+            @PathVariable Long id) {
+        try {
+            var template = templateService.activateStrategy(principal.getUserId(), id);
+            // 更新 session 中的 AppUser
+            principal.getAppUser().setActiveStrategyTemplateId(id);
+            log.info("[策略API] 用戶 {} 啟用策略: '{}' (id={})", principal.getUserId(), template.getName(), id);
+            return ResponseEntity.ok(Map.of(
+                    "id", template.getId(),
+                    "name", template.getName(),
+                    "message", "已啟用策略: " + template.getName()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[策略API] 啟用策略失敗", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "操作失敗，請稍後重試"));
+        }
+    }
+
+    /** 取得用戶目前啟用的策略模板 */
+    @GetMapping("/active")
+    public ResponseEntity<?> getActiveStrategy(@AuthenticationPrincipal AppUserPrincipal principal) {
+        var template = templateService.getActiveStrategy(principal.getUserId());
+        if (template == null) {
+            return ResponseEntity.ok(Map.of("active", false));
+        }
+        return ResponseEntity.ok(Map.of(
+                "active", true,
+                "id", template.getId(),
+                "name", template.getName(),
+                "description", template.getDescription() != null ? template.getDescription() : ""
+        ));
+    }
+
     /** 刪除用戶自訂模板（系統預設不可刪除） */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTemplate(

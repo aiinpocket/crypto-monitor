@@ -3,6 +3,7 @@ package com.aiinpocket.btctrade.service;
 import com.aiinpocket.btctrade.config.TradingStrategyProperties;
 import com.aiinpocket.btctrade.model.entity.AppUser;
 import com.aiinpocket.btctrade.model.entity.StrategyTemplate;
+import com.aiinpocket.btctrade.repository.AppUserRepository;
 import com.aiinpocket.btctrade.repository.BacktestRunRepository;
 import com.aiinpocket.btctrade.repository.StrategyPerformanceRepository;
 import com.aiinpocket.btctrade.repository.StrategyTemplateRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 策略模板管理服務。
@@ -35,9 +37,18 @@ public class StrategyTemplateService {
     private final StrategyTemplateRepository templateRepo;
     private final StrategyPerformanceRepository perfRepo;
     private final BacktestRunRepository backtestRunRepo;
+    private final AppUserRepository userRepo;
     private final TradingStrategyProperties defaultProps;
     private final StrategyPerformanceService performanceService;
     private final GamificationService gamificationService;
+
+    /** 職業名稱前綴→模板名稱對應 */
+    private static final Map<String, String> CLASS_TO_PREFIX = Map.of(
+            "WARRIOR", "⚔️ 戰士",
+            "MAGE", "🔮 法師",
+            "RANGER", "🏹 遊俠",
+            "ASSASSIN", "🗡️ 刺客"
+    );
 
     /** 每位用戶最大自訂模板數量 */
     private static final int MAX_USER_TEMPLATES = 10;
@@ -295,5 +306,78 @@ public class StrategyTemplateService {
         perfRepo.deleteByStrategyTemplateId(templateId);
         templateRepo.delete(template);
         log.info("[策略模板] 用戶 {} 刪除模板 {} (id={})", userId, template.getName(), templateId);
+    }
+
+    /**
+     * 查詢指定職業的系統預設策略模板。
+     *
+     * @param characterClass 職業名稱（WARRIOR/MAGE/RANGER/ASSASSIN）
+     * @return 對應的系統預設策略模板
+     * @throws IllegalArgumentException 無效的職業名稱
+     * @throws IllegalStateException    找不到對應的系統預設模板
+     */
+    public StrategyTemplate getDefaultTemplateForClass(String characterClass) {
+        String prefix = CLASS_TO_PREFIX.get(characterClass);
+        if (prefix == null) {
+            throw new IllegalArgumentException("無效的角色職業: " + characterClass);
+        }
+        return templateRepo.findFirstByNameStartingWithAndSystemDefaultTrue(prefix)
+                .orElseThrow(() -> new IllegalStateException(
+                        "找不到職業 " + characterClass + " 的預設策略模板，請確認系統初始化完成"));
+    }
+
+    /**
+     * 啟用指定策略模板為用戶的活躍策略。
+     * 驗證用戶有權存取該模板（系統預設模板所有人可用，自建模板僅限本人）。
+     *
+     * @param userId     操作的用戶 ID
+     * @param templateId 要啟用的模板 ID
+     * @return 啟用的策略模板
+     */
+    @Transactional
+    public StrategyTemplate activateStrategy(Long userId, Long templateId) {
+        StrategyTemplate template = getTemplate(templateId, userId);
+        AppUser user = userRepo.findById(userId).orElseThrow();
+        user.setActiveStrategyTemplateId(templateId);
+        userRepo.save(user);
+        log.info("[策略模板] 用戶 {} 啟用策略: '{}' (id={})", userId, template.getName(), templateId);
+        return template;
+    }
+
+    /**
+     * 角色創建：選擇職業並自動綁定該職業的預設策略。
+     *
+     * @param userId         操作的用戶 ID
+     * @param characterClass 選擇的職業（WARRIOR/MAGE/RANGER/ASSASSIN）
+     * @return 綁定的預設策略模板
+     */
+    @Transactional
+    public StrategyTemplate selectClassAndActivateDefault(Long userId, String characterClass) {
+        // 驗證職業有效性
+        if (!CLASS_TO_PREFIX.containsKey(characterClass)) {
+            throw new IllegalArgumentException("無效的角色職業: " + characterClass);
+        }
+
+        AppUser user = userRepo.findById(userId).orElseThrow();
+        StrategyTemplate defaultTemplate = getDefaultTemplateForClass(characterClass);
+
+        user.setCharacterClass(characterClass);
+        user.setActiveStrategyTemplateId(defaultTemplate.getId());
+        userRepo.save(user);
+
+        log.info("[策略模板] 用戶 {} 完成角色創建: 職業={}, 預設策略='{}' (id={})",
+                userId, characterClass, defaultTemplate.getName(), defaultTemplate.getId());
+        return defaultTemplate;
+    }
+
+    /**
+     * 取得用戶目前啟用的策略模板。
+     *
+     * @return 策略模板，若未設定則回傳 null
+     */
+    public StrategyTemplate getActiveStrategy(Long userId) {
+        AppUser user = userRepo.findById(userId).orElseThrow();
+        if (user.getActiveStrategyTemplateId() == null) return null;
+        return templateRepo.findById(user.getActiveStrategyTemplateId()).orElse(null);
     }
 }

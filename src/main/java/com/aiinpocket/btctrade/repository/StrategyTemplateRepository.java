@@ -38,4 +38,7 @@ public interface StrategyTemplateRepository extends JpaRepository<StrategyTempla
 
     /** 計算用戶自建的模板數量（用於限制每位用戶的模板上限） */
     int countByUserId(Long userId);
+
+    /** 按名稱前綴查詢系統預設模板（用於職業→策略映射） */
+    Optional<StrategyTemplate> findFirstByNameStartingWithAndSystemDefaultTrue(String namePrefix);
 }

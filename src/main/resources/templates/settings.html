@@ -315,7 +315,7 @@
                 this.savingClass = true;
                 try {
                     const r = await fetch('/api/user/gamification/character-class', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({characterClass: this.selectedClass}) });
-                    if (r.ok) this.showMsg('職業已更新', 'success');
+                    if (r.ok) this.showMsg('職業已更新（活躍策略已同步切換）', 'success');
                     else { const e = await r.json(); this.showMsg(e.error||'更新失敗', 'error'); }
                 } catch (e) { this.showMsg('網路錯誤', 'error'); }
                 finally { this.savingClass = false; }
