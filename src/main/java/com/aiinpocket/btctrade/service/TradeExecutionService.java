@@ -21,9 +21,7 @@ import java.util.List;
 /**
  * 交易執行服務。
  * 接收 K 線收盤事件後，評估策略並執行進場/出場操作。
- * 產生交易訊號時會同步執行：
- * 1. WebSocket 廣播（即時更新前端）
- * 2. 通知分發（Discord / Gmail / Telegram，非同步）
+ * 支援全域評估（舊邏輯）和每用戶獨立評估（Phase 2）。
  */
 @Service
 @RequiredArgsConstructor
@@ -39,8 +37,7 @@ public class TradeExecutionService {
     private final NotificationDispatcher notificationDispatcher;
 
     /**
-     * 評估策略並執行交易。
-     * 被 KlineClosedEventHandler 在每根 K 線收盤時呼叫。
+     * 全域評估策略並執行交易（舊邏輯，保留向下相容）。
      */
     public void evaluateAndExecute(String symbol, IndicatorSnapshot snapshot) {
         var openPosition = positionRepo
@@ -51,12 +48,10 @@ public class TradeExecutionService {
 
         if (action != TradeAction.HOLD) {
             log.info("[交易執行] {} 產生訊號: {} @ ${}", symbol, action, snapshot.closePrice());
-            executeAction(action, symbol, openPosition, snapshot);
+            executeAction(null, action, symbol, openPosition, snapshot, props);
 
-            // WebSocket 廣播訊號到所有連線的前端
             wsHandler.broadcastSignal(action, snapshot);
 
-            // 非同步分發通知到所有訂閱此幣對的使用者
             TradeNotification notification = new TradeNotification(
                     symbol, action, snapshot.closePrice(),
                     snapshot.rsi(), snapshot.macdHistogram(), Instant.now());
@@ -64,8 +59,39 @@ public class TradeExecutionService {
         }
     }
 
-    private void executeAction(TradeAction action, String symbol,
-                               TradePosition openPosition, IndicatorSnapshot snapshot) {
+    /**
+     * 為特定用戶評估策略並執行交易（Phase 2：每用戶獨立評估）。
+     * 使用用戶的自訂策略參數建立臨時 StrategyService 實例。
+     */
+    public void evaluateAndExecuteForUser(
+            Long userId, String symbol,
+            IndicatorSnapshot snapshot,
+            TradingStrategyProperties userProps,
+            StrategyService userStrategy) {
+
+        var openPosition = positionRepo
+                .findByUserIdAndSymbolAndStatus(userId, symbol, PositionStatus.OPEN)
+                .orElse(null);
+
+        TradeAction action = userStrategy.evaluate(snapshot, openPosition, Instant.now());
+
+        if (action != TradeAction.HOLD) {
+            log.info("[交易執行] userId={} {} 產生訊號: {} @ ${}",
+                    userId, symbol, action, snapshot.closePrice());
+            executeAction(userId, action, symbol, openPosition, snapshot, userProps);
+
+            wsHandler.broadcastSignal(action, snapshot);
+
+            TradeNotification notification = new TradeNotification(
+                    symbol, action, snapshot.closePrice(),
+                    snapshot.rsi(), snapshot.macdHistogram(), Instant.now());
+            notificationDispatcher.notifyUser(userId, notification);
+        }
+    }
+
+    private void executeAction(Long userId, TradeAction action, String symbol,
+                               TradePosition openPosition, IndicatorSnapshot snapshot,
+                               TradingStrategyProperties actionProps) {
         Instant now = Instant.now();
 
         switch (action) {
@@ -73,40 +99,49 @@ public class TradeExecutionService {
                 if (openPosition == null) {
                     PositionDirection dir = action == TradeAction.LONG_ENTRY
                             ? PositionDirection.LONG : PositionDirection.SHORT;
-                    BigDecimal capital = calculateAvailableCapital();
-                    positionService.openPosition(
-                            symbol, dir, snapshot.closePrice(), now,
-                            capital, snapshot, false);
+                    BigDecimal capital = calculateAvailableCapital(userId, actionProps);
+                    if (userId != null) {
+                        positionService.openPositionForUser(
+                                userId, symbol, dir, snapshot.closePrice(), now,
+                                capital, snapshot, false, actionProps.risk().stopLossPct());
+                    } else {
+                        positionService.openPosition(
+                                symbol, dir, snapshot.closePrice(), now,
+                                capital, snapshot, false);
+                    }
                 }
             }
             case LONG_EXIT, SHORT_EXIT -> {
                 if (openPosition != null) {
-                    ExitReason reason = determineExitReason(snapshot, openPosition, now);
+                    ExitReason reason = determineExitReason(snapshot, openPosition, now, actionProps);
                     positionService.closePosition(
                             openPosition, snapshot.closePrice(), now,
                             reason, snapshot);
                 }
             }
-            default -> { /* HOLD — 不執行任何操作 */ }
+            default -> { /* HOLD */ }
         }
     }
 
-    /** 計算當前可用資本（初始資金 + 所有已實現損益） */
-    private BigDecimal calculateAvailableCapital() {
-        List<TradePosition> closedPositions = positionRepo
-                .findByBacktestOrderByEntryTimeAsc(false);
+    private BigDecimal calculateAvailableCapital(Long userId, TradingStrategyProperties capitalProps) {
+        List<TradePosition> closedPositions;
+        if (userId != null) {
+            closedPositions = positionRepo.findByUserIdAndBacktestOrderByEntryTimeAsc(userId, false);
+        } else {
+            closedPositions = positionRepo.findByBacktestOrderByEntryTimeAsc(false);
+        }
 
         BigDecimal totalPnl = closedPositions.stream()
                 .filter(p -> p.getRealizedPnl() != null)
                 .map(TradePosition::getRealizedPnl)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return BigDecimal.valueOf(props.risk().initialCapital()).add(totalPnl);
+        return BigDecimal.valueOf(capitalProps.risk().initialCapital()).add(totalPnl);
     }
 
-    /** 判斷出場原因（停損 / 最長持倉 / RSI 極端 / 訊號反轉） */
     private ExitReason determineExitReason(
-            IndicatorSnapshot snap, TradePosition pos, Instant currentTime) {
+            IndicatorSnapshot snap, TradePosition pos, Instant currentTime,
+            TradingStrategyProperties exitProps) {
 
         boolean isLong = pos.getDirection() == PositionDirection.LONG;
         double currentPrice = snap.closePrice().doubleValue();
@@ -117,15 +152,15 @@ public class TradeExecutionService {
                 ? (currentPrice - entryPrice) / entryPrice
                 : (entryPrice - currentPrice) / entryPrice;
 
-        if (priceDelta <= -props.risk().stopLossPct()) return ExitReason.STOP_LOSS;
+        if (priceDelta <= -exitProps.risk().stopLossPct()) return ExitReason.STOP_LOSS;
 
         long minutesHeld = Duration.between(pos.getEntryTime(), currentTime).toMinutes();
         long barsHeld = minutesHeld / intervalParams.barDurationMinutes();
-        int maxHoldingBars = props.risk().maxHoldingDays() * intervalParams.barsPerDay();
+        int maxHoldingBars = exitProps.risk().maxHoldingDays() * intervalParams.barsPerDay();
         if (barsHeld >= maxHoldingBars) return ExitReason.MAX_HOLDING_PERIOD;
 
-        if (isLong && rsi > props.rsi().longExitExtreme()) return ExitReason.RSI_EXTREME;
-        if (!isLong && rsi < props.rsi().shortExitExtreme()) return ExitReason.RSI_EXTREME;
+        if (isLong && rsi > exitProps.rsi().longExitExtreme()) return ExitReason.RSI_EXTREME;
+        if (!isLong && rsi < exitProps.rsi().shortExitExtreme()) return ExitReason.RSI_EXTREME;
 
         return ExitReason.SIGNAL_REVERSAL;
     }

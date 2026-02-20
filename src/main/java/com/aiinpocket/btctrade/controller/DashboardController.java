@@ -70,10 +70,12 @@ public class DashboardController {
         model.addAttribute("allSymbols", allTrackedSymbols);
         model.addAttribute("userSymbols", userSymbols);
         model.addAttribute("activeSymbol", activeSymbol);
-        model.addAttribute("livePositions", dashboardService.getLivePositions(activeSymbol));
-        model.addAttribute("openPosition", dashboardService.getOpenPosition(activeSymbol).orElse(null));
+        // Phase 2: 使用用戶隔離查詢（每位用戶看自己的交易紀錄）
+        Long userId = user.getId();
+        model.addAttribute("livePositions", dashboardService.getUserLivePositions(userId, activeSymbol));
+        model.addAttribute("openPosition", dashboardService.getUserOpenPosition(userId, activeSymbol).orElse(null));
         model.addAttribute("klineCount", dashboardService.getKlineCount(activeSymbol, interval));
-        model.addAttribute("recentSignals", dashboardService.getRecentSignals(activeSymbol));
+        model.addAttribute("recentSignals", dashboardService.getUserRecentSignals(userId, activeSymbol));
 
         // 檢查當前選中的幣對是否已下架
         boolean activeSymbolDelisted = allTrackedSymbols.stream()

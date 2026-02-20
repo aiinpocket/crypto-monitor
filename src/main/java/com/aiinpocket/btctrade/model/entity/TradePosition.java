@@ -14,7 +14,9 @@ import java.time.Instant;
         @Index(name = "idx_position_status", columnList = "status"),
         @Index(name = "idx_position_entry_time", columnList = "entry_time"),
         @Index(name = "idx_position_symbol_status", columnList = "symbol, status"),
-        @Index(name = "idx_position_backtest_entry", columnList = "is_backtest, entry_time")
+        @Index(name = "idx_position_backtest_entry", columnList = "is_backtest, entry_time"),
+        @Index(name = "idx_position_user_symbol_status", columnList = "user_id, symbol, status"),
+        @Index(name = "idx_position_user_backtest", columnList = "user_id, is_backtest, entry_time")
 })
 @Getter
 @Setter
@@ -26,6 +28,10 @@ public class TradePosition {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** 所屬用戶 ID（null = 回測或舊資料） */
+    @Column(name = "user_id")
+    private Long userId;
 
     @Column(nullable = false, length = 20)
     private String symbol;

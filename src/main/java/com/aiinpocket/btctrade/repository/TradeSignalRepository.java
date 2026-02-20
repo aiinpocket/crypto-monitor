@@ -16,4 +16,9 @@ public interface TradeSignalRepository extends JpaRepository<TradeSignal, Long> 
 
     List<TradeSignal> findBySymbolAndSignalTimeBetweenOrderBySignalTimeAsc(
             String symbol, Instant start, Instant end);
+
+    // ── 用戶隔離查詢 ──
+
+    List<TradeSignal> findTop100ByUserIdAndSymbolAndBacktestOrderBySignalTimeDesc(
+            Long userId, String symbol, boolean backtest);
 }

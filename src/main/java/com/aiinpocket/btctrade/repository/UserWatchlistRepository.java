@@ -3,6 +3,7 @@ package com.aiinpocket.btctrade.repository;
 import com.aiinpocket.btctrade.model.entity.UserWatchlist;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,13 @@ public interface UserWatchlistRepository extends JpaRepository<UserWatchlist, Lo
 
     @Query("SELECT DISTINCT w.user.id FROM UserWatchlist w WHERE w.symbol = :symbol")
     List<Long> findUserIdsBySymbol(String symbol);
+
+    /** 查詢觀察此幣對且有啟用策略的用戶 ID（非系統帳號） */
+    @Query("SELECT DISTINCT w.user.id FROM UserWatchlist w " +
+            "WHERE w.symbol = :symbol " +
+            "AND w.user.activeStrategyTemplateId IS NOT NULL " +
+            "AND w.user.oauthProvider != 'SYSTEM'")
+    List<Long> findActiveStrategyUserIdsBySymbol(@Param("symbol") String symbol);
 
     long countByUserId(Long userId);
 

@@ -96,7 +96,8 @@ public class NotificationDispatcher {
      * 會遍歷使用者所有已啟用的通知管道，根據訂閱設定（進場/出場）決定是否發送。
      * 每個管道的發送獨立處理，單一管道失敗不影響其他管道。
      */
-    private void notifyUser(Long userId, TradeNotification notification) {
+    /** 對單一使用者發送交易通知（Phase 2 公開給 TradeExecutionService 使用）。 */
+    public void notifyUser(Long userId, TradeNotification notification) {
         List<NotificationChannel> channels = channelRepo.findByUserIdAndEnabledTrue(userId);
         if (channels.isEmpty()) {
             return;

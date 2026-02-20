@@ -14,4 +14,12 @@ public interface TradePositionRepository extends JpaRepository<TradePosition, Lo
     List<TradePosition> findByBacktestOrderByEntryTimeAsc(boolean backtest);
 
     List<TradePosition> findBySymbolAndBacktestOrderByEntryTimeAsc(String symbol, boolean backtest);
+
+    // ── 用戶隔離查詢 ──
+
+    Optional<TradePosition> findByUserIdAndSymbolAndStatus(Long userId, String symbol, PositionStatus status);
+
+    List<TradePosition> findByUserIdAndBacktestOrderByEntryTimeAsc(Long userId, boolean backtest);
+
+    List<TradePosition> findByUserIdAndSymbolAndBacktestOrderByEntryTimeAsc(Long userId, String symbol, boolean backtest);
 }

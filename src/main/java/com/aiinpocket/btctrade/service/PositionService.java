@@ -33,15 +33,35 @@ public class PositionService {
             BigDecimal availableCapital,
             IndicatorSnapshot snapshot,
             boolean isBacktest) {
+        return openPosition(null, symbol, direction, price, time, availableCapital, snapshot, isBacktest, props.risk().stopLossPct());
+    }
+
+    /** 為特定用戶開倉（使用用戶自訂停損比例） */
+    @Transactional
+    public TradePosition openPositionForUser(
+            Long userId, String symbol, PositionDirection direction,
+            BigDecimal price, Instant time,
+            BigDecimal availableCapital,
+            IndicatorSnapshot snapshot,
+            boolean isBacktest, double stopLossPct) {
+        return openPosition(userId, symbol, direction, price, time, availableCapital, snapshot, isBacktest, stopLossPct);
+    }
+
+    private TradePosition openPosition(
+            Long userId, String symbol, PositionDirection direction,
+            BigDecimal price, Instant time,
+            BigDecimal availableCapital,
+            IndicatorSnapshot snapshot,
+            boolean isBacktest, double slPct) {
 
         BigDecimal quantity = availableCapital.divide(price, 8, RoundingMode.HALF_DOWN);
 
-        double slPct = props.risk().stopLossPct();
         BigDecimal stopLoss = direction == PositionDirection.LONG
                 ? price.multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(slPct)))
                 : price.multiply(BigDecimal.ONE.add(BigDecimal.valueOf(slPct)));
 
         TradePosition position = TradePosition.builder()
+                .userId(userId)
                 .symbol(symbol)
                 .direction(direction)
                 .status(PositionStatus.OPEN)
@@ -55,7 +75,7 @@ public class PositionService {
 
         positionRepo.save(position);
 
-        saveSignal(symbol, time, snapshot,
+        saveSignal(userId, symbol, time, snapshot,
                 direction == PositionDirection.LONG
                         ? TradeAction.LONG_ENTRY : TradeAction.SHORT_ENTRY,
                 isBacktest);
@@ -100,7 +120,7 @@ public class PositionService {
 
         positionRepo.save(position);
 
-        saveSignal(position.getSymbol(), exitTime, snapshot,
+        saveSignal(position.getUserId(), position.getSymbol(), exitTime, snapshot,
                 isLong ? TradeAction.LONG_EXIT : TradeAction.SHORT_EXIT,
                 position.isBacktest());
 
@@ -120,10 +140,11 @@ public class PositionService {
         return position;
     }
 
-    private void saveSignal(String symbol, Instant time,
+    private void saveSignal(Long userId, String symbol, Instant time,
                             IndicatorSnapshot snapshot, TradeAction action,
                             boolean isBacktest) {
         TradeSignal signal = TradeSignal.builder()
+                .userId(userId)
                 .symbol(symbol)
                 .signalTime(time)
                 .action(action)

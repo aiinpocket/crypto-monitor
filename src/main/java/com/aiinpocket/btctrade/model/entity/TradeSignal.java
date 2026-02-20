@@ -13,7 +13,8 @@ import java.time.Instant;
         @Index(name = "idx_signal_action", columnList = "action"),
         @Index(name = "idx_signal_symbol_backtest", columnList = "symbol, is_backtest"),
         @Index(name = "idx_signal_symbol_time", columnList = "symbol, signal_time"),
-        @Index(name = "idx_signal_symbol_backtest_time", columnList = "symbol, is_backtest, signal_time")
+        @Index(name = "idx_signal_symbol_backtest_time", columnList = "symbol, is_backtest, signal_time"),
+        @Index(name = "idx_signal_user_symbol", columnList = "user_id, symbol, is_backtest")
 })
 @Getter
 @Setter
@@ -25,6 +26,10 @@ public class TradeSignal {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** 所屬用戶 ID（null = 回測或舊資料） */
+    @Column(name = "user_id")
+    private Long userId;
 
     @Column(nullable = false, length = 20)
     private String symbol;

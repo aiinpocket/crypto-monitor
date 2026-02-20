@@ -27,6 +27,22 @@ public class DashboardService {
         return trackedSymbolRepo.findByActiveTrue();
     }
 
+    // ── 用戶隔離查詢（Phase 2） ──
+
+    public List<TradePosition> getUserLivePositions(Long userId, String symbol) {
+        return positionRepo.findByUserIdAndSymbolAndBacktestOrderByEntryTimeAsc(userId, symbol, false);
+    }
+
+    public Optional<TradePosition> getUserOpenPosition(Long userId, String symbol) {
+        return positionRepo.findByUserIdAndSymbolAndStatus(userId, symbol, PositionStatus.OPEN);
+    }
+
+    public List<TradeSignal> getUserRecentSignals(Long userId, String symbol) {
+        return signalRepo.findTop100ByUserIdAndSymbolAndBacktestOrderBySignalTimeDesc(userId, symbol, false);
+    }
+
+    // ── 全域查詢（向下相容） ──
+
     public List<TradePosition> getLivePositions(String symbol) {
         return positionRepo.findBySymbolAndBacktestOrderByEntryTimeAsc(symbol, false);
     }
