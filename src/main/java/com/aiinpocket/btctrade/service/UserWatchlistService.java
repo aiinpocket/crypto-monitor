@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -86,6 +88,7 @@ public class UserWatchlistService {
      * 用於通知分發：當某幣對產生交易訊號時，找出所有需要通知的使用者。
      */
     public List<Long> getUserIdsWatching(String symbol) {
-        return watchlistRepo.findUserIdsBySymbol(symbol);
+        Instant activeCutoff = Instant.now().minus(7, ChronoUnit.DAYS);
+        return watchlistRepo.findUserIdsBySymbol(symbol, activeCutoff);
     }
 }

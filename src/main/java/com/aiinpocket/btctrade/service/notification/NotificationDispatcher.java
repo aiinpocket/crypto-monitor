@@ -13,6 +13,8 @@ import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -74,8 +76,9 @@ public class NotificationDispatcher {
      */
     @Async("notificationExecutor")
     public void notifyAllSubscribers(String symbol, TradeNotification notification) {
-        // 找出所有觀察清單中包含此幣對的使用者 ID
-        List<Long> userIds = watchlistRepo.findUserIdsBySymbol(symbol);
+        // 找出所有觀察清單中包含此幣對的活躍使用者 ID（排除 7 天未登入）
+        Instant activeCutoff = Instant.now().minus(7, ChronoUnit.DAYS);
+        List<Long> userIds = watchlistRepo.findUserIdsBySymbol(symbol, activeCutoff);
         if (userIds.isEmpty()) {
             log.debug("[通知分發] 幣對 {} 無任何使用者訂閱，跳過通知", symbol);
             return;

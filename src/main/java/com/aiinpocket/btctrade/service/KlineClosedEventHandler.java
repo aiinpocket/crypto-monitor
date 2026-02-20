@@ -19,6 +19,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.BarSeries;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -73,8 +75,9 @@ public class KlineClosedEventHandler {
             // BarSeries 每幣對只建一次（共享）
             BarSeries series = barSeriesFactory.createFromKlines(recentKlines, "live-" + symbol);
 
-            // Phase 2: 遍歷所有有啟用策略且觀察此幣對的用戶
-            List<Long> activeUserIds = watchlistRepo.findActiveStrategyUserIdsBySymbol(symbol);
+            // Phase 2: 遍歷所有有啟用策略且觀察此幣對的活躍用戶（排除 7 天未登入）
+            Instant activeCutoff = Instant.now().minus(7, ChronoUnit.DAYS);
+            List<Long> activeUserIds = watchlistRepo.findActiveStrategyUserIdsBySymbol(symbol, activeCutoff);
 
             if (activeUserIds.isEmpty()) {
                 log.debug("[策略評估] 幣對 {} 無啟用策略的用戶訂閱", symbol);
