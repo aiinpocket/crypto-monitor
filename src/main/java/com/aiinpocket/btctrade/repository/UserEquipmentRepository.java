@@ -30,11 +30,21 @@ public interface UserEquipmentRepository extends JpaRepository<UserEquipment, Lo
     Optional<UserEquipment> findEquippedByUserAndType(@Param("userId") Long userId,
                                                        @Param("type") EquipmentType type);
 
+    /** 查詢隊伍成員身上特定類型的裝備 */
+    @Query("SELECT ue FROM UserEquipment ue JOIN FETCH ue.equipmentTemplate et " +
+           "WHERE ue.equippedByMember.id = :memberId AND et.equipmentType = :type")
+    Optional<UserEquipment> findEquippedByMemberAndType(@Param("memberId") Long memberId,
+                                                         @Param("type") EquipmentType type);
+
+    /** 查詢隊伍成員身上的裝備（eager fetch） */
+    @EntityGraph(attributePaths = {"equipmentTemplate"})
+    List<UserEquipment> findByEquippedByMemberIdAndEquippedByMemberActiveTrue(Long equippedByMemberId);
+
     /** 查詢用戶特定一件裝備（eager fetch template + user） */
     @EntityGraph(attributePaths = {"equipmentTemplate", "user"})
     Optional<UserEquipment> findByIdAndUserId(Long id, Long userId);
 
-    /** 按取得時間倒序（eager fetch template 避免 N+1 和 LazyInit） */
-    @EntityGraph(attributePaths = {"equipmentTemplate"})
+    /** 按取得時間倒序（eager fetch template + member 避免 N+1 和 LazyInit） */
+    @EntityGraph(attributePaths = {"equipmentTemplate", "equippedByMember"})
     List<UserEquipment> findByUserIdOrderByAcquiredAtDesc(Long userId);
 }

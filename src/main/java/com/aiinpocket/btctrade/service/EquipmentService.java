@@ -2,9 +2,11 @@ package com.aiinpocket.btctrade.service;
 
 import com.aiinpocket.btctrade.model.entity.AppUser;
 import com.aiinpocket.btctrade.model.entity.EquipmentTemplate;
+import com.aiinpocket.btctrade.model.entity.PartyMember;
 import com.aiinpocket.btctrade.model.entity.UserEquipment;
 import com.aiinpocket.btctrade.model.enums.EquipmentType;
 import com.aiinpocket.btctrade.repository.AppUserRepository;
+import com.aiinpocket.btctrade.repository.PartyMemberRepository;
 import com.aiinpocket.btctrade.repository.UserEquipmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +19,7 @@ import java.util.Optional;
 /**
  * 裝備管理服務。
  * 負責背包查詢、穿脫裝備、賣出裝備、擴充背包。
- * P2 階段用戶角色直接穿戴（max 1 武器 + 1 防具），
- * P4 階段擴展到隊伍成員。
+ * 支援主角和隊伍成員裝備。
  */
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class EquipmentService {
 
     private final UserEquipmentRepository userEquipRepo;
     private final AppUserRepository userRepo;
+    private final PartyMemberRepository memberRepo;
 
     // 擴充背包每次增加的格數
     private static final int EXPAND_SLOTS = 5;
@@ -93,7 +95,57 @@ public class EquipmentService {
     }
 
     /**
-     * 卸下裝備。
+     * 裝備到隊伍成員身上。
+     * 同類型只能裝一件（自動卸下原有裝備）。
+     */
+    @Transactional
+    public EquipResult equipItemToMember(Long userId, Long equipmentId, Long memberId) {
+        Optional<UserEquipment> opt = userEquipRepo.findByIdAndUserId(equipmentId, userId);
+        if (opt.isEmpty()) {
+            return EquipResult.fail("找不到該裝備");
+        }
+
+        UserEquipment item = opt.get();
+        if (Boolean.TRUE.equals(item.getEquippedByUser()) || item.getEquippedByMember() != null) {
+            return EquipResult.fail("此裝備已穿戴中，請先卸下");
+        }
+
+        // 確認隊伍成員屬於該用戶且啟用中
+        PartyMember member = memberRepo.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("找不到隊伍成員"));
+        if (!member.getUser().getId().equals(userId) || !member.isActive()) {
+            return EquipResult.fail("無效的隊伍成員");
+        }
+
+        EquipmentTemplate template = item.getEquipmentTemplate();
+
+        // 檢查職業限制（對應隊員的職業）
+        if (template.getClassRestriction() != null) {
+            if (!template.getClassRestriction().name().equals(member.getCharacterClass().name())) {
+                return EquipResult.fail("此裝備限定 " + template.getClassRestriction().name() + " 職業");
+            }
+        }
+
+        // 卸下隊員同類型已裝備的裝備
+        EquipmentType type = template.getEquipmentType();
+        Optional<UserEquipment> currentEquipped = userEquipRepo.findEquippedByMemberAndType(memberId, type);
+        if (currentEquipped.isPresent()) {
+            UserEquipment old = currentEquipped.get();
+            old.setEquippedByMember(null);
+            userEquipRepo.save(old);
+        }
+
+        // 裝備到隊員
+        item.setEquippedByMember(member);
+        userEquipRepo.save(item);
+
+        log.info("[裝備] 用戶 {} 把「{}」裝備給隊員「{}」({})",
+                userId, template.getName(), member.getName(), type);
+        return EquipResult.success("已將「" + template.getName() + "」裝備給「" + member.getName() + "」");
+    }
+
+    /**
+     * 卸下裝備（支援主角和隊伍成員）。
      */
     @Transactional
     public EquipResult unequipItem(Long userId, Long equipmentId) {
@@ -103,15 +155,24 @@ public class EquipmentService {
         }
 
         UserEquipment item = opt.get();
-        if (!Boolean.TRUE.equals(item.getEquippedByUser())) {
-            return EquipResult.fail("此裝備未穿戴");
+        String itemName = item.getEquipmentTemplate().getName();
+
+        if (Boolean.TRUE.equals(item.getEquippedByUser())) {
+            item.setEquippedByUser(false);
+            userEquipRepo.save(item);
+            log.info("[裝備] 用戶 {} 卸下了「{}」", userId, itemName);
+            return EquipResult.success("已卸下「" + itemName + "」");
         }
 
-        item.setEquippedByUser(false);
-        userEquipRepo.save(item);
+        if (item.getEquippedByMember() != null) {
+            String memberName = item.getEquippedByMember().getName();
+            item.setEquippedByMember(null);
+            userEquipRepo.save(item);
+            log.info("[裝備] 用戶 {} 從隊員「{}」卸下了「{}」", userId, memberName, itemName);
+            return EquipResult.success("已從「" + memberName + "」卸下「" + itemName + "」");
+        }
 
-        log.info("[裝備] 用戶 {} 卸下了「{}」", userId, item.getEquipmentTemplate().getName());
-        return EquipResult.success("已卸下「" + item.getEquipmentTemplate().getName() + "」");
+        return EquipResult.fail("此裝備未穿戴");
     }
 
     /**
@@ -125,7 +186,7 @@ public class EquipmentService {
         }
 
         UserEquipment item = opt.get();
-        if (Boolean.TRUE.equals(item.getEquippedByUser())) {
+        if (Boolean.TRUE.equals(item.getEquippedByUser()) || item.getEquippedByMember() != null) {
             return EquipResult.fail("請先卸下裝備再賣出");
         }
 

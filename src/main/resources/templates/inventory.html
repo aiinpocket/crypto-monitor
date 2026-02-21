@@ -31,12 +31,11 @@
 
     <div x-show="!loading" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-        <!-- 左側：角色裝備展示 -->
-        <div class="lg:col-span-4">
+        <!-- 左側：角色 + 隊員裝備展示 -->
+        <div class="lg:col-span-4 space-y-4">
+            <!-- 主角裝備 -->
             <div class="pixel-card p-4">
-                <h2 class="font-heading text-sm text-primary mb-3">&#128100; 角色裝備</h2>
-
-                <!-- 角色像素圖 + 裝備名稱 -->
+                <h2 class="font-heading text-sm text-primary mb-3">&#128100; 主角裝備</h2>
                 <div class="flex flex-col items-center mb-4">
                     <div class="relative w-[48px] h-[48px] mb-2">
                         <div class="absolute top-0 left-0 anim-idle"
@@ -44,8 +43,6 @@
                     </div>
                     <span class="text-xs text-text-muted" x-text="charLabel"></span>
                 </div>
-
-                <!-- 武器欄 -->
                 <div class="space-y-2">
                     <div class="flex items-center gap-3 pixel-card p-2"
                          :class="summary.equippedWeaponCss ? 'rarity-bg-rare' : ''">
@@ -63,8 +60,6 @@
                                  x-text="summary.equippedWeaponName || '— 空 —'"></div>
                         </div>
                     </div>
-
-                    <!-- 防具欄 -->
                     <div class="flex items-center gap-3 pixel-card p-2"
                          :class="summary.equippedArmorCss ? 'rarity-bg-rare' : ''">
                         <div class="w-6 h-6 flex items-center justify-center text-text-muted shrink-0">
@@ -82,19 +77,46 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 擴充背包 -->
-                <div class="mt-4 pt-3 border-t border-border-main">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-[11px] text-text-muted">背包格數</div>
-                            <div class="text-sm" x-text="summary.itemCount + ' / ' + summary.maxSlots"></div>
-                        </div>
-                        <button @click="expandInventory()" class="pixel-btn pixel-btn-gold text-[11px] py-1 px-2 cursor-pointer"
-                                :disabled="summary.gameCurrency < summary.expandCost">
-                            <span x-text="'擴充 +5 (' + summary.expandCost + 'G)'"></span>
-                        </button>
+            <!-- 隊員裝備 -->
+            <template x-if="partyMembers.length > 0">
+                <div class="pixel-card p-4">
+                    <h2 class="font-heading text-sm text-cta mb-3">&#128101; 隊員裝備</h2>
+                    <div class="space-y-3">
+                        <template x-for="m in partyMembers" :key="m.id">
+                            <div class="pixel-card p-2">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-xs font-heading text-text-heading" x-text="m.name"></span>
+                                    <span class="text-[9px] px-1 py-0.5 bg-cta/20 text-cta" x-text="classLabel(m.characterClass)"></span>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-2 text-[10px]">
+                                        <span class="text-text-muted w-8">武器</span>
+                                        <span class="text-text-heading" x-text="getMemberWeapon(m.id) || '— 空 —'"></span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[10px]">
+                                        <span class="text-text-muted w-8">防具</span>
+                                        <span class="text-text-heading" x-text="getMemberArmor(m.id) || '— 空 —'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
+                </div>
+            </template>
+
+            <!-- 擴充背包 -->
+            <div class="pixel-card p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-[11px] text-text-muted">背包格數</div>
+                        <div class="text-sm" x-text="summary.itemCount + ' / ' + summary.maxSlots"></div>
+                    </div>
+                    <button @click="expandInventory()" class="pixel-btn pixel-btn-gold text-[11px] py-1 px-2 cursor-pointer"
+                            :disabled="summary.gameCurrency < summary.expandCost">
+                        <span x-text="'擴充 +5 (' + summary.expandCost + 'G)'"></span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -128,7 +150,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <template x-for="item in filteredItems" :key="item.id">
                         <div class="pixel-card p-3 border-l-2 transition-all duration-200"
-                             :class="rarityBorderClass(item.rarity) + ' ' + (item.equipped ? 'ring-1 ring-primary/50' : '')">
+                             :class="rarityBorderClass(item.rarity) + ' ' + (isEquipped(item) ? 'ring-1 ring-primary/50' : '')">
                             <div class="flex items-start gap-3">
                                 <!-- 裝備像素圖 -->
                                 <div class="w-[24px] h-[24px] shrink-0 relative">
@@ -143,7 +165,7 @@
                                               x-text="rarityLabel(item.rarity)"></span>
                                     </div>
                                     <div class="text-[10px] text-text-muted mt-0.5" x-text="item.description"></div>
-                                    <div class="flex items-center gap-2 mt-1">
+                                    <div class="flex items-center gap-2 mt-1 flex-wrap">
                                         <span class="text-[10px]"
                                               :class="item.equipmentType === 'WEAPON' ? 'text-negative' : 'text-cta'"
                                               x-text="item.equipmentType === 'WEAPON' ? '&#9876; 武器' : '&#128737; 防具'"></span>
@@ -152,19 +174,22 @@
                                             <span class="text-[10px] text-text-muted" x-text="'限 ' + classLabel(item.classRestriction)"></span>
                                         </template>
                                         <template x-if="item.equipped">
-                                            <span class="text-[10px] text-positive font-heading">&#9989; 穿戴中</span>
+                                            <span class="text-[10px] text-positive font-heading">&#9989; 主角穿戴</span>
+                                        </template>
+                                        <template x-if="item.equippedByMemberName">
+                                            <span class="text-[10px] text-cta font-heading" x-text="'&#128101; ' + item.equippedByMemberName + ' 穿戴'"></span>
                                         </template>
                                     </div>
                                 </div>
                                 <!-- 操作按鈕 -->
                                 <div class="flex flex-col gap-1 shrink-0">
-                                    <template x-if="!item.equipped">
-                                        <button @click="equipItem(item.id)" class="pixel-btn pixel-btn-gold text-[10px] py-0.5 px-1.5 cursor-pointer">穿戴</button>
+                                    <template x-if="!isEquipped(item)">
+                                        <button @click="showEquipDialog(item)" class="pixel-btn pixel-btn-gold text-[10px] py-0.5 px-1.5 cursor-pointer">穿戴</button>
                                     </template>
-                                    <template x-if="item.equipped">
+                                    <template x-if="isEquipped(item)">
                                         <button @click="unequipItem(item.id)" class="pixel-btn pixel-btn-purple text-[10px] py-0.5 px-1.5 cursor-pointer">卸下</button>
                                     </template>
-                                    <template x-if="!item.equipped">
+                                    <template x-if="!isEquipped(item)">
                                         <button @click="sellItem(item)" class="pixel-btn text-[10px] py-0.5 px-1.5 cursor-pointer text-negative border-negative/30 hover:bg-negative/10">賣出</button>
                                     </template>
                                 </div>
@@ -175,6 +200,38 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- 穿戴對象選擇彈窗 -->
+    <div x-show="equipDialog.show" x-cloak x-transition
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60"
+         @click.self="equipDialog.show = false">
+        <div class="pixel-card p-4 w-[300px] max-w-[90vw]">
+            <h3 class="font-heading text-sm text-primary mb-3">&#128100; 選擇穿戴對象</h3>
+            <p class="text-[11px] text-text-muted mb-3" x-text="'裝備：' + (equipDialog.item?.name || '')"></p>
+            <div class="space-y-2">
+                <!-- 主角 -->
+                <button @click="equipToTarget('user')"
+                        class="w-full pixel-btn pixel-btn-gold text-[11px] py-2 px-3 cursor-pointer text-left flex items-center gap-2"
+                        :disabled="equipDialog.item?.classRestriction && equipDialog.item.classRestriction !== charClass">
+                    <span>&#128100;</span>
+                    <span>主角</span>
+                    <span class="text-[9px] text-text-muted ml-auto" x-text="classLabel(charClass)"></span>
+                </button>
+                <!-- 隊員 -->
+                <template x-for="m in partyMembers" :key="m.id">
+                    <button @click="equipToTarget('member', m.id)"
+                            class="w-full pixel-btn pixel-btn-purple text-[11px] py-2 px-3 cursor-pointer text-left flex items-center gap-2"
+                            :disabled="equipDialog.item?.classRestriction && equipDialog.item.classRestriction !== m.characterClass">
+                        <span>&#128101;</span>
+                        <span x-text="m.name"></span>
+                        <span class="text-[9px] text-text-muted ml-auto" x-text="classLabel(m.characterClass)"></span>
+                    </button>
+                </template>
+            </div>
+            <button @click="equipDialog.show = false"
+                    class="w-full mt-3 pixel-btn text-[11px] py-1.5 cursor-pointer text-text-muted">取消</button>
+        </div>
     </div>
 
     <!-- Toast 通知 -->
@@ -191,6 +248,7 @@ function inventoryApp() {
     return {
         loading: true,
         items: [],
+        partyMembers: [],
         filter: 'all',
         charClass: 'WARRIOR',
         charLabel: '戰士',
@@ -200,15 +258,29 @@ function inventoryApp() {
             equippedWeaponCss: null, equippedArmorCss: null
         },
         toast: { show: false, message: '', success: true },
+        equipDialog: { show: false, item: null },
+
+        isEquipped(item) {
+            return item.equipped || !!item.equippedByMemberId;
+        },
 
         get filteredItems() {
             if (this.filter === 'all') return this.items;
-            if (this.filter === 'equipped') return this.items.filter(i => i.equipped);
+            if (this.filter === 'equipped') return this.items.filter(i => this.isEquipped(i));
             return this.items.filter(i => i.equipmentType === this.filter);
         },
 
+        getMemberWeapon(memberId) {
+            const item = this.items.find(i => i.equippedByMemberId === memberId && i.equipmentType === 'WEAPON');
+            return item ? item.name : null;
+        },
+        getMemberArmor(memberId) {
+            const item = this.items.find(i => i.equippedByMemberId === memberId && i.equipmentType === 'ARMOR');
+            return item ? item.name : null;
+        },
+
         async init() {
-            await Promise.all([this.loadInventory(), this.loadSummary(), this.loadCharClass()]);
+            await Promise.all([this.loadInventory(), this.loadSummary(), this.loadCharClass(), this.loadPartyMembers()]);
             this.loading = false;
         },
 
@@ -236,9 +308,48 @@ function inventoryApp() {
             } catch (e) { /* silent */ }
         },
 
+        async loadPartyMembers() {
+            try {
+                const resp = await fetch('/api/user/equipment/party-members');
+                if (resp.ok) this.partyMembers = await resp.json();
+            } catch (e) { /* silent */ }
+        },
+
+        showEquipDialog(item) {
+            if (this.partyMembers.length === 0) {
+                this.equipItem(item.id);
+                return;
+            }
+            this.equipDialog = { show: true, item };
+        },
+
+        async equipToTarget(target, memberId) {
+            this.equipDialog.show = false;
+            const itemId = this.equipDialog.item?.id;
+            if (!itemId) return;
+            if (target === 'user') {
+                await this.equipItem(itemId);
+            } else {
+                await this.equipItemToMember(itemId, memberId);
+            }
+        },
+
         async equipItem(id) {
             try {
                 const resp = await fetch(`/api/user/equipment/${id}/equip`, { method: 'POST' });
+                const result = await resp.json();
+                this.showToast(result.message, result.success);
+                if (result.success) { await this.loadInventory(); await this.loadSummary(); }
+            } catch (e) { this.showToast('操作失敗', false); }
+        },
+
+        async equipItemToMember(id, memberId) {
+            try {
+                const resp = await fetch(`/api/user/equipment/${id}/equip-member`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ memberId })
+                });
                 const result = await resp.json();
                 this.showToast(result.message, result.success);
                 if (result.success) { await this.loadInventory(); await this.loadSummary(); }
