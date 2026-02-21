@@ -57,10 +57,14 @@ public class BattleController {
                 e.getMonster().getRiskTier().name(),
                 e.getSymbol(),
                 e.getResult().name(),
+                e.getTradeDirection(),
+                e.getEntryPrice() != null ? e.getEntryPrice().toPlainString() : null,
+                e.getExitPrice() != null ? e.getExitPrice().toPlainString() : null,
                 e.getProfitPct() != null ? e.getProfitPct().doubleValue() : null,
                 e.getExpGained(),
                 e.getGoldGained(),
                 e.getGoldLost(),
+                e.getBattleLog(),
                 e.getStartedAt().toString(),
                 e.getEndedAt() != null ? e.getEndedAt().toString() : null
         );
@@ -79,7 +83,9 @@ public class BattleController {
             Long id, String monsterName, int monsterLevel,
             String monsterCssClass, String riskTier,
             String symbol, String result,
+            String tradeDirection, String entryPrice, String exitPrice,
             Double profitPct, int expGained, long goldGained, long goldLost,
+            String battleLog,
             String startedAt, String endedAt
     ) {}
 

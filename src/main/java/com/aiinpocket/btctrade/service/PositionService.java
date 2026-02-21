@@ -86,8 +86,8 @@ public class PositionService {
         // 非回測交易觸發怪物遭遇（遊戲化）
         if (!isBacktest) {
             try {
-                // 使用 ATR 概念：(high-low)/close 近似波動率，此處用停損比例作為簡易代理
-                battleService.startEncounters(symbol, slPct, time);
+                battleService.startEncounters(symbol, slPct, time,
+                        direction.name(), price);
             } catch (Exception e) {
                 log.warn("[戰鬥] 觸發遭遇失敗，不影響交易: {}", e.getMessage());
             }
@@ -131,7 +131,8 @@ public class PositionService {
         // 非回測交易結算怪物遭遇（遊戲化）
         if (!position.isBacktest()) {
             try {
-                battleService.resolveEncounters(position.getSymbol(), returnPct, exitTime);
+                battleService.resolveEncounters(position.getSymbol(), returnPct,
+                        exitTime, exitPrice);
             } catch (Exception e) {
                 log.warn("[戰鬥] 結算遭遇失敗，不影響交易: {}", e.getMessage());
             }

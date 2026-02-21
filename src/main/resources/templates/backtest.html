@@ -161,7 +161,9 @@
 </main>
 
 <script th:inline="javascript">
-    const watchlistSymbolList = /*[[${watchlistSymbols}]]*/ ['BTCUSDT'];
+    const _watchlist = /*[[${watchlistSymbols}]]*/ ['BTCUSDT'];
+    const _readySymbols = /*[[${readySymbols}]]*/ ['BTCUSDT'];
+    const watchlistSymbolList = _watchlist.length > 0 ? _watchlist : _readySymbols;
     let _symDebounce = null;
     function backtestApp() {
         return {

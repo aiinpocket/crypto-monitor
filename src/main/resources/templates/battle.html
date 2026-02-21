@@ -60,51 +60,93 @@
             <p class="text-text-muted text-xs mt-1">將幣對加入觀察清單後，交易信號觸發時會自動出現怪物</p>
         </div>
 
-        <div class="space-y-2">
+        <div class="space-y-3">
             <template x-for="enc in encounters" :key="enc.id">
-                <div class="pixel-card p-3 flex items-center gap-4">
-                    <!-- 怪物像素圖 -->
-                    <div class="relative w-[48px] h-[48px] shrink-0">
-                        <div class="absolute top-0 left-0 anim-monster" :class="enc.monsterCssClass"></div>
-                    </div>
-                    <!-- 怪物資訊 -->
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-heading text-text-heading" x-text="enc.monsterName"></span>
-                            <span class="text-xs text-text-muted" x-text="'Lv.' + enc.monsterLevel"></span>
-                            <span class="text-[10px] px-1.5 py-0.5"
-                                  :class="{
-                                      'bg-positive/20 text-positive': enc.riskTier === 'LOW',
-                                      'bg-primary/20 text-primary': enc.riskTier === 'MEDIUM',
-                                      'bg-cta/20 text-cta': enc.riskTier === 'HIGH',
-                                      'bg-negative/20 text-negative': enc.riskTier === 'EXTREME'
-                                  }"
-                                  x-text="enc.riskTier"></span>
+                <div class="pixel-card p-4">
+                    <!-- 上半：怪物資訊 + 結果 -->
+                    <div class="flex items-center gap-4 mb-3">
+                        <!-- 怪物像素圖 -->
+                        <div class="relative w-[48px] h-[48px] shrink-0">
+                            <div class="absolute top-0 left-0 anim-monster" :class="enc.monsterCssClass"></div>
                         </div>
-                        <div class="text-xs text-text-muted mt-0.5" x-text="enc.symbol + ' · ' + formatTime(enc.startedAt)"></div>
+                        <!-- 怪物資訊 -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-sm font-heading text-text-heading" x-text="enc.monsterName"></span>
+                                <span class="text-xs text-text-muted" x-text="'Lv.' + enc.monsterLevel"></span>
+                                <span class="text-[10px] px-1.5 py-0.5"
+                                      :class="{
+                                          'bg-positive/20 text-positive': enc.riskTier === 'LOW',
+                                          'bg-primary/20 text-primary': enc.riskTier === 'MEDIUM',
+                                          'bg-cta/20 text-cta': enc.riskTier === 'HIGH',
+                                          'bg-negative/20 text-negative': enc.riskTier === 'EXTREME'
+                                      }"
+                                      x-text="enc.riskTier"></span>
+                            </div>
+                            <div class="text-xs text-text-muted mt-0.5" x-text="enc.symbol + ' · ' + formatTime(enc.startedAt)"></div>
+                        </div>
+                        <!-- 結果 -->
+                        <div class="text-right shrink-0">
+                            <template x-if="enc.result === 'VICTORY'">
+                                <div>
+                                    <div class="text-sm font-heading text-positive">&#9989; 討伐成功</div>
+                                    <div class="text-xs text-positive" x-text="'+' + enc.expGained + ' EXP · +' + enc.goldGained + ' G'"></div>
+                                </div>
+                            </template>
+                            <template x-if="enc.result === 'DEFEAT'">
+                                <div>
+                                    <div class="text-sm font-heading text-negative">&#10060; 戰鬥失敗</div>
+                                    <div class="text-xs text-negative" x-text="'-' + enc.goldLost + ' G'"></div>
+                                </div>
+                            </template>
+                            <template x-if="enc.result === 'IN_PROGRESS'">
+                                <div>
+                                    <div class="text-sm font-heading text-primary anim-flash">&#9876; 戰鬥中...</div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
-                    <!-- 結果 -->
-                    <div class="text-right shrink-0">
-                        <template x-if="enc.result === 'VICTORY'">
-                            <div>
-                                <div class="text-sm font-heading text-positive">&#9989; 討伐成功</div>
-                                <div class="text-xs text-positive" x-text="'+' + enc.expGained + ' EXP · +' + enc.goldGained + ' G'"></div>
-                                <div class="text-[10px] text-text-muted" x-text="'+' + (enc.profitPct * 100).toFixed(2) + '%'"></div>
+
+                    <!-- 交易詳情（非進行中才顯示） -->
+                    <template x-if="enc.result !== 'IN_PROGRESS' && enc.tradeDirection">
+                        <div class="border-t border-white/10 pt-2 mb-2">
+                            <div class="flex items-center gap-3 text-xs flex-wrap">
+                                <span class="px-1.5 py-0.5 font-heading"
+                                      :class="enc.tradeDirection === 'LONG' ? 'bg-positive/20 text-positive' : 'bg-negative/20 text-negative'"
+                                      x-text="enc.tradeDirection === 'LONG' ? '&#9650; 做多' : '&#9660; 做空'"></span>
+                                <span class="text-text-muted">
+                                    入場 <span class="text-text-heading" x-text="'$' + Number(enc.entryPrice).toLocaleString()"></span>
+                                    &#8594;
+                                    出場 <span class="text-text-heading" x-text="'$' + Number(enc.exitPrice).toLocaleString()"></span>
+                                </span>
+                                <span class="font-heading"
+                                      :class="enc.profitPct >= 0 ? 'text-positive' : 'text-negative'"
+                                      x-text="(enc.profitPct >= 0 ? '+' : '') + (enc.profitPct * 100).toFixed(2) + '%'"></span>
                             </div>
-                        </template>
-                        <template x-if="enc.result === 'DEFEAT'">
-                            <div>
-                                <div class="text-sm font-heading text-negative">&#10060; 戰鬥失敗</div>
-                                <div class="text-xs text-negative" x-text="'-' + enc.goldLost + ' G'"></div>
-                                <div class="text-[10px] text-text-muted" x-text="(enc.profitPct * 100).toFixed(2) + '%'"></div>
+                        </div>
+                    </template>
+
+                    <!-- 戰鬥日誌（魔物獵人風格文字敘述） -->
+                    <template x-if="enc.battleLog">
+                        <div class="border-t border-white/10 pt-2">
+                            <p class="text-[12px] text-text-muted leading-relaxed italic" x-text="enc.battleLog"></p>
+                        </div>
+                    </template>
+
+                    <!-- 進行中的交易資訊 -->
+                    <template x-if="enc.result === 'IN_PROGRESS' && enc.tradeDirection">
+                        <div class="border-t border-white/10 pt-2">
+                            <div class="flex items-center gap-3 text-xs">
+                                <span class="px-1.5 py-0.5 font-heading"
+                                      :class="enc.tradeDirection === 'LONG' ? 'bg-positive/20 text-positive' : 'bg-negative/20 text-negative'"
+                                      x-text="enc.tradeDirection === 'LONG' ? '&#9650; 做多' : '&#9660; 做空'"></span>
+                                <span class="text-text-muted">
+                                    入場 <span class="text-text-heading" x-text="'$' + Number(enc.entryPrice).toLocaleString()"></span>
+                                </span>
+                                <span class="text-primary text-[11px] anim-flash">持倉中...</span>
                             </div>
-                        </template>
-                        <template x-if="enc.result === 'IN_PROGRESS'">
-                            <div>
-                                <div class="text-sm font-heading text-primary anim-flash">&#9876; 戰鬥中...</div>
-                            </div>
-                        </template>
-                    </div>
+                        </div>
+                    </template>
                 </div>
             </template>
         </div>
@@ -170,7 +212,7 @@
 <script>
 function battleApp() {
     return {
-        tab: 'bestiary',
+        tab: 'encounters',
         tierFilter: 'ALL',
         loading: true,
         encounters: [],

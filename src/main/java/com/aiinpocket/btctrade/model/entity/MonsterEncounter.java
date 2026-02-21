@@ -48,9 +48,25 @@ public class MonsterEncounter {
     @Column(nullable = false, length = 15)
     private BattleResult result;
 
+    /** 交易方向（LONG / SHORT） */
+    @Column(name = "trade_direction", length = 10)
+    private String tradeDirection;
+
+    /** 開倉價格 */
+    @Column(name = "entry_price", precision = 20, scale = 8)
+    private BigDecimal entryPrice;
+
+    /** 平倉價格 */
+    @Column(name = "exit_price", precision = 20, scale = 8)
+    private BigDecimal exitPrice;
+
     /** 交易報酬率百分比（平倉時填入） */
     @Column(name = "profit_pct", precision = 10, scale = 4)
     private BigDecimal profitPct;
+
+    /** 戰鬥日誌文字（平倉時生成） */
+    @Column(name = "battle_log", columnDefinition = "TEXT")
+    private String battleLog;
 
     /** 本次戰鬥獲得的經驗值 */
     @Column(name = "exp_gained")

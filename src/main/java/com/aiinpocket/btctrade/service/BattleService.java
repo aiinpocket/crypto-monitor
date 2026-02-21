@@ -42,13 +42,16 @@ public class BattleService {
     /**
      * 交易開倉時觸發：為所有觀察該幣對的用戶建立怪物遭遇。
      *
-     * @param symbol     幣對符號
-     * @param volatility 近期波動率（ATR % 或類似指標）
-     * @param entryTime  開倉時間
+     * @param symbol         幣對符號
+     * @param volatility     近期波動率（ATR % 或類似指標）
+     * @param entryTime      開倉時間
+     * @param tradeDirection 交易方向（"LONG" / "SHORT"）
+     * @param entryPrice     開倉價格
      * @return 建立的遭遇數量
      */
     @Transactional
-    public int startEncounters(String symbol, double volatility, Instant entryTime) {
+    public int startEncounters(String symbol, double volatility, Instant entryTime,
+                               String tradeDirection, BigDecimal entryPrice) {
         // 1. 依波動度選擇怪物
         Monster monster = selectMonster(volatility);
         if (monster == null) {
@@ -71,6 +74,8 @@ public class BattleService {
                         .symbol(symbol)
                         .result(BattleResult.IN_PROGRESS)
                         .startedAt(entryTime)
+                        .tradeDirection(tradeDirection)
+                        .entryPrice(entryPrice)
                         .build();
                 encounterRepo.save(encounter);
                 count++;
@@ -90,9 +95,11 @@ public class BattleService {
      * @param symbol    幣對符號
      * @param profitPct 交易報酬率（正數=獲利，負數=虧損）
      * @param exitTime  平倉時間
+     * @param exitPrice 平倉價格
      */
     @Transactional
-    public void resolveEncounters(String symbol, BigDecimal profitPct, Instant exitTime) {
+    public void resolveEncounters(String symbol, BigDecimal profitPct,
+                                  Instant exitTime, BigDecimal exitPrice) {
         List<MonsterEncounter> allInProgress = encounterRepo
                 .findBySymbolAndResult(symbol, BattleResult.IN_PROGRESS);
 
@@ -100,7 +107,7 @@ public class BattleService {
 
         for (MonsterEncounter encounter : allInProgress) {
             try {
-                resolveOne(encounter, profitPct, isVictory, exitTime);
+                resolveOne(encounter, profitPct, isVictory, exitTime, exitPrice);
             } catch (Exception e) {
                 log.error("[戰鬥] 結算遭遇 {} 失敗: {}", encounter.getId(), e.getMessage());
             }
@@ -114,9 +121,10 @@ public class BattleService {
      * 結算單場遭遇。
      */
     private void resolveOne(MonsterEncounter encounter, BigDecimal profitPct,
-                            boolean isVictory, Instant exitTime) {
+                            boolean isVictory, Instant exitTime, BigDecimal exitPrice) {
         encounter.setProfitPct(profitPct);
         encounter.setEndedAt(exitTime);
+        encounter.setExitPrice(exitPrice);
 
         AppUser user = encounter.getUser();
         Monster monster = encounter.getMonster();
@@ -160,6 +168,9 @@ public class BattleService {
             log.info("[戰鬥] 用戶 {} 敗給「{}」→ -{} 金幣",
                     user.getId(), monster.getName(), penalty);
         }
+
+        // 生成戰鬥日誌
+        encounter.setBattleLog(generateBattleLog(encounter, user, monster, isVictory));
 
         encounterRepo.save(encounter);
     }
@@ -225,6 +236,104 @@ public class BattleService {
         }
 
         return matching.get(ThreadLocalRandom.current().nextInt(matching.size()));
+    }
+
+    // ===== 戰鬥日誌生成 =====
+
+    /**
+     * 職業技能表：依職業和等級階段決定技能名稱。
+     * 格式：SKILL_MAP[職業] = { {初級技能}, {中級技能}, {上級技能}, {極致技能} }
+     */
+    private static final Map<String, String[][]> SKILL_MAP = Map.of(
+            "WARRIOR", new String[][]{
+                    {"猛擊", "防禦姿態", "盾牌衝撞"},
+                    {"旋風斬", "鐵壁防禦", "戰吼"},
+                    {"破甲重擊", "堅不可摧", "泰坦之握"},
+                    {"天崩地裂", "不朽戰魂", "弒神一擊"}
+            },
+            "MAGE", new String[][]{
+                    {"初級火球", "冰凍術", "魔力箭"},
+                    {"中級火球", "暴風雪", "雷電鏈"},
+                    {"上級火球", "冰晶結界", "閃電風暴"},
+                    {"烈焰地獄", "極寒領域", "末日審判"}
+            },
+            "RANGER", new String[][]{
+                    {"精準射擊", "毒箭", "設置陷阱"},
+                    {"連射箭", "毒霧箭", "自然之力"},
+                    {"貫穿射擊", "致命毒液", "鷹眼追蹤"},
+                    {"流星箭雨", "萬箭齊發", "神射手之眼"}
+            },
+            "ASSASSIN", new String[][]{
+                    {"背刺", "毒刃", "暗影步"},
+                    {"致命背刺", "劇毒之刃", "暗殺術"},
+                    {"影分身", "死亡之舞", "夜影追蹤"},
+                    {"極影滅殺", "絕命毒牙", "虛空暗殺"}
+            }
+    );
+
+    /**
+     * 根據等級取得技能階段 (0=初級, 1=中級, 2=上級, 3=極致)
+     */
+    private int getSkillTier(int userLevel) {
+        if (userLevel >= 30) return 3;
+        if (userLevel >= 20) return 2;
+        if (userLevel >= 10) return 1;
+        return 0;
+    }
+
+    /**
+     * 隨機選取一個技能名稱
+     */
+    private String pickSkill(String characterClass, int userLevel) {
+        String[][] skills = SKILL_MAP.getOrDefault(characterClass, SKILL_MAP.get("WARRIOR"));
+        int tier = getSkillTier(userLevel);
+        String[] tierSkills = skills[tier];
+        return tierSkills[ThreadLocalRandom.current().nextInt(tierSkills.length)];
+    }
+
+    /**
+     * 生成魔物獵人風格的戰鬥日誌（不顯示 HP）。
+     */
+    private String generateBattleLog(MonsterEncounter encounter, AppUser user,
+                                     Monster monster, boolean isVictory) {
+        String charClass = user.getCharacterClass();
+        int level = user.getLevel();
+        String monsterName = monster.getName();
+
+        // 選取 2~3 個技能
+        String skill1 = pickSkill(charClass, level);
+        String skill2 = pickSkill(charClass, level);
+        String skill3 = pickSkill(charClass, level);
+        // 避免連續重複
+        while (skill2.equals(skill1)) skill2 = pickSkill(charClass, level);
+
+        StringBuilder log = new StringBuilder();
+
+        if (isVictory) {
+            // 勝利敘事（3 回合風格）
+            String[] victoryPatterns = {
+                    "冒險者對「%s」施展了【%s】，命中！怪物怒吼反擊！冒險者側身閃過，蓄力發動【%s】！%s搖搖欲墜...最終一擊！【%s】貫穿要害，%s轟然倒下！",
+                    "「%s」擋住去路！冒險者以【%s】先發制人！怪物被擊退一步，冒險者乘勝追擊施展【%s】！%s發出痛苦嘶吼...冒險者抓住破綻，【%s】一擊必殺！%s化為塵埃！",
+                    "冒險者遭遇「%s」！迅速展開【%s】攻勢！怪物負傷反撲，冒險者沉著應對，再施【%s】！%s體力不支...冒險者發動終結技【%s】！%s被完全擊潰！"
+            };
+            String pattern = victoryPatterns[ThreadLocalRandom.current().nextInt(victoryPatterns.length)];
+            log.append(String.format(pattern, monsterName, skill1, skill2, monsterName, skill3, monsterName));
+        } else {
+            // 敗北敘事
+            String[] defeatPatterns = {
+                    "冒險者對「%s」施展【%s】，但被閃避！%s的猛烈攻擊命中！冒險者嘗試以【%s】反擊...但%s的力量太過強大，冒險者被迫撤退！",
+                    "「%s」的氣勢壓倒一切！冒險者使用【%s】奮力抵抗，但效果不彰！%s發動猛攻！冒險者嘗試【%s】脫困...但寡不敵眾，冒險者被擊退！",
+                    "冒險者以【%s】挑戰「%s」！初始攻勢被化解...%s展開反擊！冒險者在慌亂中施展【%s】，但為時已晚...冒險者不敵%s的壓倒性力量，敗退而歸！"
+            };
+            String pattern = defeatPatterns[ThreadLocalRandom.current().nextInt(defeatPatterns.length)];
+            if (defeatPatterns[2].equals(pattern)) {
+                log.append(String.format(pattern, skill1, monsterName, monsterName, skill2, monsterName));
+            } else {
+                log.append(String.format(pattern, monsterName, skill1, monsterName, skill2, monsterName));
+            }
+        }
+
+        return log.toString();
     }
 
     // ===== 查詢 API =====
