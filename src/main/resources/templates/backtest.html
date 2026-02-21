@@ -465,6 +465,45 @@
         </div>
     </div>
 
+    <!-- ===== 回測歷史紀錄 ===== -->
+    <div class="pixel-card p-4 mt-4" x-show="history.length > 0">
+        <h3 class="text-sm text-text-heading mb-3">&#128218; 歷史紀錄</h3>
+        <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full text-xs">
+                <thead>
+                <tr class="text-text-muted border-b border-border-main">
+                    <th scope="col" class="py-1.5 px-2 text-left">策略</th>
+                    <th scope="col" class="py-1.5 px-2 text-left">幣對</th>
+                    <th scope="col" class="py-1.5 px-2 text-left">狀態</th>
+                    <th scope="col" class="py-1.5 px-2 text-left">提交時間</th>
+                    <th scope="col" class="py-1.5 px-2 text-center">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <template x-for="h in history" :key="h.id">
+                    <tr class="border-b border-border-main/50 hover:bg-white/5">
+                        <td class="py-1.5 px-2 text-text-heading" x-text="h.templateName"></td>
+                        <td class="py-1.5 px-2 text-primary" x-text="h.symbol"></td>
+                        <td class="py-1.5 px-2">
+                            <span :class="{
+                                'text-positive': h.status === 'COMPLETED',
+                                'text-negative': h.status === 'FAILED',
+                                'text-warning anim-flash': h.status === 'RUNNING' || h.status === 'PENDING'
+                            }" x-text="h.status === 'COMPLETED' ? '&#10003; 完成' : h.status === 'FAILED' ? '&#10007; 失敗' : '&#9881; 執行中'"></span>
+                        </td>
+                        <td class="py-1.5 px-2 text-text-muted" x-text="new Date(h.createdAt).toLocaleString()"></td>
+                        <td class="py-1.5 px-2 text-center">
+                            <button x-show="h.status === 'COMPLETED'"
+                                    @click="loadHistoryResult(h.id)"
+                                    class="pixel-btn text-[10px] py-0.5 px-2 cursor-pointer">查看</button>
+                        </td>
+                    </tr>
+                </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div x-show="message" x-cloak x-transition class="fixed bottom-4 right-4 pixel-card px-4 py-2 text-[13px] z-50"
          :class="messageType === 'success' ? 'text-positive' : 'text-negative'" x-text="message"></div>
 </main>
@@ -481,7 +520,7 @@
     function backtestApp() {
         return {
             form: { templateId: '', symbol: watchlistSymbolList[0] || 'BTCUSDT', years: 5 },
-            allTemplates: [], running: false, result: null,
+            allTemplates: [], running: false, result: null, history: [],
             equityChart: null, message: '', messageType: 'success', pollPct: 0,
             tradePage: 1, tradesPerPage: 50,
             charClass: _charClass,
@@ -523,7 +562,8 @@
             priestFloatTexts: [],
 
             get priestCost() {
-                return (this.staminaData.maxStamina - this.staminaData.stamina) * 5;
+                const gps = this.staminaData.goldPerStamina || 20;
+                return (this.staminaData.maxStamina - this.staminaData.stamina) * gps;
             },
 
             // 幣對搜尋
@@ -534,6 +574,7 @@
             async init() {
                 await this.loadTemplates();
                 await this.loadStamina();
+                await this.loadHistory();
                 this.symSearch();
                 this.restoreAdventure();
                 this.startStaminaTimer();
@@ -588,47 +629,50 @@
 
             // ── 輪詢結果 + 觸發冒險事件 ──
             async pollResult(runId) {
-                // 使用恢復的進度作為起點
-                const startI = Math.floor((this.advRestoredPct / 100) * 120);
-                if (startI === 0) this.pollPct = 0;
-                this.advRestoredPct = 0; // 清除恢復標記
+                // 啟動自動儲存（每 3 秒持續寫入 sessionStorage）
+                const autoSave = setInterval(() => this.saveAdventure(), 3000);
 
-                for (let i = startI; i < 120; i++) {
-                    if (this.advSkipped) break; // Skip 按鈕
-                    this.pollPct = Math.min(99, Math.round((i / 120) * 100));
-                    if (!this.advInBattle) this.advCurrentScene = 'walk';
+                try {
+                    // 使用恢復的進度作為起點
+                    const startI = Math.floor((this.advRestoredPct / 100) * 120);
+                    if (startI === 0) this.pollPct = 0;
+                    this.advRestoredPct = 0;
 
-                    // 檢查是否到達里程碑（非跳過模式才播動畫）
-                    if (!this.advSkipped) await this.checkMilestones();
-                    this.saveAdventure();
+                    for (let i = startI; i < 120; i++) {
+                        if (this.advSkipped) break;
+                        this.pollPct = Math.min(99, Math.round((i / 120) * 100));
+                        if (!this.advInBattle) this.advCurrentScene = 'walk';
 
-                    await new Promise(r => setTimeout(r, 2000));
-                    if (this.advSkipped) break;
+                        if (!this.advSkipped) await this.checkMilestones();
 
-                    try {
-                        const r = await fetch(`/api/user/backtest/${runId}`);
-                        if (!r.ok) continue;
-                        const d = await r.json();
+                        await new Promise(r => setTimeout(r, 2000));
+                        if (this.advSkipped) break;
 
-                        if (d.status === 'COMPLETED') {
-                            await this.handleComplete(d, runId);
-                            return;
-                        } else if (d.status === 'FAILED') {
-                            this.running = false; this.pollPct = 0;
-                            this.advCurrentScene = 'idle'; this.advInBattle = false;
-                            this.addLog('❌ 回測計算失敗', 'text-negative');
-                            this.showMsg('回測失敗', 'error');
-                            this.clearSavedAdventure();
-                            return;
-                        }
-                    } catch(e) {}
-                }
+                        try {
+                            const r = await fetch(`/api/user/backtest/${runId}`);
+                            if (!r.ok) continue;
+                            const d = await r.json();
+                            if (d.status === 'COMPLETED') {
+                                clearInterval(autoSave);
+                                await this.handleComplete(d, runId);
+                                return;
+                            } else if (d.status === 'FAILED') {
+                                clearInterval(autoSave);
+                                this.running = false; this.pollPct = 0;
+                                this.advCurrentScene = 'idle'; this.advInBattle = false;
+                                this.addLog('❌ 回測計算失敗', 'text-negative');
+                                this.showMsg('回測失敗', 'error');
+                                this.clearSavedAdventure();
+                                return;
+                            }
+                        } catch(e) {}
+                    }
 
-                // 跳過模式或超時：持續輪詢直到回測完成
-                if (this.advSkipped) {
+                    // 跳過模式或動畫跑完：持續輪詢直到回測完成
                     this.advInBattle = false;
                     this.advCurrentScene = 'idle';
-                    this.addLog('⏩ 已跳過冒險動畫，等待回測完成...', 'text-text-muted');
+                    if (this.advSkipped) this.addLog('⏩ 已跳過冒險動畫，等待回測完成...', 'text-text-muted');
+
                     for (let j = 0; j < 300; j++) {
                         this.pollPct = Math.min(99, this.pollPct + 1);
                         await new Promise(r => setTimeout(r, 1000));
@@ -636,17 +680,27 @@
                             const r = await fetch(`/api/user/backtest/${runId}`);
                             if (!r.ok) continue;
                             const d = await r.json();
-                            if (d.status === 'COMPLETED') { await this.handleComplete(d, runId); return; }
-                            else if (d.status === 'FAILED') {
+                            if (d.status === 'COMPLETED') {
+                                clearInterval(autoSave);
+                                await this.handleComplete(d, runId);
+                                return;
+                            } else if (d.status === 'FAILED') {
+                                clearInterval(autoSave);
                                 this.running = false; this.pollPct = 0;
-                                this.showMsg('回測失敗', 'error'); this.clearSavedAdventure(); return;
+                                this.showMsg('回測失敗', 'error');
+                                this.clearSavedAdventure();
+                                return;
                             }
                         } catch(e) {}
                     }
+                    clearInterval(autoSave);
+                    this.running = false; this.pollPct = 0; this.advCurrentScene = 'idle';
+                    this.showMsg('超時', 'error');
+                    this.clearSavedAdventure();
+                } catch(e) {
+                    clearInterval(autoSave);
+                    throw e;
                 }
-                this.running = false; this.pollPct = 0; this.advCurrentScene = 'idle';
-                this.showMsg('超時', 'error');
-                this.clearSavedAdventure();
             },
 
             async handleComplete(d, runId) {
@@ -669,6 +723,8 @@
                 this.showMsg(this.result.passed ? '🏆 挑戰成功！' : '💀 挑戰失敗', 'success');
                 this.$nextTick(() => this.renderChart());
                 this.clearSavedAdventure();
+                await this.loadHistory();
+                await this.loadStamina();
             },
 
             // ── 跳過動畫 ──
@@ -731,6 +787,10 @@
                 const win = Math.random() < 0.6;
                 const rounds = 2 + Math.floor(Math.random() * 2); // 2~3 回合
 
+                // 根據勝敗決定傷害範圍，確保動畫與結果一致
+                const pDmgBase = win ? 25 : 10;  // 勝利時角色傷害高
+                const mDmgBase = win ? 8 : 22;   // 失敗時怪物傷害高
+
                 for (let round = 1; round <= rounds; round++) {
                     // === 角色回合 ===
                     const skill = this.pickSkill();
@@ -745,15 +805,16 @@
                     this.advPlayerAnim = 'anim-idle';
                     this.advSkillName = '';
 
-                    // 怪物受傷
-                    const pDmg = 15 + Math.floor(Math.random() * 25);
+                    // 怪物受傷（勝利時傷害更高）
+                    const pDmg = pDmgBase + Math.floor(Math.random() * 15);
                     this.advMonsterAnim = 'anim-hurt';
                     this.spawnDmg(65, `-${pDmg}`, 'text-negative');
                     this.advMonsterHp = Math.max(0, this.advMonsterHp - pDmg);
                     await this.sleep(600);
                     this.advMonsterAnim = 'anim-monster';
 
-                    if (this.advMonsterHp <= 0 || (round === rounds && win)) {
+                    // 勝利：怪物 HP 歸零時結束
+                    if (win && this.advMonsterHp <= 0) {
                         this.advMonsterHp = 0;
                         break;
                     }
@@ -773,21 +834,17 @@
                     this.advMonsterAnim = 'anim-monster';
                     this.advMonsterSkill = '';
 
-                    // 角色受傷
-                    const mDmg = 10 + Math.floor(Math.random() * 20);
+                    // 角色受傷（失敗時怪物傷害更高）
+                    const mDmg = mDmgBase + Math.floor(Math.random() * 12);
                     this.advPlayerAnim = 'anim-hurt';
                     this.spawnDmg(30, `-${mDmg}`, 'text-negative');
-                    this.advPlayerHp = Math.max(5, this.advPlayerHp - mDmg);
+                    this.advPlayerHp = Math.max(3, this.advPlayerHp - mDmg);
                     await this.sleep(600);
                     this.advPlayerAnim = 'anim-idle';
-
-                    if (!win && round === rounds) {
-                        this.advPlayerHp = Math.max(5, this.advPlayerHp);
-                    }
                     await this.sleep(300);
                 }
 
-                // === 結算 ===
+                // === 結算：確保 HP 反映結果 ===
                 await this.sleep(400);
                 if (win) {
                     this.advMonsterHp = 0;
@@ -797,7 +854,8 @@
                     this.addLog(`✅ 擊敗 ${evt.monsterName}！獲得經驗與金幣`, 'text-positive');
                     this.spawnLoot(evt.pct, '+EXP +Gold', 'text-primary');
                 } else {
-                    this.advPlayerHp = Math.max(5, this.advPlayerHp);
+                    this.advPlayerHp = Math.max(3, Math.min(15, this.advPlayerHp));
+                    this.advMonsterHp = Math.max(20, this.advMonsterHp); // 怪物仍有血
                     this.advBattleText = `&#10060; 被 ${evt.monsterName} 擊退...`;
                     this.advBattleWin = false;
                     this.addLog(`❌ 被 ${evt.monsterName} 擊退... 損失金幣`, 'text-negative');
@@ -976,6 +1034,28 @@
                         } else { toast(d.error || '新增失敗', 'error'); }
                     }
                 } catch(e) { toast('新增失敗', 'error'); }
+            },
+
+            // ── 歷史紀錄方法 ──
+            async loadHistory() {
+                try {
+                    const r = await fetch('/api/user/backtest/history');
+                    if (r.ok) this.history = await r.json();
+                } catch(e) {}
+            },
+            async loadHistoryResult(id) {
+                try {
+                    const r = await fetch(`/api/user/backtest/${id}`);
+                    if (!r.ok) return;
+                    const d = await r.json();
+                    if (d.status === 'COMPLETED' && d.resultJson) {
+                        this.result = JSON.parse(d.resultJson);
+                        this.tradePage = 1;
+                        this.advShowRewards = false;
+                        this.$nextTick(() => this.renderChart());
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                } catch(e) { this.showMsg('載入失敗', 'error'); }
             },
 
             // ── 體力系統方法 ──

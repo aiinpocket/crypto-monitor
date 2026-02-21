@@ -33,8 +33,8 @@ public class StaminaService {
     /** 每 30 分鐘回復 1 點體力 */
     private static final int REGEN_INTERVAL_MINUTES = 30;
 
-    /** 金幣恢復價格：每 1 點體力 = 5 金幣 */
-    private static final int GOLD_PER_STAMINA = 5;
+    /** 金幣恢復價格：每 1 點體力 = 20 金幣（防止越測越有錢的無限循環） */
+    private static final int GOLD_PER_STAMINA = 20;
 
     /**
      * 取得用戶目前的體力資訊（會自動套用時間回復）。
