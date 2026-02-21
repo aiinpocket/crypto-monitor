@@ -57,6 +57,8 @@ public class StrategiesPageController {
 
         model.addAttribute("user", user);
         model.addAttribute("watchlistSymbols", watchlistService.getWatchlistSymbols(user.getId()));
+        model.addAttribute("charClass", user.getCharacterClass() != null ? user.getCharacterClass() : "WARRIOR");
+        model.addAttribute("userLevel", user.getLevel());
         // 提供所有 READY 幣對讓回測不受限於觀察清單
         List<String> readySymbols = trackedSymbolService.getReadySymbols().stream()
                 .map(TrackedSymbol::getSymbol).toList();

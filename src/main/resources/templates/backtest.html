@@ -71,6 +71,168 @@
         </div>
     </div>
 
+    <!-- ===== 冒險動畫場景 ===== -->
+    <div x-show="running || advShowRewards" x-cloak class="pixel-card p-4 mb-4 relative overflow-hidden" style="min-height:180px;">
+        <!-- 場景背景：地面+天空 -->
+        <div class="absolute inset-0" style="background: linear-gradient(180deg, #0c1021 0%, #1a1a2e 60%, #2d1f3d 80%, #3a2a1a 90%, #4a3a2a 100%);">
+            <!-- 星星 -->
+            <div class="absolute" style="top:8px;left:15%;width:2px;height:2px;background:#fff;opacity:0.6;"></div>
+            <div class="absolute" style="top:18px;left:45%;width:2px;height:2px;background:#fff;opacity:0.4;"></div>
+            <div class="absolute" style="top:12px;left:72%;width:2px;height:2px;background:#fff;opacity:0.7;"></div>
+            <div class="absolute" style="top:25px;left:88%;width:2px;height:2px;background:#fff;opacity:0.3;"></div>
+            <!-- 地面裝飾 -->
+            <div class="absolute bottom-0 left-0 right-0 h-[30px]" style="background: repeating-linear-gradient(90deg, #3a2a1a 0px, #4a3a2a 6px, #3a2a1a 12px);"></div>
+        </div>
+
+        <!-- 進度條 -->
+        <div class="relative z-10 mb-2">
+            <div class="flex items-center justify-between text-[10px] text-text-muted mb-1">
+                <span>冒險進度</span>
+                <span x-text="pollPct + '%'"></span>
+            </div>
+            <div class="w-full h-2 bg-black/40 pixel-border-dark overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-primary to-cta transition-all duration-500"
+                     :style="'width:' + pollPct + '%'"></div>
+            </div>
+        </div>
+
+        <!-- 角色行走區域 -->
+        <div class="relative z-10" style="height:100px;">
+            <!-- 路徑里程碑標記 -->
+            <template x-for="evt in advEvents" :key="evt.pct">
+                <div class="absolute bottom-[36px] z-10 transition-opacity duration-300"
+                     :style="'left:' + evt.pct + '%'"
+                     :class="pollPct >= evt.pct ? 'opacity-100' : 'opacity-30'">
+                    <div class="text-[16px] -ml-2" x-text="evt.type === 'MONSTER' ? '&#128128;' : '&#127873;'"></div>
+                </div>
+            </template>
+
+            <!-- 角色精靈 -->
+            <div class="absolute bottom-[30px] z-20 transition-all duration-[1500ms] ease-linear"
+                 :style="'left: calc(' + Math.min(pollPct, 95) + '% - 24px)'"
+                 :class="advCurrentScene === 'walk' ? 'anim-walk' : (advCurrentScene === 'attack' ? 'anim-attack' : 'anim-idle')">
+                <div class="relative w-[48px] h-[48px]">
+                    <div class="absolute top-0 left-0" :class="'pixel-char-' + charClass.toLowerCase()"></div>
+                </div>
+            </div>
+
+            <!-- 遭遇怪物（臨時顯示） -->
+            <div x-show="advCurrentMonster" x-transition class="absolute bottom-[30px] z-20"
+                 :style="'left: calc(' + (advMonsterPct||0) + '% + 30px)'"
+                 :class="advMonsterHurt ? 'anim-hurt' : 'anim-monster'">
+                <div class="relative w-[48px] h-[48px]" x-show="advCurrentMonster">
+                    <div class="absolute top-0 left-0" :class="advCurrentMonster?.monsterCss || ''"></div>
+                </div>
+            </div>
+
+            <!-- 戰鬥文字 -->
+            <div x-show="advBattleText" x-transition class="absolute top-0 left-1/2 -translate-x-1/2 z-30">
+                <div class="pixel-card px-3 py-1.5 text-[11px] font-heading text-center whitespace-nowrap"
+                     :class="advBattleWin ? 'text-positive' : 'text-negative'"
+                     x-text="advBattleText"></div>
+            </div>
+
+            <!-- 寶箱 -->
+            <div x-show="advShowTreasure" x-transition class="absolute bottom-[30px] z-20 anim-treasure-pop"
+                 :style="'left: calc(' + (advTreasurePct||0) + '% - 8px)'">
+                <div class="text-[32px]">&#127873;</div>
+            </div>
+
+            <!-- 戰利品飄字 -->
+            <template x-for="loot in advLootTexts" :key="loot.id">
+                <div class="absolute z-30 anim-loot text-[11px] font-heading"
+                     :style="'left:' + loot.x + '%;bottom:80px'"
+                     :class="loot.color">
+                    <span x-text="loot.text"></span>
+                </div>
+            </template>
+        </div>
+
+        <!-- 事件日誌 -->
+        <div class="relative z-10 mt-2 max-h-[60px] overflow-y-auto scrollbar-thin">
+            <template x-for="(log, i) in advLog" :key="i">
+                <div class="text-[10px] leading-relaxed" :class="log.color || 'text-text-muted'" x-text="log.text"></div>
+            </template>
+        </div>
+    </div>
+
+    <!-- ===== 冒險獎勵結算面板 ===== -->
+    <div x-show="advShowRewards && advRewards" x-cloak class="pixel-card p-4 mb-4">
+        <h3 class="text-sm font-heading text-primary mb-3">&#127942; 冒險結算</h3>
+        <!-- 戰鬥結果列表 -->
+        <div class="space-y-2 mb-4 max-h-48 overflow-y-auto scrollbar-thin">
+            <template x-for="(b, i) in advRewards?.battles || []" :key="i">
+                <div class="flex items-center gap-3 text-xs px-2 py-1 bg-white/5 rounded">
+                    <template x-if="b.type === 'TREASURE'">
+                        <div class="flex items-center gap-2 w-full">
+                            <span>&#127873;</span>
+                            <span class="text-primary">發現寶箱！</span>
+                            <span class="ml-auto text-primary font-heading" x-text="'+' + b.gold + ' G'"></span>
+                        </div>
+                    </template>
+                    <template x-if="b.type !== 'TREASURE'">
+                        <div class="flex items-center gap-2 w-full">
+                            <div class="w-[24px] h-[24px] relative shrink-0" style="transform:scale(0.5);transform-origin:top left;">
+                                <div class="absolute top-0 left-0" :class="b.monsterCss || ''"></div>
+                            </div>
+                            <span class="text-text-heading" x-text="b.monsterName"></span>
+                            <span class="text-[10px] text-text-muted" x-text="'Lv.' + b.monsterLevel"></span>
+                            <template x-if="b.victory">
+                                <div class="ml-auto flex items-center gap-2">
+                                    <span class="text-positive text-[10px]">&#9989; 勝利</span>
+                                    <span class="text-primary font-heading text-[10px]" x-text="'+' + b.exp + ' EXP'"></span>
+                                    <span class="text-primary font-heading text-[10px]" x-text="'+' + b.gold + ' G'"></span>
+                                </div>
+                            </template>
+                            <template x-if="!b.victory">
+                                <div class="ml-auto">
+                                    <span class="text-negative text-[10px]">&#10060; 敗北</span>
+                                    <span class="text-negative font-heading text-[10px]" x-text="'-' + b.goldLost + ' G'"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+        <!-- 獎勵總計 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div class="pixel-card p-2 text-center">
+                <div class="text-[10px] text-text-muted">獲得 EXP</div>
+                <div class="text-sm font-heading text-primary" x-text="'+' + (advRewards?.exp || 0)"></div>
+            </div>
+            <div class="pixel-card p-2 text-center">
+                <div class="text-[10px] text-text-muted">獲得金幣</div>
+                <div class="text-sm font-heading text-primary" x-text="'+' + (advRewards?.gold || 0) + ' G'"></div>
+            </div>
+            <div class="pixel-card p-2 text-center">
+                <div class="text-[10px] text-text-muted">掉落裝備</div>
+                <div class="text-sm font-heading text-cta" x-text="(advRewards?.equipment?.filter(e=>e.dropped)?.length || 0) + ' 件'"></div>
+            </div>
+            <div class="pixel-card p-2 text-center">
+                <div class="text-[10px] text-text-muted">回測判定</div>
+                <div class="text-sm font-heading" :class="advRewards?.profitable ? 'text-positive' : 'text-negative'"
+                     x-text="advRewards?.profitable ? '&#127942; 獲利' : '&#128128; 虧損'"></div>
+            </div>
+        </div>
+        <!-- 裝備掉落 -->
+        <template x-if="advRewards?.equipment?.length > 0">
+            <div class="mb-3">
+                <div class="text-[11px] text-text-muted mb-1">&#128081; 掉落裝備</div>
+                <div class="flex flex-wrap gap-2">
+                    <template x-for="eq in advRewards.equipment" :key="eq.name">
+                        <div class="pixel-card px-2 py-1 text-[10px]"
+                             :class="{'text-text-heading': eq.rarity==='COMMON', 'text-blue-400': eq.rarity==='RARE', 'text-purple-400': eq.rarity==='EPIC', 'text-primary': eq.rarity==='LEGENDARY'}">
+                            <span x-text="eq.name"></span>
+                            <span class="text-[9px] opacity-70" x-text="'(' + eq.rarity + ')'"></span>
+                            <span x-show="!eq.dropped" class="text-negative text-[9px]">背包已滿</span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+
     <!-- 結果區域 -->
     <div x-show="result" x-cloak>
         <!-- 戰報卡片 -->
@@ -163,53 +325,304 @@
 <script th:inline="javascript">
     const _watchlist = /*[[${watchlistSymbols}]]*/ ['BTCUSDT'];
     const _readySymbols = /*[[${readySymbols}]]*/ ['BTCUSDT'];
+    const _charClass = /*[[${charClass}]]*/ 'WARRIOR';
+    const _userLevel = /*[[${userLevel}]]*/ 1;
     const watchlistSymbolList = _watchlist.length > 0 ? _watchlist : _readySymbols;
     let _symDebounce = null;
+    let _lootId = 0;
+
     function backtestApp() {
         return {
             form: { templateId: '', symbol: watchlistSymbolList[0] || 'BTCUSDT', years: 5 },
             allTemplates: [], running: false, result: null,
             equityChart: null, message: '', messageType: 'success', pollPct: 0,
             tradePage: 1, tradesPerPage: 50,
+            charClass: _charClass,
             get pagedTrades() { const t = this.result?.trades || []; const s = (this.tradePage-1)*this.tradesPerPage; return t.slice(s, s+this.tradesPerPage); },
             get totalTradePages() { return Math.ceil((this.result?.trades?.length || 0) / this.tradesPerPage); },
+
+            // ── 冒險動畫狀態 ──
+            advEvents: [],           // 冒險事件列表
+            advCurrentScene: 'idle', // idle | walk | attack | treasure
+            advCurrentMonster: null, // 當前遭遇的怪物
+            advMonsterPct: 0,
+            advMonsterHurt: false,
+            advBattleText: '',
+            advBattleWin: false,
+            advShowTreasure: false,
+            advTreasurePct: 0,
+            advLog: [],
+            advLootTexts: [],
+            advShowRewards: false,
+            advRewards: null,
+            advTriggered: {},        // 已觸發的里程碑
+            advRunId: null,
+
             // 幣對搜尋
             symQuery: watchlistSymbolList[0] || 'BTCUSDT',
             symMatches: [], symShowDrop: false, symValidating: false,
             symCustomValid: false, symCustomChecked: false,
-            async init() { await this.loadTemplates(); this.symSearch(); },
-            async loadTemplates() { try { const r=await fetch('/api/user/strategies'); if(r.ok) this.allTemplates=await r.json(); else this.showMsg('載入策略列表失敗','error'); } catch(e){ this.showMsg('網路異常','error'); } },
-            async submitBacktest() {
-                if(!this.form.templateId) return; this.running=true; this.result=null;
+
+            async init() {
+                await this.loadTemplates();
+                this.symSearch();
+                this.restoreAdventure();
+            },
+
+            async loadTemplates() {
                 try {
-                    const r=await fetch('/api/user/backtest/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(this.form)});
-                    if(!r.ok){try{const e=await r.json();this.showMsg(e.error||'\u63D0\u4EA4\u5931\u6557','error');}catch(_){this.showMsg('\u63D0\u4EA4\u5931\u6557','error');}this.running=false;return;}
-                    const{id}=await r.json(); this.showMsg('挑戰已開始...','success'); await this.pollResult(id);
-                } catch(e){this.showMsg('網路錯誤','error');this.running=false;}
+                    const r = await fetch('/api/user/strategies');
+                    if (r.ok) this.allTemplates = await r.json();
+                    else this.showMsg('載入策略列表失敗', 'error');
+                } catch(e) { this.showMsg('網路異常', 'error'); }
             },
+
+            // ── 回測提交 ──
+            async submitBacktest() {
+                if (!this.form.templateId) return;
+                this.running = true; this.result = null;
+                this.advShowRewards = false; this.advRewards = null;
+                this.advLog = []; this.advTriggered = {}; this.advEvents = [];
+                this.advCurrentScene = 'walk';
+                try {
+                    const r = await fetch('/api/user/backtest/run', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(this.form)
+                    });
+                    if (!r.ok) {
+                        try { const e = await r.json(); this.showMsg(e.error || '提交失敗', 'error'); }
+                        catch(_) { this.showMsg('提交失敗', 'error'); }
+                        this.running = false; this.advCurrentScene = 'idle'; return;
+                    }
+                    const data = await r.json();
+                    this.advRunId = data.id;
+
+                    // 解析冒險計畫
+                    try {
+                        const plan = JSON.parse(data.adventureJson || '{}');
+                        this.advEvents = plan.events || [];
+                    } catch(e) { this.advEvents = []; }
+
+                    this.advLog.push({ text: '⚔ 冒險開始！勇士踏上征途...', color: 'text-primary' });
+                    this.saveAdventure();
+                    this.showMsg('挑戰已開始...', 'success');
+                    await this.pollResult(data.id);
+                } catch(e) { this.showMsg('網路錯誤', 'error'); this.running = false; this.advCurrentScene = 'idle'; }
+            },
+
+            // ── 輪詢結果 + 觸發冒險事件 ──
             async pollResult(runId) {
-                this.pollPct=0;
-                for(let i=0;i<120;i++){this.pollPct=Math.min(99,Math.round((i/120)*100));await new Promise(r=>setTimeout(r,2000));
-                    try{const r=await fetch(`/api/user/backtest/${runId}`);if(!r.ok)continue;const d=await r.json();
-                        if(d.status==='COMPLETED'){this.pollPct=100;this.result=JSON.parse(d.resultJson);this.running=false;
-                            this.showMsg(this.result.passed?'&#127942; 挑戰成功！':'&#128128; 挑戰失敗','success');
-                            this.$nextTick(()=>this.renderChart());return;}
-                        else if(d.status==='FAILED'){this.running=false;this.pollPct=0;this.showMsg('回測失敗','error');return;}
-                    }catch(e){}}
-                this.running=false;this.pollPct=0;this.showMsg('超時','error');
+                this.pollPct = 0;
+                for (let i = 0; i < 120; i++) {
+                    this.pollPct = Math.min(99, Math.round((i / 120) * 100));
+                    this.advCurrentScene = 'walk';
+
+                    // 檢查是否到達里程碑
+                    await this.checkMilestones();
+                    this.saveAdventure();
+
+                    await new Promise(r => setTimeout(r, 2000));
+                    try {
+                        const r = await fetch(`/api/user/backtest/${runId}`);
+                        if (!r.ok) continue;
+                        const d = await r.json();
+
+                        if (d.status === 'COMPLETED') {
+                            this.pollPct = 100;
+                            this.result = JSON.parse(d.resultJson);
+                            this.running = false;
+                            this.advCurrentScene = 'idle';
+
+                            // 觸發剩餘的里程碑事件
+                            await this.checkMilestones();
+
+                            this.advLog.push({ text: this.result.passed ? '🏆 冒險完成！英雄凱旋歸來！' : '💀 冒險結束... 英雄拖著疲憊的身軀返回營地', color: this.result.passed ? 'text-positive' : 'text-negative' });
+
+                            // 自動領取獎勵
+                            if (!d.adventureRewardsClaimed) {
+                                await this.claimRewards(runId);
+                            }
+
+                            this.showMsg(this.result.passed ? '🏆 挑戰成功！' : '💀 挑戰失敗', 'success');
+                            this.$nextTick(() => this.renderChart());
+                            this.clearSavedAdventure();
+                            return;
+                        } else if (d.status === 'FAILED') {
+                            this.running = false; this.pollPct = 0;
+                            this.advCurrentScene = 'idle';
+                            this.advLog.push({ text: '❌ 回測計算失敗', color: 'text-negative' });
+                            this.showMsg('回測失敗', 'error');
+                            this.clearSavedAdventure();
+                            return;
+                        }
+                    } catch(e) {}
+                }
+                this.running = false; this.pollPct = 0; this.advCurrentScene = 'idle';
+                this.showMsg('超時', 'error');
+                this.clearSavedAdventure();
             },
+
+            // ── 里程碑檢查 + 動畫觸發 ──
+            async checkMilestones() {
+                for (const evt of this.advEvents) {
+                    if (this.pollPct >= evt.pct && !this.advTriggered[evt.pct]) {
+                        this.advTriggered[evt.pct] = true;
+                        if (evt.type === 'MONSTER') {
+                            await this.playMonsterEncounter(evt);
+                        } else if (evt.type === 'TREASURE') {
+                            await this.playTreasureEvent(evt);
+                        }
+                    }
+                }
+            },
+
+            // ── 怪物遭遇動畫 ──
+            async playMonsterEncounter(evt) {
+                this.advCurrentScene = 'idle';
+                this.advCurrentMonster = evt;
+                this.advMonsterPct = evt.pct;
+                this.advLog.push({ text: `⚠ 遭遇 ${evt.monsterName}（Lv.${evt.monsterLevel}）！`, color: 'text-cta' });
+                await this.sleep(800);
+
+                // 攻擊動畫
+                this.advCurrentScene = 'attack';
+                await this.sleep(500);
+
+                // 隨機勝敗（前端只做動畫，實際獎勵由後端 claimRewards 決定）
+                const win = Math.random() < 0.6;
+                this.advMonsterHurt = true;
+                await this.sleep(600);
+
+                if (win) {
+                    this.advBattleText = `擊敗了 ${evt.monsterName}！`;
+                    this.advBattleWin = true;
+                    this.advLog.push({ text: `✅ 擊敗 ${evt.monsterName}！`, color: 'text-positive' });
+                    this.spawnLoot(evt.pct, '+EXP', 'text-primary');
+                } else {
+                    this.advBattleText = `被 ${evt.monsterName} 擊退...`;
+                    this.advBattleWin = false;
+                    this.advLog.push({ text: `❌ 被 ${evt.monsterName} 擊退...`, color: 'text-negative' });
+                }
+                await this.sleep(1500);
+
+                this.advBattleText = '';
+                this.advCurrentMonster = null;
+                this.advMonsterHurt = false;
+                this.advCurrentScene = 'walk';
+            },
+
+            // ── 寶箱事件動畫 ──
+            async playTreasureEvent(evt) {
+                this.advCurrentScene = 'idle';
+                this.advShowTreasure = true;
+                this.advTreasurePct = evt.pct;
+                this.advLog.push({ text: `🎁 發現寶箱！獲得 ${evt.goldAmount} G`, color: 'text-primary' });
+                this.spawnLoot(evt.pct, `+${evt.goldAmount} G`, 'text-primary');
+                await this.sleep(2000);
+                this.advShowTreasure = false;
+                this.advCurrentScene = 'walk';
+            },
+
+            // ── 戰利品飄字效果 ──
+            spawnLoot(x, text, color) {
+                const id = ++_lootId;
+                this.advLootTexts.push({ id, x, text, color });
+                setTimeout(() => {
+                    this.advLootTexts = this.advLootTexts.filter(l => l.id !== id);
+                }, 1500);
+            },
+
+            // ── 領取獎勵 ──
+            async claimRewards(runId) {
+                try {
+                    const r = await fetch(`/api/user/backtest/${runId}/adventure/claim`, { method: 'POST' });
+                    if (r.ok) {
+                        this.advRewards = await r.json();
+                        this.advShowRewards = true;
+                        this.advLog.push({ text: `🎉 獲得 ${this.advRewards.exp} EXP, ${this.advRewards.gold} G`, color: 'text-primary' });
+                    }
+                } catch(e) {
+                    console.error('Failed to claim adventure rewards', e);
+                }
+            },
+
+            // ── sessionStorage 持久化 ──
+            saveAdventure() {
+                try {
+                    sessionStorage.setItem('btc_adventure', JSON.stringify({
+                        runId: this.advRunId, events: this.advEvents,
+                        triggered: this.advTriggered, log: this.advLog,
+                        pollPct: this.pollPct, running: this.running
+                    }));
+                } catch(e) {}
+            },
+            restoreAdventure() {
+                try {
+                    const saved = sessionStorage.getItem('btc_adventure');
+                    if (!saved) return;
+                    const s = JSON.parse(saved);
+                    if (!s.running || !s.runId) { this.clearSavedAdventure(); return; }
+
+                    // 恢復狀態
+                    this.advRunId = s.runId;
+                    this.advEvents = s.events || [];
+                    this.advTriggered = s.triggered || {};
+                    this.advLog = s.log || [];
+                    this.running = true;
+                    this.advCurrentScene = 'walk';
+                    this.pollPct = s.pollPct || 0;
+
+                    // 繼續輪詢
+                    this.pollResult(s.runId);
+                } catch(e) { this.clearSavedAdventure(); }
+            },
+            clearSavedAdventure() {
+                try { sessionStorage.removeItem('btc_adventure'); } catch(e) {}
+            },
+
+            sleep(ms) { return new Promise(r => setTimeout(r, ms)); },
+
             renderChart() {
-                const canvas=document.getElementById('equityChart');if(!canvas||!this.result?.equityCurve)return;
-                if(this.equityChart)this.equityChart.destroy();
-                const curve=this.result.equityCurve;const step=Math.max(1,Math.floor(curve.length/500));
-                const sampled=curve.filter((_,i)=>i%step===0);
-                const initEquity=sampled.length>0?parseFloat(sampled[0].equity):1;
-                this.equityChart=new Chart(canvas.getContext('2d'),{type:'line',data:{labels:sampled.map(p=>new Date(p.time).toLocaleDateString()),
-                    datasets:[{label:'報酬率',data:sampled.map(p=>((parseFloat(p.equity)-initEquity)/initEquity*100)),borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.1)',borderWidth:2,fill:true,tension:0,pointRadius:0,stepped:'before'}]},
-                    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#16213e',titleColor:'#e8e8f0',bodyColor:'#7a7a9a',borderColor:'#2a2a4a',borderWidth:2,titleFont:{family:'"Exo 2"',size:12},bodyFont:{family:'"Exo 2"',size:11},callbacks:{label:ctx=>ctx.parsed.y.toFixed(2)+'%'}}},
-                        scales:{x:{display:true,ticks:{color:'#7a7a9a',maxTicksLimit:6,font:{family:'"Exo 2"',size:10}},grid:{color:'rgba(42,42,74,0.3)'}},y:{display:true,ticks:{color:'#7a7a9a',font:{family:'"Exo 2"',size:10},callback:v=>v.toFixed(1)+'%'},grid:{color:'rgba(42,42,74,0.3)'}}}}});
+                const canvas = document.getElementById('equityChart');
+                if (!canvas || !this.result?.equityCurve) return;
+                if (this.equityChart) this.equityChart.destroy();
+                const curve = this.result.equityCurve;
+                const step = Math.max(1, Math.floor(curve.length / 500));
+                const sampled = curve.filter((_, i) => i % step === 0);
+                const initEquity = sampled.length > 0 ? parseFloat(sampled[0].equity) : 1;
+                this.equityChart = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: sampled.map(p => new Date(p.time).toLocaleDateString()),
+                        datasets: [{
+                            label: '報酬率',
+                            data: sampled.map(p => ((parseFloat(p.equity) - initEquity) / initEquity * 100)),
+                            borderColor: '#a855f7', backgroundColor: 'rgba(168,85,247,0.1)',
+                            borderWidth: 2, fill: true, tension: 0, pointRadius: 0, stepped: 'before'
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#16213e', titleColor: '#e8e8f0', bodyColor: '#7a7a9a',
+                                borderColor: '#2a2a4a', borderWidth: 2,
+                                titleFont: { family: '"Exo 2"', size: 12 },
+                                bodyFont: { family: '"Exo 2"', size: 11 },
+                                callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + '%' }
+                            }
+                        },
+                        scales: {
+                            x: { display: true, ticks: { color: '#7a7a9a', maxTicksLimit: 6, font: { family: '"Exo 2"', size: 10 } }, grid: { color: 'rgba(42,42,74,0.3)' } },
+                            y: { display: true, ticks: { color: '#7a7a9a', font: { family: '"Exo 2"', size: 10 }, callback: v => v.toFixed(1) + '%' }, grid: { color: 'rgba(42,42,74,0.3)' } }
+                        }
+                    }
+                });
             },
-            showMsg(m,t) { this.message=m; this.messageType=t; setTimeout(()=>{this.message='';},4000); },
+
+            showMsg(m, t) { this.message = m; this.messageType = t; setTimeout(() => { this.message = ''; }, 4000); },
+
             // ── 幣對搜尋方法 ──
             symSearch() {
                 const q = this.symQuery.toUpperCase().trim();

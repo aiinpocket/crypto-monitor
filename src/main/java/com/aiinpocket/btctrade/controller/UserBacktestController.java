@@ -2,6 +2,7 @@ package com.aiinpocket.btctrade.controller;
 
 import com.aiinpocket.btctrade.model.entity.BacktestRun;
 import com.aiinpocket.btctrade.security.AppUserPrincipal;
+import com.aiinpocket.btctrade.service.BacktestAdventureService;
 import com.aiinpocket.btctrade.service.UserBacktestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ import java.util.Map;
 public class UserBacktestController {
 
     private final UserBacktestService backtestService;
+    private final BacktestAdventureService adventureService;
 
     /**
      * 提交回測任務。
@@ -73,11 +75,12 @@ public class UserBacktestController {
             log.info("[回測API] 用戶 {} 提交回測: runId={}, symbol={}, years={}",
                     principal.getUserId(), run.getId(), symbol, years);
 
-            return ResponseEntity.ok(Map.of(
-                    "id", run.getId(),
-                    "status", run.getStatus().name(),
-                    "message", "回測已提交，正在背景執行中"
-            ));
+            Map<String, Object> resp = new java.util.HashMap<>();
+            resp.put("id", run.getId());
+            resp.put("status", run.getStatus().name());
+            resp.put("message", "回測已提交，正在背景執行中");
+            resp.put("adventureJson", run.getAdventureJson() != null ? run.getAdventureJson() : "{}");
+            return ResponseEntity.ok(resp);
         } catch (IllegalStateException e) {
             // 已有 RUNNING 回測
             return ResponseEntity.status(429).body(Map.of("error", e.getMessage()));
@@ -116,17 +119,35 @@ public class UserBacktestController {
             @PathVariable Long id) {
         try {
             BacktestRun run = backtestService.getRun(id, principal.getUserId());
-            return ResponseEntity.ok(Map.of(
-                    "id", run.getId(),
-                    "status", run.getStatus().name(),
-                    "symbol", run.getSymbol(),
-                    "templateName", run.getStrategyTemplate().getName(),
-                    "resultJson", run.getResultJson() != null ? run.getResultJson() : "",
-                    "createdAt", run.getCreatedAt().toString(),
-                    "completedAt", run.getCompletedAt() != null ? run.getCompletedAt().toString() : ""
-            ));
+            Map<String, Object> resp = new java.util.HashMap<>();
+            resp.put("id", run.getId());
+            resp.put("status", run.getStatus().name());
+            resp.put("symbol", run.getSymbol());
+            resp.put("templateName", run.getStrategyTemplate().getName());
+            resp.put("resultJson", run.getResultJson() != null ? run.getResultJson() : "");
+            resp.put("createdAt", run.getCreatedAt().toString());
+            resp.put("completedAt", run.getCompletedAt() != null ? run.getCompletedAt().toString() : "");
+            resp.put("adventureJson", run.getAdventureJson() != null ? run.getAdventureJson() : "{}");
+            resp.put("adventureRewardsClaimed", run.isAdventureRewardsClaimed());
+            return ResponseEntity.ok(resp);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /** 領取冒險獎勵（回測完成後，一次性操作） */
+    @PostMapping("/{id}/adventure/claim")
+    public ResponseEntity<?> claimAdventureRewards(
+            @AuthenticationPrincipal AppUserPrincipal principal,
+            @PathVariable Long id) {
+        try {
+            Map<String, Object> rewards = adventureService.claimRewards(id, principal.getUserId());
+            return ResponseEntity.ok(rewards);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[冒險API] 領取獎勵失敗: runId={}", id, e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "領取獎勵失敗"));
         }
     }
 }

@@ -38,6 +38,7 @@ public class UserBacktestService {
     private final StrategyTemplateService templateService;
     private final ObjectMapper objectMapper;
     private final GamificationService gamificationService;
+    private final BacktestAdventureService adventureService;
     private final TaskExecutor backtestExecutor;
 
     public UserBacktestService(
@@ -46,12 +47,14 @@ public class UserBacktestService {
             StrategyTemplateService templateService,
             ObjectMapper objectMapper,
             GamificationService gamificationService,
+            BacktestAdventureService adventureService,
             @Qualifier("backtestExecutor") TaskExecutor backtestExecutor) {
         this.runRepo = runRepo;
         this.backtestService = backtestService;
         this.templateService = templateService;
         this.objectMapper = objectMapper;
         this.gamificationService = gamificationService;
+        this.adventureService = adventureService;
         this.backtestExecutor = backtestExecutor;
     }
 
@@ -95,6 +98,14 @@ public class UserBacktestService {
         // 驗證模板存取權限
         StrategyTemplate template = templateService.getTemplate(templateId, user.getId());
 
+        // 生成冒險計畫
+        String adventureJson = "{}";
+        try {
+            adventureJson = adventureService.generateAdventurePlan();
+        } catch (Exception e) {
+            log.warn("[用戶回測] 冒險計畫生成失敗，不影響回測", e);
+        }
+
         // 建立回測紀錄
         BacktestRun run = BacktestRun.builder()
                 .user(user)
@@ -103,6 +114,7 @@ public class UserBacktestService {
                 .startDate(startDate)
                 .endDate(endDate)
                 .status(BacktestRunStatus.PENDING)
+                .adventureJson(adventureJson)
                 .build();
         runRepo.save(run);
 

@@ -80,6 +80,15 @@ public class BacktestRun {
     /** 回測完成時間（COMPLETED 或 FAILED 時填入） */
     private Instant completedAt;
 
+    /** 冒險事件計畫 JSON（回測提交時生成） */
+    @Column(name = "adventure_json", columnDefinition = "TEXT")
+    private String adventureJson;
+
+    /** 冒險獎勵是否已領取 */
+    @Column(name = "adventure_rewards_claimed")
+    @Builder.Default
+    private boolean adventureRewardsClaimed = false;
+
     @PrePersist
     void prePersist() {
         createdAt = Instant.now();
