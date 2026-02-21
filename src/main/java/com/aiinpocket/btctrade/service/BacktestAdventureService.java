@@ -31,6 +31,7 @@ public class BacktestAdventureService {
     private final AppUserRepository userRepo;
     private final BacktestRunRepository backtestRunRepo;
     private final GamificationService gamificationService;
+    private final BattleService battleService;
     private final ObjectMapper objectMapper;
 
     /** 冒險事件觸發的進度里程碑 */
@@ -152,6 +153,12 @@ public class BacktestAdventureService {
                 boolean victory = rng.nextDouble() < winRate;
                 String monsterName = (String) event.get("monsterName");
                 int monsterLevel = ((Number) event.get("monsterLevel")).intValue();
+
+                // 記錄怪物圖鑑發現
+                Object monsterIdObj = event.get("monsterId");
+                if (monsterIdObj instanceof Number) {
+                    battleService.recordDiscoveryById(user, ((Number) monsterIdObj).longValue());
+                }
 
                 if (victory) {
                     int exp = monsterLevel * 3;

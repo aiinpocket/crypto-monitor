@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 /**
  * 怪物戰鬥核心服務。
@@ -32,6 +33,7 @@ public class BattleService {
     private final UserEquipmentRepository userEquipRepo;
     private final UserWatchlistRepository watchlistRepo;
     private final AppUserRepository userRepo;
+    private final UserMonsterDiscoveryRepository discoveryRepo;
     private final GamificationService gamificationService;
 
     // 戰敗金幣懲罰比例（損失當前金幣的 5%）
@@ -78,6 +80,7 @@ public class BattleService {
                         .entryPrice(entryPrice)
                         .build();
                 encounterRepo.save(encounter);
+                recordDiscovery(watcher.getUser(), monster);
                 count++;
             } catch (Exception e) {
                 log.error("[戰鬥] 建立遭遇失敗 userId={}: {}", watcher.getUser().getId(), e.getMessage());
@@ -357,11 +360,41 @@ public class BattleService {
     }
 
     /**
-     * 取得怪物圖鑑（所有怪物定義）。
+     * 取得怪物圖鑑（含用戶發現狀態）。
      */
-    public List<Monster> getBestiary() {
-        return monsterRepo.findAll();
+    public BestiaryResult getBestiary(Long userId) {
+        List<Monster> all = monsterRepo.findAll();
+        Set<Long> discovered = discoveryRepo.findDiscoveredMonsterIdsByUserId(userId);
+        long totalMonsters = all.size();
+        long discoveredCount = discovered.size();
+        return new BestiaryResult(all, discovered, totalMonsters, discoveredCount);
+    }
+
+    /**
+     * 記錄怪物發現（冪等，已發現則跳過）。
+     */
+    public void recordDiscovery(AppUser user, Monster monster) {
+        try {
+            if (!discoveryRepo.existsByUserIdAndMonsterId(user.getId(), monster.getId())) {
+                discoveryRepo.save(UserMonsterDiscovery.builder()
+                        .user(user)
+                        .monster(monster)
+                        .build());
+            }
+        } catch (Exception e) {
+            // unique constraint violation is benign (concurrent discovery)
+            log.debug("[圖鑑] 用戶 {} 已發現怪物 {}", user.getId(), monster.getName());
+        }
+    }
+
+    /**
+     * 根據 monster ID 記錄發現（供冒險系統使用）。
+     */
+    public void recordDiscoveryById(AppUser user, Long monsterId) {
+        monsterRepo.findById(monsterId).ifPresent(m -> recordDiscovery(user, m));
     }
 
     public record BattleStats(long total, long victories, long defeats, double winRate) {}
+    public record BestiaryResult(List<Monster> monsters, Set<Long> discoveredIds,
+                                 long totalMonsters, long discoveredCount) {}
 }

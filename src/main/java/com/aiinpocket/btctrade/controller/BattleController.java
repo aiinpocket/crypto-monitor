@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * 戰鬥系統 REST API。
@@ -38,12 +39,17 @@ public class BattleController {
         return ResponseEntity.ok(battleService.getUserBattleStats(principal.getUserId()));
     }
 
-    /** 取得怪物圖鑑 */
+    /** 取得怪物圖鑑（含發現狀態） */
     @GetMapping("/bestiary")
-    public ResponseEntity<List<MonsterDto>> getBestiary() {
-        List<Monster> monsters = battleService.getBestiary();
-        List<MonsterDto> dtos = monsters.stream().map(this::toMonsterDto).toList();
-        return ResponseEntity.ok(dtos);
+    public ResponseEntity<BestiaryResponse> getBestiary(
+            @AuthenticationPrincipal AppUserPrincipal principal) {
+        BattleService.BestiaryResult result = battleService.getBestiary(principal.getUserId());
+        Set<Long> discovered = result.discoveredIds();
+        List<MonsterDto> dtos = result.monsters().stream()
+                .map(m -> toMonsterDto(m, discovered.contains(m.getId())))
+                .toList();
+        return ResponseEntity.ok(new BestiaryResponse(
+                dtos, result.totalMonsters(), result.discoveredCount()));
     }
 
     // ===== DTO =====
@@ -70,12 +76,13 @@ public class BattleController {
         );
     }
 
-    private MonsterDto toMonsterDto(Monster m) {
+    private MonsterDto toMonsterDto(Monster m, boolean discovered) {
         return new MonsterDto(
                 m.getId(), m.getName(), m.getDescription(),
                 m.getRiskTier().name(), m.getLevel(),
                 m.getHp(), m.getAtk(), m.getDef(),
-                m.getExpReward(), m.getPixelCssClass()
+                m.getExpReward(), m.getPixelCssClass(),
+                discovered
         );
     }
 
@@ -93,6 +100,9 @@ public class BattleController {
             Long id, String name, String description,
             String riskTier, int level,
             int hp, int atk, int def,
-            int expReward, String pixelCssClass
+            int expReward, String pixelCssClass,
+            boolean discovered
     ) {}
+
+    record BestiaryResponse(List<MonsterDto> monsters, long totalMonsters, long discoveredCount) {}
 }

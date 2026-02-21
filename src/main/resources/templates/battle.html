@@ -166,42 +166,69 @@
                     :class="tierFilter === 'HIGH' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#128293; HIGH</button>
             <button @click="tierFilter = 'EXTREME'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
                     :class="tierFilter === 'EXTREME' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#128128; EXTREME</button>
-            <span class="text-[10px] text-text-muted self-center ml-2" x-text="filteredBestiary.length + ' 隻怪物'"></span>
+            <span class="text-[10px] text-text-muted self-center ml-2"
+                  x-text="bestiaryProgress + ' (' + filteredBestiary.length + ' 隻)'"></span>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <template x-for="m in filteredBestiary" :key="m.id">
-                <div class="pixel-card p-4 text-center">
-                    <!-- 怪物像素圖（大） -->
-                    <div class="relative w-[48px] h-[48px] mx-auto mb-3">
-                        <div class="absolute top-0 left-0 anim-monster" :class="m.pixelCssClass"></div>
-                    </div>
-                    <!-- 名稱和等級 -->
-                    <div class="font-heading text-sm text-text-heading" x-text="m.name"></div>
-                    <div class="text-xs mt-1 mb-2"
-                         :class="{
-                             'text-positive': m.riskTier === 'LOW',
-                             'text-primary': m.riskTier === 'MEDIUM',
-                             'text-cta': m.riskTier === 'HIGH',
-                             'text-negative': m.riskTier === 'EXTREME'
-                         }"
-                         x-text="'Lv.' + m.level + ' · ' + m.riskTier"></div>
-                    <p class="text-[11px] text-text-muted mb-3 leading-relaxed" x-text="m.description"></p>
-                    <!-- 屬性 -->
-                    <div class="grid grid-cols-3 gap-1 text-[10px]">
-                        <div class="pixel-card p-1">
-                            <span class="text-negative">HP</span>
-                            <div class="text-text-heading font-heading" x-text="m.hp"></div>
+                <div class="pixel-card p-4 text-center" :class="!m.discovered ? 'opacity-60' : ''">
+                    <template x-if="m.discovered">
+                        <div>
+                            <!-- 已發現：顯示完整資訊 -->
+                            <div class="relative w-[48px] h-[48px] mx-auto mb-3">
+                                <div class="absolute top-0 left-0 anim-monster" :class="m.pixelCssClass"></div>
+                            </div>
+                            <div class="font-heading text-sm text-text-heading" x-text="m.name"></div>
+                            <div class="text-xs mt-1 mb-2"
+                                 :class="{
+                                     'text-positive': m.riskTier === 'LOW',
+                                     'text-primary': m.riskTier === 'MEDIUM',
+                                     'text-cta': m.riskTier === 'HIGH',
+                                     'text-negative': m.riskTier === 'EXTREME'
+                                 }"
+                                 x-text="'Lv.' + m.level + ' · ' + m.riskTier"></div>
+                            <p class="text-[11px] text-text-muted mb-3 leading-relaxed" x-text="m.description"></p>
+                            <div class="grid grid-cols-3 gap-1 text-[10px]">
+                                <div class="pixel-card p-1">
+                                    <span class="text-negative">HP</span>
+                                    <div class="text-text-heading font-heading" x-text="m.hp"></div>
+                                </div>
+                                <div class="pixel-card p-1">
+                                    <span class="text-primary">ATK</span>
+                                    <div class="text-text-heading font-heading" x-text="m.atk"></div>
+                                </div>
+                                <div class="pixel-card p-1">
+                                    <span class="text-cta">DEF</span>
+                                    <div class="text-text-heading font-heading" x-text="m.def"></div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-primary mt-2" x-text="'&#127775; ' + m.expReward + ' EXP'"></div>
                         </div>
-                        <div class="pixel-card p-1">
-                            <span class="text-primary">ATK</span>
-                            <div class="text-text-heading font-heading" x-text="m.atk"></div>
+                    </template>
+                    <template x-if="!m.discovered">
+                        <div>
+                            <!-- 未發現：顯示問號剪影 -->
+                            <div class="relative w-[48px] h-[48px] mx-auto mb-3 flex items-center justify-center">
+                                <span class="text-3xl text-text-muted/40 font-heading">?</span>
+                            </div>
+                            <div class="font-heading text-sm text-text-muted/50">? ? ?</div>
+                            <div class="text-xs mt-1 mb-2"
+                                 :class="{
+                                     'text-positive/40': m.riskTier === 'LOW',
+                                     'text-primary/40': m.riskTier === 'MEDIUM',
+                                     'text-cta/40': m.riskTier === 'HIGH',
+                                     'text-negative/40': m.riskTier === 'EXTREME'
+                                 }"
+                                 x-text="m.riskTier"></div>
+                            <p class="text-[11px] text-text-muted/30 mb-3">遭遇後解鎖圖鑑</p>
+                            <div class="grid grid-cols-3 gap-1 text-[10px]">
+                                <div class="pixel-card p-1"><span class="text-text-muted/30">HP</span><div class="text-text-muted/30">???</div></div>
+                                <div class="pixel-card p-1"><span class="text-text-muted/30">ATK</span><div class="text-text-muted/30">???</div></div>
+                                <div class="pixel-card p-1"><span class="text-text-muted/30">DEF</span><div class="text-text-muted/30">???</div></div>
+                            </div>
+                            <div class="text-xs text-text-muted/30 mt-2">&#127775; ??? EXP</div>
                         </div>
-                        <div class="pixel-card p-1">
-                            <span class="text-cta">DEF</span>
-                            <div class="text-text-heading font-heading" x-text="m.def"></div>
-                        </div>
-                    </div>
-                    <div class="text-xs text-primary mt-2" x-text="'&#127775; ' + m.expReward + ' EXP'"></div>
+                    </template>
                 </div>
             </template>
         </div>
@@ -217,11 +244,17 @@ function battleApp() {
         loading: true,
         encounters: [],
         bestiary: [],
+        bestiaryTotal: 0,
+        bestiaryDiscovered: 0,
         stats: { total: 0, victories: 0, defeats: 0, winRate: 0 },
 
         get filteredBestiary() {
             if (this.tierFilter === 'ALL') return this.bestiary;
             return this.bestiary.filter(m => m.riskTier === this.tierFilter);
+        },
+
+        get bestiaryProgress() {
+            return '\u{1F4D6} ' + this.bestiaryDiscovered + ' / ' + this.bestiaryTotal + ' \u767C\u73FE';
         },
 
         async init() {
@@ -243,7 +276,12 @@ function battleApp() {
         async loadBestiary() {
             try {
                 const resp = await fetch('/api/user/battle/bestiary');
-                if (resp.ok) this.bestiary = await resp.json();
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.bestiary = data.monsters || [];
+                    this.bestiaryTotal = data.totalMonsters || 0;
+                    this.bestiaryDiscovered = data.discoveredCount || 0;
+                }
             } catch (e) { console.error('Failed to load bestiary', e); }
         },
 
