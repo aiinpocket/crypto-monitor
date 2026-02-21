@@ -179,7 +179,10 @@
             <div class="absolute top-0 left-0 right-0 z-20 px-3 pt-2">
                 <div class="flex items-center justify-between text-[10px] text-white/60 mb-1">
                     <span>&#9876; 冒險進度</span>
-                    <span x-text="pollPct + '%'"></span>
+                    <div class="flex items-center gap-2">
+                        <span x-show="running && pollPct < 100" class="text-white/40" x-text="estimatedTime"></span>
+                        <span x-text="pollPct + '%'"></span>
+                    </div>
                 </div>
                 <div class="w-full h-1.5 bg-black/40 overflow-hidden" style="border:1px solid rgba(255,255,255,0.1);">
                     <div class="h-full transition-all duration-500"
@@ -221,26 +224,41 @@
 
             <!-- 戰鬥時：RPG 戰鬥劇場 -->
             <div x-show="advInBattle" x-transition class="absolute inset-0 z-10 flex items-end justify-center pb-[50px]">
-                <!-- 左側：角色 -->
-                <div class="flex flex-col items-center mr-8 md:mr-16 relative">
-                    <!-- 角色名 + HP -->
-                    <div class="mb-1 text-center">
-                        <div class="text-[10px] text-primary font-heading" x-text="charClass"></div>
-                        <div class="w-16 h-1.5 bg-black/60 mt-0.5 overflow-hidden" style="border:1px solid #4a90d9;">
-                            <div class="h-full bg-positive transition-all duration-300" :style="'width:' + advPlayerHp + '%'"></div>
+                <!-- 左側：隊伍（主角 + 隊員） -->
+                <div class="flex items-end mr-4 md:mr-8">
+                    <!-- 隊員（主角身後） -->
+                    <div x-show="partyMembers.length > 0" class="flex flex-col gap-0.5 mr-1 mb-1">
+                        <template x-for="m in partyMembers" :key="m.id">
+                            <div class="flex flex-col items-center">
+                                <div class="text-[7px] font-heading text-cta/70 truncate max-w-[32px]" x-text="m.name"></div>
+                                <div class="w-[32px] h-[32px] relative opacity-70 anim-idle">
+                                    <div class="absolute top-0 left-0" :class="'pixel-char-' + m.characterClass.toLowerCase()"
+                                         style="transform:scale(0.65);transform-origin:top left;"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <!-- 主角 -->
+                    <div class="flex flex-col items-center relative">
+                        <!-- 角色名 + HP -->
+                        <div class="mb-1 text-center">
+                            <div class="text-[10px] text-primary font-heading" x-text="charClass"></div>
+                            <div class="w-16 h-1.5 bg-black/60 mt-0.5 overflow-hidden" style="border:1px solid #4a90d9;">
+                                <div class="h-full bg-positive transition-all duration-300" :style="'width:' + advPlayerHp + '%'"></div>
+                            </div>
                         </div>
-                    </div>
-                    <!-- 角色精靈 -->
-                    <div class="w-[48px] h-[48px] relative"
-                         :class="advPlayerAnim">
-                        <div class="absolute top-0 left-0" :class="'pixel-char-' + charClass.toLowerCase()"></div>
-                    </div>
-                    <!-- 技能名 -->
-                    <div x-show="advSkillName" x-transition
-                         class="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                        <span class="text-[10px] font-heading text-cta px-1.5 py-0.5"
-                              style="background:rgba(139,92,246,0.3);border:1px solid rgba(139,92,246,0.5);"
-                              x-text="advSkillName"></span>
+                        <!-- 角色精靈 -->
+                        <div class="w-[48px] h-[48px] relative"
+                             :class="advPlayerAnim">
+                            <div class="absolute top-0 left-0" :class="'pixel-char-' + charClass.toLowerCase()"></div>
+                        </div>
+                        <!-- 技能名 -->
+                        <div x-show="advSkillName" x-transition
+                             class="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                            <span class="text-[10px] font-heading text-cta px-1.5 py-0.5"
+                                  style="background:rgba(139,92,246,0.3);border:1px solid rgba(139,92,246,0.5);"
+                                  x-text="advSkillName"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -466,9 +484,15 @@
     </div>
 
     <!-- ===== 回測歷史紀錄 ===== -->
-    <div class="pixel-card p-4 mt-4" x-show="history.length > 0">
+    <div class="pixel-card p-4 mt-4">
         <h3 class="text-sm text-text-heading mb-3">&#128218; 歷史紀錄</h3>
-        <div class="overflow-x-auto scrollbar-thin">
+        <!-- 空歷史提示 -->
+        <div x-show="history.length === 0" class="text-center py-6">
+            <div class="text-2xl mb-2">&#128220;</div>
+            <p class="text-text-muted text-xs">尚無挑戰紀錄</p>
+            <p class="text-text-muted text-[10px] mt-1">選擇策略開始你的第一場冒險吧！</p>
+        </div>
+        <div x-show="history.length > 0" class="overflow-x-auto scrollbar-thin">
             <table class="w-full text-xs">
                 <thead>
                 <tr class="text-text-muted border-b border-border-main">
@@ -524,8 +548,25 @@
             equityChart: null, message: '', messageType: 'success', pollPct: 0,
             tradePage: 1, tradesPerPage: 50,
             charClass: _charClass,
+            partyMembers: [],
+            backtestStartTime: null,
             get pagedTrades() { const t = this.result?.trades || []; const s = (this.tradePage-1)*this.tradesPerPage; return t.slice(s, s+this.tradesPerPage); },
             get totalTradePages() { return Math.ceil((this.result?.trades?.length || 0) / this.tradesPerPage); },
+            get estimatedTime() {
+                if (!this.backtestStartTime || this.pollPct <= 0) {
+                    const mins = {1: '1~2', 2: '2~3', 3: '2~4', 5: '3~5'}[this.form.years] || '2~5';
+                    return '\u23F1 \u9810\u4F30 ' + mins + ' \u5206\u9418';
+                }
+                const elapsed = (Date.now() - this.backtestStartTime) / 1000;
+                if (this.pollPct < 5) {
+                    const mins = {1: '1~2', 2: '2~3', 3: '2~4', 5: '3~5'}[this.form.years] || '2~5';
+                    return '\u23F1 \u9810\u4F30 ' + mins + ' \u5206\u9418';
+                }
+                const totalEst = elapsed / (this.pollPct / 100);
+                const remaining = Math.max(0, totalEst - elapsed);
+                if (remaining < 60) return '\u23F1 \u7D04 ' + Math.ceil(remaining) + ' \u79D2';
+                return '\u23F1 \u7D04 ' + Math.ceil(remaining / 60) + ' \u5206\u9418';
+            },
 
             // ── 冒險動畫狀態 ──
             advEvents: [],
@@ -572,9 +613,7 @@
             symCustomValid: false, symCustomChecked: false,
 
             async init() {
-                await this.loadTemplates();
-                await this.loadStamina();
-                await this.loadHistory();
+                await Promise.all([this.loadTemplates(), this.loadStamina(), this.loadHistory(), this.loadPartyMembers()]);
                 this.symSearch();
                 this.restoreAdventure();
                 this.startStaminaTimer();
@@ -597,6 +636,7 @@
                     return;
                 }
                 this.running = true; this.result = null;
+                this.backtestStartTime = Date.now();
                 this.advShowRewards = false; this.advRewards = null;
                 this.advLog = []; this.advTriggered = {}; this.advEvents = [];
                 this.advCurrentScene = 'walk'; this.advSkipped = false;
@@ -707,6 +747,7 @@
                 this.pollPct = 100;
                 this.result = JSON.parse(d.resultJson);
                 this.running = false;
+                this.backtestStartTime = null;
                 this.advCurrentScene = 'idle';
                 this.advInBattle = false;
 
@@ -1043,6 +1084,13 @@
                     if (r.ok) this.history = await r.json();
                 } catch(e) {}
             },
+            async loadPartyMembers() {
+                try {
+                    const r = await fetch('/api/user/equipment/party-members');
+                    if (r.ok) this.partyMembers = await r.json();
+                } catch(e) {}
+            },
+
             async loadHistoryResult(id) {
                 try {
                     const r = await fetch(`/api/user/backtest/${id}`);

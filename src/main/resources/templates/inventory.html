@@ -210,23 +210,27 @@
             <h3 class="font-heading text-sm text-primary mb-3">&#128100; 選擇穿戴對象</h3>
             <p class="text-[11px] text-text-muted mb-3" x-text="'裝備：' + (equipDialog.item?.name || '')"></p>
             <div class="space-y-2">
-                <!-- 主角 -->
-                <button @click="equipToTarget('user')"
-                        class="w-full pixel-btn pixel-btn-gold text-[11px] py-2 px-3 cursor-pointer text-left flex items-center gap-2"
-                        :disabled="equipDialog.item?.classRestriction && equipDialog.item.classRestriction !== charClass">
-                    <span>&#128100;</span>
-                    <span>主角</span>
-                    <span class="text-[9px] text-text-muted ml-auto" x-text="classLabel(charClass)"></span>
-                </button>
-                <!-- 隊員 -->
-                <template x-for="m in partyMembers" :key="m.id">
+                <!-- 主角（職業相容才顯示） -->
+                <template x-if="!equipDialog.item?.classRestriction || equipDialog.item.classRestriction === charClass">
+                    <button @click="equipToTarget('user')"
+                            class="w-full pixel-btn pixel-btn-gold text-[11px] py-2 px-3 cursor-pointer text-left flex items-center gap-2">
+                        <span>&#128100;</span>
+                        <span>主角</span>
+                        <span class="text-[9px] text-text-muted ml-auto" x-text="classLabel(charClass)"></span>
+                    </button>
+                </template>
+                <!-- 隊員（只顯示職業相容的） -->
+                <template x-for="m in compatibleMembers" :key="m.id">
                     <button @click="equipToTarget('member', m.id)"
-                            class="w-full pixel-btn pixel-btn-purple text-[11px] py-2 px-3 cursor-pointer text-left flex items-center gap-2"
-                            :disabled="equipDialog.item?.classRestriction && equipDialog.item.classRestriction !== m.characterClass">
+                            class="w-full pixel-btn pixel-btn-purple text-[11px] py-2 px-3 cursor-pointer text-left flex items-center gap-2">
                         <span>&#128101;</span>
                         <span x-text="m.name"></span>
                         <span class="text-[9px] text-text-muted ml-auto" x-text="classLabel(m.characterClass)"></span>
                     </button>
+                </template>
+                <!-- 無可穿戴對象提示 -->
+                <template x-if="equipDialog.item?.classRestriction && equipDialog.item.classRestriction !== charClass && compatibleMembers.length === 0">
+                    <p class="text-[11px] text-negative text-center py-2" x-text="'此裝備限定 ' + classLabel(equipDialog.item.classRestriction) + ' 職業，隊伍中沒有符合的角色'"></p>
                 </template>
             </div>
             <button @click="equipDialog.show = false"
@@ -259,6 +263,12 @@ function inventoryApp() {
         },
         toast: { show: false, message: '', success: true },
         equipDialog: { show: false, item: null },
+
+        get compatibleMembers() {
+            const item = this.equipDialog.item;
+            if (!item || !item.classRestriction) return this.partyMembers;
+            return this.partyMembers.filter(m => m.characterClass === item.classRestriction);
+        },
 
         isEquipped(item) {
             return item.equipped || !!item.equippedByMemberId;
