@@ -226,12 +226,13 @@
             <div x-show="advInBattle" x-transition class="absolute inset-0 z-10 flex items-end justify-center pb-[50px]">
                 <!-- 左側：隊伍（主角 + 隊員） -->
                 <div class="flex items-end mr-4 md:mr-8">
-                    <!-- 隊員（主角身後） -->
+                    <!-- 隊員（主角身後，跟隨主角動畫） -->
                     <div x-show="partyMembers.length > 0" class="flex flex-col gap-0.5 mr-1 mb-1">
-                        <template x-for="m in partyMembers" :key="m.id">
+                        <template x-for="(m, mi) in partyMembers" :key="m.id">
                             <div class="flex flex-col items-center">
                                 <div class="text-[7px] font-heading text-cta/70 truncate max-w-[32px]" x-text="m.name"></div>
-                                <div class="w-[32px] h-[32px] relative opacity-70 anim-idle">
+                                <div class="w-[32px] h-[32px] relative opacity-70"
+                                     :class="advPlayerAnim === 'anim-attack' ? 'anim-attack' : (advPlayerAnim === 'anim-hurt' ? 'anim-hurt' : 'anim-idle')">
                                     <div class="absolute top-0 left-0" :class="'pixel-char-' + m.characterClass.toLowerCase()"
                                          style="transform:scale(0.65);transform-origin:top left;"></div>
                                 </div>

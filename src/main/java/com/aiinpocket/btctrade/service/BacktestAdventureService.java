@@ -140,6 +140,7 @@ public class BacktestAdventureService {
         long totalGold = 0;
         List<Map<String, Object>> battleResults = new ArrayList<>();
         List<Map<String, Object>> droppedEquipment = new ArrayList<>();
+        List<Long> discoveredMonsterIds = new ArrayList<>();
 
         // 勝率基於回測結果：獲利 60~80%，虧損 20~40%
         double winRate = profitable
@@ -154,10 +155,10 @@ public class BacktestAdventureService {
                 String monsterName = (String) event.get("monsterName");
                 int monsterLevel = ((Number) event.get("monsterLevel")).intValue();
 
-                // 記錄怪物圖鑑發現
+                // 收集怪物 ID（事務提交後再記錄圖鑑發現）
                 Object monsterIdObj = event.get("monsterId");
                 if (monsterIdObj instanceof Number) {
-                    battleService.recordDiscoveryById(user, ((Number) monsterIdObj).longValue());
+                    discoveredMonsterIds.add(((Number) monsterIdObj).longValue());
                 }
 
                 if (victory) {
@@ -222,6 +223,9 @@ public class BacktestAdventureService {
 
         log.info("[冒險] 用戶 {} 領取回測冒險獎勵: +{} EXP, +{} G, {} 件裝備",
                 userId, totalExp, totalGold, droppedEquipment.size());
+
+        // 將遭遇的怪物 ID 放入結果，由 controller 層在事務外記錄圖鑑
+        rewards.put("_discoveredMonsterIds", discoveredMonsterIds);
 
         return rewards;
     }

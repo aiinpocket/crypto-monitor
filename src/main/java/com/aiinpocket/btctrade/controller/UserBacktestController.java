@@ -3,6 +3,7 @@ package com.aiinpocket.btctrade.controller;
 import com.aiinpocket.btctrade.model.entity.BacktestRun;
 import com.aiinpocket.btctrade.security.AppUserPrincipal;
 import com.aiinpocket.btctrade.service.BacktestAdventureService;
+import com.aiinpocket.btctrade.service.BattleService;
 import com.aiinpocket.btctrade.service.StaminaService;
 import com.aiinpocket.btctrade.service.UserBacktestService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class UserBacktestController {
 
     private final UserBacktestService backtestService;
     private final BacktestAdventureService adventureService;
+    private final BattleService battleService;
     private final StaminaService staminaService;
 
     /**
@@ -163,12 +165,26 @@ public class UserBacktestController {
     }
 
     /** 領取冒險獎勵（回測完成後，一次性操作） */
+    @SuppressWarnings("unchecked")
     @PostMapping("/{id}/adventure/claim")
     public ResponseEntity<?> claimAdventureRewards(
             @AuthenticationPrincipal AppUserPrincipal principal,
             @PathVariable Long id) {
         try {
             Map<String, Object> rewards = adventureService.claimRewards(id, principal.getUserId());
+
+            // 事務已提交，在事務外記錄怪物圖鑑發現（不影響獎勵流程）
+            List<Long> monsterIds = (List<Long>) rewards.remove("_discoveredMonsterIds");
+            if (monsterIds != null) {
+                for (Long monsterId : monsterIds) {
+                    try {
+                        battleService.recordDiscoveryById(principal.getAppUser(), monsterId);
+                    } catch (Exception e) {
+                        log.warn("[冒險API] 記錄圖鑑發現失敗 monsterId={}: {}", monsterId, e.getMessage());
+                    }
+                }
+            }
+
             return ResponseEntity.ok(rewards);
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
