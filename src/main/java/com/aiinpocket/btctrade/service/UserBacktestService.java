@@ -39,6 +39,7 @@ public class UserBacktestService {
     private final ObjectMapper objectMapper;
     private final GamificationService gamificationService;
     private final BacktestAdventureService adventureService;
+    private final StaminaService staminaService;
     private final TaskExecutor backtestExecutor;
 
     public UserBacktestService(
@@ -48,6 +49,7 @@ public class UserBacktestService {
             ObjectMapper objectMapper,
             GamificationService gamificationService,
             BacktestAdventureService adventureService,
+            StaminaService staminaService,
             @Qualifier("backtestExecutor") TaskExecutor backtestExecutor) {
         this.runRepo = runRepo;
         this.backtestService = backtestService;
@@ -55,6 +57,7 @@ public class UserBacktestService {
         this.objectMapper = objectMapper;
         this.gamificationService = gamificationService;
         this.adventureService = adventureService;
+        this.staminaService = staminaService;
         this.backtestExecutor = backtestExecutor;
     }
 
@@ -94,6 +97,10 @@ public class UserBacktestService {
                 List.of(BacktestRunStatus.RUNNING, BacktestRunStatus.PENDING))) {
             throw new IllegalStateException("您已有一個回測正在執行中，請等待完成後再提交新的回測");
         }
+
+        // 體力檢查與扣除（消耗量 = 回測年數，由 Controller 傳入）
+        int years = Math.max(1, (int) (java.time.Duration.between(startDate, endDate).toDays() / 365));
+        staminaService.consumeStamina(user, years);
 
         // 驗證模板存取權限
         StrategyTemplate template = templateService.getTemplate(templateId, user.getId());

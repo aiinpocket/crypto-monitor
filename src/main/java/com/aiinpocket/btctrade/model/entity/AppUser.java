@@ -106,6 +106,22 @@ public class AppUser {
     @Builder.Default
     private Integer maxPartySize = 1;
 
+    // ===== 體力系統欄位 =====
+
+    /** 當前體力值 */
+    @Column(nullable = false, columnDefinition = "integer default 50")
+    @Builder.Default
+    private Integer stamina = 50;
+
+    /** 體力上限 */
+    @Column(name = "max_stamina", nullable = false, columnDefinition = "integer default 50")
+    @Builder.Default
+    private Integer maxStamina = 50;
+
+    /** 上次體力回復時間（用於計算時間回復） */
+    @Column(name = "last_stamina_regen_at")
+    private Instant lastStaminaRegenAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();

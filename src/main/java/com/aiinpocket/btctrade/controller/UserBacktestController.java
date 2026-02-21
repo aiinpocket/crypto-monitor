@@ -3,6 +3,7 @@ package com.aiinpocket.btctrade.controller;
 import com.aiinpocket.btctrade.model.entity.BacktestRun;
 import com.aiinpocket.btctrade.security.AppUserPrincipal;
 import com.aiinpocket.btctrade.service.BacktestAdventureService;
+import com.aiinpocket.btctrade.service.StaminaService;
 import com.aiinpocket.btctrade.service.UserBacktestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ public class UserBacktestController {
 
     private final UserBacktestService backtestService;
     private final BacktestAdventureService adventureService;
+    private final StaminaService staminaService;
 
     /**
      * 提交回測任務。
@@ -132,6 +134,31 @@ public class UserBacktestController {
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /** 查詢體力狀態 */
+    @GetMapping("/stamina")
+    public ResponseEntity<?> getStamina(@AuthenticationPrincipal AppUserPrincipal principal) {
+        return ResponseEntity.ok(staminaService.getStaminaInfo(principal.getAppUser()));
+    }
+
+    /** 使用金幣恢復體力（神父祈禱） */
+    @PostMapping("/stamina/restore")
+    public ResponseEntity<?> restoreStamina(
+            @AuthenticationPrincipal AppUserPrincipal principal,
+            @RequestBody Map<String, Object> body) {
+        try {
+            int amount = body.containsKey("amount")
+                    ? Integer.parseInt(body.get("amount").toString())
+                    : principal.getAppUser().getMaxStamina(); // 預設全部恢復
+            Map<String, Object> result = staminaService.restoreWithGold(principal.getAppUser(), amount);
+            return ResponseEntity.ok(result);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("[體力API] 恢復體力失敗", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "恢復失敗"));
         }
     }
 

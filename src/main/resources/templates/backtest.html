@@ -59,7 +59,7 @@
                 </select>
             </div>
             <div class="flex items-end">
-                <button @click="submitBacktest()" :disabled="running || !form.templateId"
+                <button @click="submitBacktest()" :disabled="running || !form.templateId || staminaData.stamina < form.years"
                         class="w-full pixel-btn pixel-btn-gold text-[13px] py-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     <span x-show="!running">&#9876; 開始挑戰！</span>
                     <span x-show="running" class="flex items-center justify-center gap-2">
@@ -67,6 +67,96 @@
                         <span x-text="'挑戰中... ' + pollPct + '%'"></span>
                     </span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 體力面板 ===== -->
+    <div class="pixel-card p-3 mb-4 relative overflow-hidden">
+        <div class="flex items-center justify-between gap-4">
+            <!-- 體力條 -->
+            <div class="flex-1">
+                <div class="flex items-center justify-between text-[11px] mb-1">
+                    <span class="text-text-muted">&#9889; 體力</span>
+                    <span class="font-heading" :class="staminaData.stamina <= 5 ? 'text-negative anim-flash' : 'text-primary'"
+                          x-text="staminaData.stamina + ' / ' + staminaData.maxStamina"></span>
+                </div>
+                <div class="w-full h-3 bg-black/40 overflow-hidden" style="border:1px solid rgba(255,255,255,0.1);">
+                    <div class="h-full transition-all duration-700"
+                         :style="'width:' + (staminaData.stamina / staminaData.maxStamina * 100) + '%;background:linear-gradient(90deg,' + (staminaData.stamina <= 10 ? '#ef4444,#dc2626' : staminaData.stamina <= 25 ? '#f59e0b,#d97706' : '#4ade80,#22c55e') + ');'"></div>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-text-muted mt-1">
+                    <span x-show="staminaData.stamina < staminaData.maxStamina" x-text="staminaRegenText"></span>
+                    <span x-show="staminaData.stamina >= staminaData.maxStamina" class="text-positive">&#10003; 體力全滿</span>
+                    <span x-text="'挑戰消耗: ' + form.years + ' 點'"></span>
+                </div>
+            </div>
+            <!-- 神父祈禱按鈕 -->
+            <div class="shrink-0 text-center">
+                <button @click="showPriestDialog = true"
+                        :disabled="staminaData.stamina >= staminaData.maxStamina"
+                        class="pixel-btn text-[10px] py-1.5 px-3 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap"
+                        :class="staminaData.stamina >= staminaData.maxStamina ? '' : 'pixel-btn-gold'">
+                    &#9769; 神父祈禱
+                </button>
+                <div class="text-[9px] text-text-muted mt-0.5" x-text="staminaData.userGold + ' G'"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 神父祈禱對話框 ===== -->
+    <div x-show="showPriestDialog" x-cloak x-transition
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div class="pixel-card p-5 max-w-sm mx-4 relative" :class="priestPraying ? 'anim-priest-glow' : ''">
+            <!-- 祈禱中動畫 -->
+            <div x-show="priestPraying" class="text-center mb-4">
+                <div class="inline-block relative">
+                    <div class="w-[40px] h-[40px] mx-auto relative"><div class="absolute top-0 left-0 pixel-priest"></div></div>
+                    <div class="text-2xl anim-cross-shine mt-2">&#10013;</div>
+                </div>
+                <div class="text-sm font-heading text-primary mt-2 anim-flash">祈禱中...</div>
+                <template x-for="ft in priestFloatTexts" :key="ft.id">
+                    <div class="absolute anim-priest-float text-xs font-heading text-primary"
+                         :style="'left:' + ft.x + '%;top:40%'" x-text="ft.text"></div>
+                </template>
+            </div>
+            <!-- 正常介面 -->
+            <div x-show="!priestPraying">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-[40px] h-[40px] relative shrink-0"><div class="absolute top-0 left-0 pixel-priest"></div></div>
+                    <div>
+                        <h3 class="text-sm font-heading text-primary">&#9769; 神父祈禱</h3>
+                        <p class="text-[11px] text-text-muted mt-0.5">透過神聖力量恢復體力</p>
+                    </div>
+                </div>
+                <div class="space-y-2 mb-4">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-text-muted">目前體力</span>
+                        <span class="text-text-heading" x-text="staminaData.stamina + ' / ' + staminaData.maxStamina"></span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-text-muted">需恢復</span>
+                        <span class="text-primary" x-text="(staminaData.maxStamina - staminaData.stamina) + ' 點'"></span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-text-muted">費用</span>
+                        <span class="font-heading text-primary" x-text="priestCost + ' G'"></span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-text-muted">持有金幣</span>
+                        <span :class="staminaData.userGold >= priestCost ? 'text-positive' : 'text-negative'"
+                              x-text="staminaData.userGold + ' G'"></span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button @click="showPriestDialog = false"
+                            class="flex-1 pixel-btn text-[11px] py-1.5 cursor-pointer">取消</button>
+                    <button @click="priestRestore()"
+                            :disabled="staminaData.userGold < priestCost || priestCost <= 0"
+                            class="flex-1 pixel-btn pixel-btn-gold text-[11px] py-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                        &#9769; 祈禱恢復
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -198,13 +288,18 @@
             </div>
         </div>
 
-        <!-- 下半：戰鬥日誌 -->
-        <div class="px-4 py-3" style="background:#12121f;">
-            <div x-ref="advLogBox" class="max-h-[100px] overflow-y-auto scrollbar-thin space-y-0.5">
+        <!-- 下半：戰鬥日誌 + Skip 按鈕 -->
+        <div class="px-4 py-3 flex gap-3" style="background:#12121f;">
+            <div x-ref="advLogBox" class="flex-1 max-h-[100px] overflow-y-auto scrollbar-thin space-y-0.5">
                 <template x-for="(log, i) in advLog" :key="i">
                     <div class="text-[11px] leading-relaxed" :class="log.color || 'text-text-muted'" x-text="log.text"></div>
                 </template>
             </div>
+            <button x-show="running" @click="skipAdventure()"
+                    class="shrink-0 self-end pixel-btn text-[10px] py-1 px-3 cursor-pointer text-text-muted hover:text-primary transition-colors"
+                    title="跳過動畫直接查看結果">
+                &#9654;&#9654; 跳過
+            </button>
         </div>
     </div>
 
@@ -416,6 +511,20 @@
             advRewards: null,
             advTriggered: {},
             advRunId: null,
+            advSkipped: false,        // 是否跳過動畫
+            advRestoredPct: 0,        // 從 sessionStorage 恢復的進度
+
+            // ── 體力系統狀態 ──
+            staminaData: { stamina: 50, maxStamina: 50, userGold: 0 },
+            staminaRegenText: '',
+            staminaTimer: null,
+            showPriestDialog: false,
+            priestPraying: false,
+            priestFloatTexts: [],
+
+            get priestCost() {
+                return (this.staminaData.maxStamina - this.staminaData.stamina) * 5;
+            },
 
             // 幣對搜尋
             symQuery: watchlistSymbolList[0] || 'BTCUSDT',
@@ -424,8 +533,10 @@
 
             async init() {
                 await this.loadTemplates();
+                await this.loadStamina();
                 this.symSearch();
                 this.restoreAdventure();
+                this.startStaminaTimer();
             },
 
             async loadTemplates() {
@@ -439,10 +550,15 @@
             // ── 回測提交 ──
             async submitBacktest() {
                 if (!this.form.templateId) return;
+                // 前端體力預檢
+                if (this.staminaData.stamina < this.form.years) {
+                    this.showMsg(`體力不足！需要 ${this.form.years} 點，目前 ${this.staminaData.stamina} 點`, 'error');
+                    return;
+                }
                 this.running = true; this.result = null;
                 this.advShowRewards = false; this.advRewards = null;
                 this.advLog = []; this.advTriggered = {}; this.advEvents = [];
-                this.advCurrentScene = 'walk';
+                this.advCurrentScene = 'walk'; this.advSkipped = false;
                 try {
                     const r = await fetch('/api/user/backtest/run', {
                         method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -465,50 +581,41 @@
                     this.addLog('⚔ 冒險開始！勇士踏上征途...', 'text-primary');
                     this.saveAdventure();
                     this.showMsg('挑戰已開始...', 'success');
+                    await this.loadStamina(); // 刷新體力顯示
                     await this.pollResult(data.id);
                 } catch(e) { this.showMsg('網路錯誤', 'error'); this.running = false; this.advCurrentScene = 'idle'; }
             },
 
             // ── 輪詢結果 + 觸發冒險事件 ──
             async pollResult(runId) {
-                this.pollPct = 0;
-                for (let i = 0; i < 120; i++) {
-                    this.pollPct = Math.min(99, Math.round((i / 120) * 100));
-                    this.advCurrentScene = 'walk';
+                // 使用恢復的進度作為起點
+                const startI = Math.floor((this.advRestoredPct / 100) * 120);
+                if (startI === 0) this.pollPct = 0;
+                this.advRestoredPct = 0; // 清除恢復標記
 
-                    // 檢查是否到達里程碑
-                    await this.checkMilestones();
+                for (let i = startI; i < 120; i++) {
+                    if (this.advSkipped) break; // Skip 按鈕
+                    this.pollPct = Math.min(99, Math.round((i / 120) * 100));
+                    if (!this.advInBattle) this.advCurrentScene = 'walk';
+
+                    // 檢查是否到達里程碑（非跳過模式才播動畫）
+                    if (!this.advSkipped) await this.checkMilestones();
                     this.saveAdventure();
 
                     await new Promise(r => setTimeout(r, 2000));
+                    if (this.advSkipped) break;
+
                     try {
                         const r = await fetch(`/api/user/backtest/${runId}`);
                         if (!r.ok) continue;
                         const d = await r.json();
 
                         if (d.status === 'COMPLETED') {
-                            this.pollPct = 100;
-                            this.result = JSON.parse(d.resultJson);
-                            this.running = false;
-                            this.advCurrentScene = 'idle';
-
-                            // 觸發剩餘的里程碑事件
-                            await this.checkMilestones();
-
-                            this.addLog(this.result.passed ? '🏆 冒險完成！英雄凱旋歸來！' : '💀 冒險結束... 英雄拖著疲憊的身軀返回營地', this.result.passed ? 'text-positive' : 'text-negative');
-
-                            // 自動領取獎勵
-                            if (!d.adventureRewardsClaimed) {
-                                await this.claimRewards(runId);
-                            }
-
-                            this.showMsg(this.result.passed ? '🏆 挑戰成功！' : '💀 挑戰失敗', 'success');
-                            this.$nextTick(() => this.renderChart());
-                            this.clearSavedAdventure();
+                            await this.handleComplete(d, runId);
                             return;
                         } else if (d.status === 'FAILED') {
                             this.running = false; this.pollPct = 0;
-                            this.advCurrentScene = 'idle';
+                            this.advCurrentScene = 'idle'; this.advInBattle = false;
                             this.addLog('❌ 回測計算失敗', 'text-negative');
                             this.showMsg('回測失敗', 'error');
                             this.clearSavedAdventure();
@@ -516,9 +623,59 @@
                         }
                     } catch(e) {}
                 }
+
+                // 跳過模式或超時：持續輪詢直到回測完成
+                if (this.advSkipped) {
+                    this.advInBattle = false;
+                    this.advCurrentScene = 'idle';
+                    this.addLog('⏩ 已跳過冒險動畫，等待回測完成...', 'text-text-muted');
+                    for (let j = 0; j < 300; j++) {
+                        this.pollPct = Math.min(99, this.pollPct + 1);
+                        await new Promise(r => setTimeout(r, 1000));
+                        try {
+                            const r = await fetch(`/api/user/backtest/${runId}`);
+                            if (!r.ok) continue;
+                            const d = await r.json();
+                            if (d.status === 'COMPLETED') { await this.handleComplete(d, runId); return; }
+                            else if (d.status === 'FAILED') {
+                                this.running = false; this.pollPct = 0;
+                                this.showMsg('回測失敗', 'error'); this.clearSavedAdventure(); return;
+                            }
+                        } catch(e) {}
+                    }
+                }
                 this.running = false; this.pollPct = 0; this.advCurrentScene = 'idle';
                 this.showMsg('超時', 'error');
                 this.clearSavedAdventure();
+            },
+
+            async handleComplete(d, runId) {
+                this.pollPct = 100;
+                this.result = JSON.parse(d.resultJson);
+                this.running = false;
+                this.advCurrentScene = 'idle';
+                this.advInBattle = false;
+
+                if (!this.advSkipped) {
+                    await this.checkMilestones();
+                }
+
+                this.addLog(this.result.passed ? '🏆 冒險完成！英雄凱旋歸來！' : '💀 冒險結束... 英雄拖著疲憊的身軀返回營地', this.result.passed ? 'text-positive' : 'text-negative');
+
+                if (!d.adventureRewardsClaimed) {
+                    await this.claimRewards(runId);
+                }
+
+                this.showMsg(this.result.passed ? '🏆 挑戰成功！' : '💀 挑戰失敗', 'success');
+                this.$nextTick(() => this.renderChart());
+                this.clearSavedAdventure();
+            },
+
+            // ── 跳過動畫 ──
+            skipAdventure() {
+                this.advSkipped = true;
+                this.advInBattle = false;
+                this.advCurrentScene = 'idle';
             },
 
             // ── 里程碑檢查 + 動畫觸發 ──
@@ -725,6 +882,9 @@
                     this.running = true;
                     this.advCurrentScene = 'walk';
                     this.pollPct = s.pollPct || 0;
+                    this.advRestoredPct = s.pollPct || 0; // 告訴 pollResult 從這裡開始
+
+                    this.addLog('🔄 恢復冒險進度...', 'text-text-muted');
 
                     // 繼續輪詢
                     this.pollResult(s.runId);
@@ -816,6 +976,76 @@
                         } else { toast(d.error || '新增失敗', 'error'); }
                     }
                 } catch(e) { toast('新增失敗', 'error'); }
+            },
+
+            // ── 體力系統方法 ──
+            async loadStamina() {
+                try {
+                    const r = await fetch('/api/user/backtest/stamina');
+                    if (r.ok) this.staminaData = await r.json();
+                } catch(e) {}
+                this.updateRegenText();
+            },
+
+            updateRegenText() {
+                if (this.staminaData.stamina >= this.staminaData.maxStamina) {
+                    this.staminaRegenText = '';
+                    return;
+                }
+                const nextRegen = this.staminaData.nextRegenAt;
+                if (!nextRegen) { this.staminaRegenText = '回復中...'; return; }
+                const diff = Math.max(0, Math.floor((new Date(nextRegen) - Date.now()) / 1000));
+                const m = Math.floor(diff / 60);
+                const s = diff % 60;
+                this.staminaRegenText = `下次回復: ${m}:${String(s).padStart(2, '0')}`;
+            },
+
+            startStaminaTimer() {
+                if (this.staminaTimer) clearInterval(this.staminaTimer);
+                this.staminaTimer = setInterval(() => {
+                    this.updateRegenText();
+                    // 檢查是否該回復了
+                    if (this.staminaData.nextRegenAt && new Date(this.staminaData.nextRegenAt) <= Date.now()) {
+                        this.loadStamina();
+                    }
+                }, 1000);
+            },
+
+            async priestRestore() {
+                this.priestPraying = true;
+                this.priestFloatTexts = [];
+
+                // 飄字動畫
+                let pfId = 0;
+                const texts = ['&#10013;', '+HP', '&#9769;', '&#10024;'];
+                for (const t of texts) {
+                    const id = ++pfId;
+                    this.priestFloatTexts.push({ id, x: 30 + Math.random() * 40, text: t });
+                    await this.sleep(400);
+                }
+
+                try {
+                    const r = await fetch('/api/user/backtest/stamina/restore', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ amount: this.staminaData.maxStamina })
+                    });
+                    if (r.ok) {
+                        const data = await r.json();
+                        this.staminaData.stamina = data.stamina;
+                        this.staminaData.maxStamina = data.maxStamina;
+                        this.staminaData.userGold = data.userGold;
+                        await this.sleep(1000);
+                        this.showMsg(`神父祈禱！恢復 ${data.restored} 點體力 (-${data.goldSpent} G)`, 'success');
+                    } else {
+                        const e = await r.json();
+                        this.showMsg(e.error || '恢復失敗', 'error');
+                    }
+                } catch(e) { this.showMsg('網路錯誤', 'error'); }
+
+                this.priestPraying = false;
+                this.priestFloatTexts = [];
+                this.showPriestDialog = false;
+                await this.loadStamina();
             }
         };
     }
