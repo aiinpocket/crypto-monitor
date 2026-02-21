@@ -839,6 +839,15 @@
         }
         .anim-hurt { animation: pixelHurt 0.6s steps(2); }
 
+        /* 怪物攻擊（向左衝） */
+        @keyframes monsterAttack {
+            0% { transform: translateX(0); }
+            30% { transform: translateX(-14px); }
+            50% { transform: translateX(-14px) scale(1.15); }
+            100% { transform: translateX(0); }
+        }
+        .anim-m-attack { animation: monsterAttack 0.5s ease-out; }
+
         /* 寶箱出現 */
         @keyframes treasurePop {
             0% { transform: scale(0) rotate(-15deg); opacity: 0; }

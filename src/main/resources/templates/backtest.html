@@ -72,87 +72,139 @@
     </div>
 
     <!-- ===== 冒險動畫場景 ===== -->
-    <div x-show="running || advShowRewards" x-cloak class="pixel-card p-4 mb-4 relative overflow-hidden" style="min-height:180px;">
-        <!-- 場景背景：地面+天空 -->
-        <div class="absolute inset-0" style="background: linear-gradient(180deg, #0c1021 0%, #1a1a2e 60%, #2d1f3d 80%, #3a2a1a 90%, #4a3a2a 100%);">
+    <div x-show="running || advShowRewards" x-cloak class="pixel-card mb-4 relative overflow-hidden">
+        <!-- 上半：戰鬥劇場 -->
+        <div class="relative" style="height:260px;background:linear-gradient(180deg,#0c1021 0%,#1a1a2e 40%,#2d1f3d 70%,#3a2a1a 88%,#4a3a2a 100%);">
             <!-- 星星 -->
             <div class="absolute" style="top:8px;left:15%;width:2px;height:2px;background:#fff;opacity:0.6;"></div>
             <div class="absolute" style="top:18px;left:45%;width:2px;height:2px;background:#fff;opacity:0.4;"></div>
             <div class="absolute" style="top:12px;left:72%;width:2px;height:2px;background:#fff;opacity:0.7;"></div>
             <div class="absolute" style="top:25px;left:88%;width:2px;height:2px;background:#fff;opacity:0.3;"></div>
-            <!-- 地面裝飾 -->
-            <div class="absolute bottom-0 left-0 right-0 h-[30px]" style="background: repeating-linear-gradient(90deg, #3a2a1a 0px, #4a3a2a 6px, #3a2a1a 12px);"></div>
+            <div class="absolute" style="top:5px;left:30%;width:2px;height:2px;background:#ffd642;opacity:0.5;"></div>
+            <div class="absolute" style="top:22px;left:60%;width:2px;height:2px;background:#fff;opacity:0.4;"></div>
+            <!-- 地面 -->
+            <div class="absolute bottom-0 left-0 right-0 h-[40px]" style="background:repeating-linear-gradient(90deg,#3a2a1a 0px,#4a3a2a 6px,#3a2a1a 12px);"></div>
+
+            <!-- 進度條（頂部） -->
+            <div class="absolute top-0 left-0 right-0 z-20 px-3 pt-2">
+                <div class="flex items-center justify-between text-[10px] text-white/60 mb-1">
+                    <span>&#9876; 冒險進度</span>
+                    <span x-text="pollPct + '%'"></span>
+                </div>
+                <div class="w-full h-1.5 bg-black/40 overflow-hidden" style="border:1px solid rgba(255,255,255,0.1);">
+                    <div class="h-full transition-all duration-500"
+                         style="background:linear-gradient(90deg,#f59e0b,#8b5cf6);"
+                         :style="'width:' + pollPct + '%'"></div>
+                </div>
+            </div>
+
+            <!-- 非戰鬥時：行走場景 -->
+            <div x-show="!advInBattle" class="absolute inset-0 z-10">
+                <!-- 路徑里程碑標記 -->
+                <template x-for="evt in advEvents" :key="evt.pct">
+                    <div class="absolute z-10 transition-opacity duration-300"
+                         :style="'left:' + evt.pct + '%;bottom:50px'"
+                         :class="advTriggered[evt.pct] ? 'opacity-30' : (pollPct >= evt.pct - 5 ? 'opacity-100' : 'opacity-40')">
+                        <div class="text-[20px] -ml-2" x-text="evt.type === 'MONSTER' ? '&#128128;' : '&#127873;'"></div>
+                    </div>
+                </template>
+                <!-- 角色行走 -->
+                <div class="absolute z-20 transition-all duration-[1500ms] ease-linear"
+                     :style="'left:calc(' + Math.min(pollPct, 92) + '% - 24px);bottom:44px'"
+                     :class="advCurrentScene === 'walk' ? 'anim-walk' : 'anim-idle'">
+                    <div class="w-[48px] h-[48px] relative">
+                        <div class="absolute top-0 left-0" :class="'pixel-char-' + charClass.toLowerCase()"></div>
+                    </div>
+                </div>
+                <!-- 寶箱事件 -->
+                <div x-show="advShowTreasure" x-transition class="absolute z-20 anim-treasure-pop"
+                     :style="'left:calc(' + (advTreasurePct||0) + '% - 8px);bottom:44px'">
+                    <div class="text-[36px]">&#127873;</div>
+                </div>
+                <!-- 飄字 -->
+                <template x-for="loot in advLootTexts" :key="loot.id">
+                    <div class="absolute z-30 anim-loot text-xs font-heading"
+                         :style="'left:' + loot.x + '%;bottom:110px'"
+                         :class="loot.color" x-text="loot.text"></div>
+                </template>
+            </div>
+
+            <!-- 戰鬥時：RPG 戰鬥劇場 -->
+            <div x-show="advInBattle" x-transition class="absolute inset-0 z-10 flex items-end justify-center pb-[50px]">
+                <!-- 左側：角色 -->
+                <div class="flex flex-col items-center mr-8 md:mr-16 relative">
+                    <!-- 角色名 + HP -->
+                    <div class="mb-1 text-center">
+                        <div class="text-[10px] text-primary font-heading" x-text="charClass"></div>
+                        <div class="w-16 h-1.5 bg-black/60 mt-0.5 overflow-hidden" style="border:1px solid #4a90d9;">
+                            <div class="h-full bg-positive transition-all duration-300" :style="'width:' + advPlayerHp + '%'"></div>
+                        </div>
+                    </div>
+                    <!-- 角色精靈 -->
+                    <div class="w-[48px] h-[48px] relative"
+                         :class="advPlayerAnim">
+                        <div class="absolute top-0 left-0" :class="'pixel-char-' + charClass.toLowerCase()"></div>
+                    </div>
+                    <!-- 技能名 -->
+                    <div x-show="advSkillName" x-transition
+                         class="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                        <span class="text-[10px] font-heading text-cta px-1.5 py-0.5"
+                              style="background:rgba(139,92,246,0.3);border:1px solid rgba(139,92,246,0.5);"
+                              x-text="advSkillName"></span>
+                    </div>
+                </div>
+
+                <!-- 中央：VS + 戰況文字 -->
+                <div class="flex flex-col items-center mx-2 md:mx-4 mb-6">
+                    <div x-show="advBattleText" x-transition
+                         class="px-3 py-1.5 text-[11px] font-heading text-center whitespace-nowrap mb-2"
+                         style="background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.2);"
+                         :class="advBattleWin ? 'text-positive' : (advBattleWin === false ? 'text-negative' : 'text-primary')"
+                         x-text="advBattleText"></div>
+                    <div x-show="!advBattleText" class="text-lg font-heading text-white/30 anim-flash">VS</div>
+                    <!-- 傷害數字 -->
+                    <template x-for="dmg in advDmgTexts" :key="dmg.id">
+                        <div class="absolute anim-loot font-heading"
+                             :style="'left:' + dmg.x + '%;bottom:70%'"
+                             :class="dmg.color" x-text="dmg.text"
+                             style="font-size:14px;"></div>
+                    </template>
+                </div>
+
+                <!-- 右側：怪物 -->
+                <div class="flex flex-col items-center ml-8 md:ml-16 relative" x-show="advCurrentMonster">
+                    <!-- 怪物名 + HP -->
+                    <div class="mb-1 text-center">
+                        <div class="text-[10px] font-heading"
+                             :class="{'text-positive':advCurrentMonster?.riskTier==='LOW','text-primary':advCurrentMonster?.riskTier==='MEDIUM','text-cta':advCurrentMonster?.riskTier==='HIGH','text-negative':advCurrentMonster?.riskTier==='EXTREME'}"
+                             x-text="(advCurrentMonster?.monsterName||'') + ' Lv.' + (advCurrentMonster?.monsterLevel||0)"></div>
+                        <div class="w-16 h-1.5 bg-black/60 mt-0.5 overflow-hidden" style="border:1px solid #ef4444;">
+                            <div class="h-full bg-negative transition-all duration-300" :style="'width:' + advMonsterHp + '%'"></div>
+                        </div>
+                    </div>
+                    <!-- 怪物精靈 -->
+                    <div class="w-[48px] h-[48px] relative"
+                         :class="advMonsterAnim">
+                        <div class="absolute top-0 left-0" :class="advCurrentMonster?.monsterCss || ''"></div>
+                    </div>
+                    <!-- 怪物技能名 -->
+                    <div x-show="advMonsterSkill" x-transition
+                         class="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                        <span class="text-[10px] font-heading text-negative px-1.5 py-0.5"
+                              style="background:rgba(239,68,68,0.3);border:1px solid rgba(239,68,68,0.5);"
+                              x-text="advMonsterSkill"></span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- 進度條 -->
-        <div class="relative z-10 mb-2">
-            <div class="flex items-center justify-between text-[10px] text-text-muted mb-1">
-                <span>冒險進度</span>
-                <span x-text="pollPct + '%'"></span>
+        <!-- 下半：戰鬥日誌 -->
+        <div class="px-4 py-3" style="background:#12121f;">
+            <div x-ref="advLogBox" class="max-h-[100px] overflow-y-auto scrollbar-thin space-y-0.5">
+                <template x-for="(log, i) in advLog" :key="i">
+                    <div class="text-[11px] leading-relaxed" :class="log.color || 'text-text-muted'" x-text="log.text"></div>
+                </template>
             </div>
-            <div class="w-full h-2 bg-black/40 pixel-border-dark overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-primary to-cta transition-all duration-500"
-                     :style="'width:' + pollPct + '%'"></div>
-            </div>
-        </div>
-
-        <!-- 角色行走區域 -->
-        <div class="relative z-10" style="height:100px;">
-            <!-- 路徑里程碑標記 -->
-            <template x-for="evt in advEvents" :key="evt.pct">
-                <div class="absolute bottom-[36px] z-10 transition-opacity duration-300"
-                     :style="'left:' + evt.pct + '%'"
-                     :class="pollPct >= evt.pct ? 'opacity-100' : 'opacity-30'">
-                    <div class="text-[16px] -ml-2" x-text="evt.type === 'MONSTER' ? '&#128128;' : '&#127873;'"></div>
-                </div>
-            </template>
-
-            <!-- 角色精靈 -->
-            <div class="absolute bottom-[30px] z-20 transition-all duration-[1500ms] ease-linear"
-                 :style="'left: calc(' + Math.min(pollPct, 95) + '% - 24px)'"
-                 :class="advCurrentScene === 'walk' ? 'anim-walk' : (advCurrentScene === 'attack' ? 'anim-attack' : 'anim-idle')">
-                <div class="relative w-[48px] h-[48px]">
-                    <div class="absolute top-0 left-0" :class="'pixel-char-' + charClass.toLowerCase()"></div>
-                </div>
-            </div>
-
-            <!-- 遭遇怪物（臨時顯示） -->
-            <div x-show="advCurrentMonster" x-transition class="absolute bottom-[30px] z-20"
-                 :style="'left: calc(' + (advMonsterPct||0) + '% + 30px)'"
-                 :class="advMonsterHurt ? 'anim-hurt' : 'anim-monster'">
-                <div class="relative w-[48px] h-[48px]" x-show="advCurrentMonster">
-                    <div class="absolute top-0 left-0" :class="advCurrentMonster?.monsterCss || ''"></div>
-                </div>
-            </div>
-
-            <!-- 戰鬥文字 -->
-            <div x-show="advBattleText" x-transition class="absolute top-0 left-1/2 -translate-x-1/2 z-30">
-                <div class="pixel-card px-3 py-1.5 text-[11px] font-heading text-center whitespace-nowrap"
-                     :class="advBattleWin ? 'text-positive' : 'text-negative'"
-                     x-text="advBattleText"></div>
-            </div>
-
-            <!-- 寶箱 -->
-            <div x-show="advShowTreasure" x-transition class="absolute bottom-[30px] z-20 anim-treasure-pop"
-                 :style="'left: calc(' + (advTreasurePct||0) + '% - 8px)'">
-                <div class="text-[32px]">&#127873;</div>
-            </div>
-
-            <!-- 戰利品飄字 -->
-            <template x-for="loot in advLootTexts" :key="loot.id">
-                <div class="absolute z-30 anim-loot text-[11px] font-heading"
-                     :style="'left:' + loot.x + '%;bottom:80px'"
-                     :class="loot.color">
-                    <span x-text="loot.text"></span>
-                </div>
-            </template>
-        </div>
-
-        <!-- 事件日誌 -->
-        <div class="relative z-10 mt-2 max-h-[60px] overflow-y-auto scrollbar-thin">
-            <template x-for="(log, i) in advLog" :key="i">
-                <div class="text-[10px] leading-relaxed" :class="log.color || 'text-text-muted'" x-text="log.text"></div>
-            </template>
         </div>
     </div>
 
@@ -160,19 +212,19 @@
     <div x-show="advShowRewards && advRewards" x-cloak class="pixel-card p-4 mb-4">
         <h3 class="text-sm font-heading text-primary mb-3">&#127942; 冒險結算</h3>
         <!-- 戰鬥結果列表 -->
-        <div class="space-y-2 mb-4 max-h-48 overflow-y-auto scrollbar-thin">
+        <div class="space-y-2 mb-4 max-h-52 overflow-y-auto scrollbar-thin">
             <template x-for="(b, i) in advRewards?.battles || []" :key="i">
-                <div class="flex items-center gap-3 text-xs px-2 py-1 bg-white/5 rounded">
+                <div class="flex items-center gap-3 text-xs px-2 py-1.5 bg-white/5 rounded">
                     <template x-if="b.type === 'TREASURE'">
                         <div class="flex items-center gap-2 w-full">
-                            <span>&#127873;</span>
+                            <span class="text-lg">&#127873;</span>
                             <span class="text-primary">發現寶箱！</span>
                             <span class="ml-auto text-primary font-heading" x-text="'+' + b.gold + ' G'"></span>
                         </div>
                     </template>
                     <template x-if="b.type !== 'TREASURE'">
                         <div class="flex items-center gap-2 w-full">
-                            <div class="w-[24px] h-[24px] relative shrink-0" style="transform:scale(0.5);transform-origin:top left;">
+                            <div class="w-6 h-6 relative shrink-0" style="transform:scale(0.5);transform-origin:top left;">
                                 <div class="absolute top-0 left-0" :class="b.monsterCss || ''"></div>
                             </div>
                             <span class="text-text-heading" x-text="b.monsterName"></span>
@@ -185,9 +237,9 @@
                                 </div>
                             </template>
                             <template x-if="!b.victory">
-                                <div class="ml-auto">
+                                <div class="ml-auto flex items-center gap-2">
                                     <span class="text-negative text-[10px]">&#10060; 敗北</span>
-                                    <span class="text-negative font-heading text-[10px]" x-text="'-' + b.goldLost + ' G'"></span>
+                                    <span class="text-negative font-heading text-[10px]" x-text="'-' + (b.goldLost||0) + ' G'"></span>
                                 </div>
                             </template>
                         </div>
@@ -217,12 +269,12 @@
         </div>
         <!-- 裝備掉落 -->
         <template x-if="advRewards?.equipment?.length > 0">
-            <div class="mb-3">
+            <div class="mb-1">
                 <div class="text-[11px] text-text-muted mb-1">&#128081; 掉落裝備</div>
                 <div class="flex flex-wrap gap-2">
                     <template x-for="eq in advRewards.equipment" :key="eq.name">
                         <div class="pixel-card px-2 py-1 text-[10px]"
-                             :class="{'text-text-heading': eq.rarity==='COMMON', 'text-blue-400': eq.rarity==='RARE', 'text-purple-400': eq.rarity==='EPIC', 'text-primary': eq.rarity==='LEGENDARY'}">
+                             :class="{'text-text-heading':eq.rarity==='COMMON','text-blue-400':eq.rarity==='RARE','text-purple-400':eq.rarity==='EPIC','text-primary':eq.rarity==='LEGENDARY'}">
                             <span x-text="eq.name"></span>
                             <span class="text-[9px] opacity-70" x-text="'(' + eq.rarity + ')'"></span>
                             <span x-show="!eq.dropped" class="text-negative text-[9px]">背包已滿</span>
@@ -342,20 +394,27 @@
             get totalTradePages() { return Math.ceil((this.result?.trades?.length || 0) / this.tradesPerPage); },
 
             // ── 冒險動畫狀態 ──
-            advEvents: [],           // 冒險事件列表
+            advEvents: [],
             advCurrentScene: 'idle', // idle | walk | attack | treasure
-            advCurrentMonster: null, // 當前遭遇的怪物
+            advInBattle: false,      // 是否在戰鬥劇場
+            advCurrentMonster: null,
             advMonsterPct: 0,
-            advMonsterHurt: false,
+            advPlayerHp: 100,        // 角色 HP (動畫用)
+            advMonsterHp: 100,       // 怪物 HP (動畫用)
+            advPlayerAnim: 'anim-idle',
+            advMonsterAnim: 'anim-monster',
+            advSkillName: '',        // 角色技能名
+            advMonsterSkill: '',     // 怪物技能名
             advBattleText: '',
-            advBattleWin: false,
+            advBattleWin: null,      // null=neutral, true=win, false=lose
+            advDmgTexts: [],         // 傷害數字
             advShowTreasure: false,
             advTreasurePct: 0,
             advLog: [],
             advLootTexts: [],
             advShowRewards: false,
             advRewards: null,
-            advTriggered: {},        // 已觸發的里程碑
+            advTriggered: {},
             advRunId: null,
 
             // 幣對搜尋
@@ -403,7 +462,7 @@
                         this.advEvents = plan.events || [];
                     } catch(e) { this.advEvents = []; }
 
-                    this.advLog.push({ text: '⚔ 冒險開始！勇士踏上征途...', color: 'text-primary' });
+                    this.addLog('⚔ 冒險開始！勇士踏上征途...', 'text-primary');
                     this.saveAdventure();
                     this.showMsg('挑戰已開始...', 'success');
                     await this.pollResult(data.id);
@@ -436,7 +495,7 @@
                             // 觸發剩餘的里程碑事件
                             await this.checkMilestones();
 
-                            this.advLog.push({ text: this.result.passed ? '🏆 冒險完成！英雄凱旋歸來！' : '💀 冒險結束... 英雄拖著疲憊的身軀返回營地', color: this.result.passed ? 'text-positive' : 'text-negative' });
+                            this.addLog(this.result.passed ? '🏆 冒險完成！英雄凱旋歸來！' : '💀 冒險結束... 英雄拖著疲憊的身軀返回營地', this.result.passed ? 'text-positive' : 'text-negative');
 
                             // 自動領取獎勵
                             if (!d.adventureRewardsClaimed) {
@@ -450,7 +509,7 @@
                         } else if (d.status === 'FAILED') {
                             this.running = false; this.pollPct = 0;
                             this.advCurrentScene = 'idle';
-                            this.advLog.push({ text: '❌ 回測計算失敗', color: 'text-negative' });
+                            this.addLog('❌ 回測計算失敗', 'text-negative');
                             this.showMsg('回測失敗', 'error');
                             this.clearSavedAdventure();
                             return;
@@ -476,38 +535,123 @@
                 }
             },
 
-            // ── 怪物遭遇動畫 ──
+            // ── 技能庫 ──
+            SKILLS: {
+                WARRIOR: ['猛擊', '盾牌衝撞', '旋風斬', '破甲重擊', '天崩地裂'],
+                MAGE: ['火球術', '冰霜新星', '雷電鏈', '隕石術', '時間停止'],
+                RANGER: ['精準射擊', '多重箭', '穿透射擊', '暴風箭雨', '鷹眼狙殺'],
+                ASSASSIN: ['背刺', '毒刃', '影步', '致命連擊', '暗影絞殺']
+            },
+            MONSTER_SKILLS: ['撕咬', '猛撲', '毒霧', '暗影衝擊', '地獄火焰', '冰凍吐息', '雷擊', '旋風爪'],
+
+            pickSkill() {
+                const skills = this.SKILLS[this.charClass] || this.SKILLS.WARRIOR;
+                return skills[Math.floor(Math.random() * skills.length)];
+            },
+            pickMonsterSkill() {
+                return this.MONSTER_SKILLS[Math.floor(Math.random() * this.MONSTER_SKILLS.length)];
+            },
+
+            // ── 怪物遭遇動畫（多回合 RPG 戰鬥） ──
             async playMonsterEncounter(evt) {
+                // 進入戰鬥劇場
                 this.advCurrentScene = 'idle';
+                this.advInBattle = true;
                 this.advCurrentMonster = evt;
                 this.advMonsterPct = evt.pct;
-                this.advLog.push({ text: `⚠ 遭遇 ${evt.monsterName}（Lv.${evt.monsterLevel}）！`, color: 'text-cta' });
-                await this.sleep(800);
-
-                // 攻擊動畫
-                this.advCurrentScene = 'attack';
-                await this.sleep(500);
-
-                // 隨機勝敗（前端只做動畫，實際獎勵由後端 claimRewards 決定）
-                const win = Math.random() < 0.6;
-                this.advMonsterHurt = true;
-                await this.sleep(600);
-
-                if (win) {
-                    this.advBattleText = `擊敗了 ${evt.monsterName}！`;
-                    this.advBattleWin = true;
-                    this.advLog.push({ text: `✅ 擊敗 ${evt.monsterName}！`, color: 'text-positive' });
-                    this.spawnLoot(evt.pct, '+EXP', 'text-primary');
-                } else {
-                    this.advBattleText = `被 ${evt.monsterName} 擊退...`;
-                    this.advBattleWin = false;
-                    this.advLog.push({ text: `❌ 被 ${evt.monsterName} 擊退...`, color: 'text-negative' });
-                }
-                await this.sleep(1500);
-
+                this.advPlayerHp = 100;
+                this.advMonsterHp = 100;
+                this.advPlayerAnim = 'anim-idle';
+                this.advMonsterAnim = 'anim-monster';
                 this.advBattleText = '';
+                this.advSkillName = '';
+                this.advMonsterSkill = '';
+
+                this.addLog(`⚠ 遭遇 ${evt.monsterName}（Lv.${evt.monsterLevel}・${evt.riskTier}）！`, 'text-cta');
+                await this.sleep(1000);
+
+                // 前端演出勝敗（實際獎勵由後端決定）
+                const win = Math.random() < 0.6;
+                const rounds = 2 + Math.floor(Math.random() * 2); // 2~3 回合
+
+                for (let round = 1; round <= rounds; round++) {
+                    // === 角色回合 ===
+                    const skill = this.pickSkill();
+                    this.advSkillName = skill;
+                    this.advBattleText = `${this.charClass} 使用了 ${skill}！`;
+                    this.addLog(`⚔ Round ${round}：${skill}！`, 'text-cta');
+                    await this.sleep(600);
+
+                    // 角色攻擊動畫
+                    this.advPlayerAnim = 'anim-attack';
+                    await this.sleep(500);
+                    this.advPlayerAnim = 'anim-idle';
+                    this.advSkillName = '';
+
+                    // 怪物受傷
+                    const pDmg = 15 + Math.floor(Math.random() * 25);
+                    this.advMonsterAnim = 'anim-hurt';
+                    this.spawnDmg(65, `-${pDmg}`, 'text-negative');
+                    this.advMonsterHp = Math.max(0, this.advMonsterHp - pDmg);
+                    await this.sleep(600);
+                    this.advMonsterAnim = 'anim-monster';
+
+                    if (this.advMonsterHp <= 0 || (round === rounds && win)) {
+                        this.advMonsterHp = 0;
+                        break;
+                    }
+
+                    await this.sleep(400);
+
+                    // === 怪物回合 ===
+                    const mSkill = this.pickMonsterSkill();
+                    this.advMonsterSkill = mSkill;
+                    this.advBattleText = `${evt.monsterName} 使用了 ${mSkill}！`;
+                    this.addLog(`💀 ${evt.monsterName} 反擊：${mSkill}！`, 'text-negative');
+                    await this.sleep(600);
+
+                    // 怪物攻擊動畫
+                    this.advMonsterAnim = 'anim-m-attack';
+                    await this.sleep(500);
+                    this.advMonsterAnim = 'anim-monster';
+                    this.advMonsterSkill = '';
+
+                    // 角色受傷
+                    const mDmg = 10 + Math.floor(Math.random() * 20);
+                    this.advPlayerAnim = 'anim-hurt';
+                    this.spawnDmg(30, `-${mDmg}`, 'text-negative');
+                    this.advPlayerHp = Math.max(5, this.advPlayerHp - mDmg);
+                    await this.sleep(600);
+                    this.advPlayerAnim = 'anim-idle';
+
+                    if (!win && round === rounds) {
+                        this.advPlayerHp = Math.max(5, this.advPlayerHp);
+                    }
+                    await this.sleep(300);
+                }
+
+                // === 結算 ===
+                await this.sleep(400);
+                if (win) {
+                    this.advMonsterHp = 0;
+                    this.advMonsterAnim = 'anim-hurt';
+                    this.advBattleText = `&#9989; ${evt.monsterName} 被擊敗了！`;
+                    this.advBattleWin = true;
+                    this.addLog(`✅ 擊敗 ${evt.monsterName}！獲得經驗與金幣`, 'text-positive');
+                    this.spawnLoot(evt.pct, '+EXP +Gold', 'text-primary');
+                } else {
+                    this.advPlayerHp = Math.max(5, this.advPlayerHp);
+                    this.advBattleText = `&#10060; 被 ${evt.monsterName} 擊退...`;
+                    this.advBattleWin = false;
+                    this.addLog(`❌ 被 ${evt.monsterName} 擊退... 損失金幣`, 'text-negative');
+                }
+                await this.sleep(2000);
+
+                // 退出戰鬥劇場
+                this.advBattleText = '';
+                this.advBattleWin = null;
                 this.advCurrentMonster = null;
-                this.advMonsterHurt = false;
+                this.advInBattle = false;
                 this.advCurrentScene = 'walk';
             },
 
@@ -516,20 +660,30 @@
                 this.advCurrentScene = 'idle';
                 this.advShowTreasure = true;
                 this.advTreasurePct = evt.pct;
-                this.advLog.push({ text: `🎁 發現寶箱！獲得 ${evt.goldAmount} G`, color: 'text-primary' });
+                this.addLog(`🎁 發現寶箱！獲得 ${evt.goldAmount} G`, 'text-primary');
                 this.spawnLoot(evt.pct, `+${evt.goldAmount} G`, 'text-primary');
-                await this.sleep(2000);
+                await this.sleep(2500);
                 this.advShowTreasure = false;
                 this.advCurrentScene = 'walk';
             },
 
-            // ── 戰利品飄字效果 ──
+            // ── 飄字效果 ──
             spawnLoot(x, text, color) {
                 const id = ++_lootId;
                 this.advLootTexts.push({ id, x, text, color });
-                setTimeout(() => {
-                    this.advLootTexts = this.advLootTexts.filter(l => l.id !== id);
-                }, 1500);
+                setTimeout(() => { this.advLootTexts = this.advLootTexts.filter(l => l.id !== id); }, 1500);
+            },
+            spawnDmg(x, text, color) {
+                const id = ++_lootId;
+                this.advDmgTexts.push({ id, x, text, color });
+                setTimeout(() => { this.advDmgTexts = this.advDmgTexts.filter(d => d.id !== id); }, 1200);
+            },
+            addLog(text, color) {
+                this.advLog.push({ text, color });
+                this.$nextTick(() => {
+                    const box = this.$refs.advLogBox;
+                    if (box) box.scrollTop = box.scrollHeight;
+                });
             },
 
             // ── 領取獎勵 ──
@@ -539,7 +693,7 @@
                     if (r.ok) {
                         this.advRewards = await r.json();
                         this.advShowRewards = true;
-                        this.advLog.push({ text: `🎉 獲得 ${this.advRewards.exp} EXP, ${this.advRewards.gold} G`, color: 'text-primary' });
+                        this.addLog(`🎉 獲得 ${this.advRewards.exp} EXP, ${this.advRewards.gold} G`, 'text-primary');
                     }
                 } catch(e) {
                     console.error('Failed to claim adventure rewards', e);
