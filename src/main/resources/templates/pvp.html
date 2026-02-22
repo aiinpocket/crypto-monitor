@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head th:replace="~{fragments/head :: head('BtcTrade - PVP 競技場')}"></head>
+<body class="bg-bg-dark text-text-main min-h-screen">
+
+<div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+<div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
+
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-6xl mx-auto" x-data="pvpApp()">
+
+    <!-- 頁面標題 -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="font-heading text-lg text-primary glow-gold">&#9876; PVP 競技場</h1>
+            <p class="text-text-muted text-[13px] mt-1">用裝備數值挑戰其他冒險者</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="pixel-card px-3 py-1.5 text-sm flex items-center gap-1">
+                <span class="text-yellow-400">&#9733;</span>
+                <span class="text-primary font-heading" x-text="status.pvpRating">1000</span>
+            </div>
+            <div class="pixel-card px-3 py-1.5 text-sm">
+                <span class="text-text-muted" x-text="'&#9889; ' + status.stamina + '/' + status.maxStamina">50/50</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 載入中 -->
+    <div x-show="loading" class="text-center py-12">
+        <span class="text-sm text-primary anim-flash">&#9876; 進入競技場...</span>
+    </div>
+
+    <div x-show="!loading" class="space-y-4">
+
+        <!-- 頂部：我的狀態 + 戰績 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- 我的狀態 -->
+            <div class="pixel-card p-4">
+                <h2 class="font-heading text-sm text-primary mb-3">&#128100; 我的戰力</h2>
+                <div class="text-center mb-3">
+                    <div class="text-3xl font-heading text-primary glow-gold" x-text="status.teamPower">0</div>
+                    <div class="text-[10px] text-text-muted">總戰力</div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                        <div class="text-sm font-heading text-positive" x-text="status.wins">0</div>
+                        <div class="text-[9px] text-text-muted">勝場</div>
+                    </div>
+                    <div>
+                        <div class="text-sm font-heading text-negative" x-text="status.losses">0</div>
+                        <div class="text-[9px] text-text-muted">敗場</div>
+                    </div>
+                    <div>
+                        <div class="text-sm font-heading text-primary" x-text="winRate">0%</div>
+                        <div class="text-[9px] text-text-muted">勝率</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 對手選擇 -->
+            <div class="pixel-card p-4 md:col-span-2">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-heading text-sm text-cta">&#9876; 挑戰對手</h2>
+                    <button @click="refreshOpponents()" class="pixel-btn pixel-btn-purple text-[10px] py-1 px-2 cursor-pointer"
+                            :disabled="searchingOpponents">
+                        <span x-show="!searchingOpponents">&#128260; 刷新</span>
+                        <span x-show="searchingOpponents" class="anim-flash">搜尋中...</span>
+                    </button>
+                </div>
+
+                <!-- 無對手提示 -->
+                <div x-show="opponents.length === 0 && !searchingOpponents" class="text-center py-6">
+                    <div class="text-3xl mb-2 opacity-50">&#128373;</div>
+                    <p class="text-text-muted text-sm">附近沒有對手</p>
+                    <p class="text-text-muted text-xs mt-1">提升裝備後再來試試</p>
+                </div>
+
+                <!-- 對手列表 -->
+                <div class="space-y-2">
+                    <template x-for="op in opponents" :key="op.id">
+                        <div class="pixel-card p-3 flex items-center gap-3 hover:bg-white/5 transition-all">
+                            <div class="shrink-0">
+                                <img x-show="op.avatarUrl" :src="op.avatarUrl" class="w-10 h-10 border-2 border-cta"
+                                     style="image-rendering: pixelated;" alt="">
+                                <div x-show="!op.avatarUrl" class="w-10 h-10 bg-cta flex items-center justify-center text-bg-dark font-heading border-2 border-cta-hover"
+                                     x-text="(op.displayName || '?')[0]"></div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-heading text-text-heading" x-text="op.displayName"></span>
+                                    <span class="text-[9px] px-1 py-0.5 bg-cta/20 text-cta" x-text="'Lv.' + op.level"></span>
+                                    <span class="text-[9px] px-1 py-0.5 bg-primary/20 text-primary" x-text="classLabel(op.characterClass)"></span>
+                                </div>
+                                <div class="flex items-center gap-3 mt-0.5">
+                                    <span class="text-[10px] text-text-muted" x-text="'&#9733; ' + op.pvpRating"></span>
+                                    <span class="text-[10px] text-text-muted" x-text="'&#9876; ' + op.teamPower"></span>
+                                    <span class="text-[10px] font-heading"
+                                          :class="diffClass(op.diffLabel)"
+                                          x-text="op.diffLabel"></span>
+                                </div>
+                            </div>
+                            <button @click="startBattle(op.id)"
+                                    class="pixel-btn pixel-btn-gold text-[11px] py-1.5 px-3 cursor-pointer"
+                                    :disabled="battling || status.stamina < status.staminaCost">
+                                &#9876; 挑戰
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- 戰鬥結果彈窗 -->
+        <div x-show="battleResult" x-cloak x-transition
+             class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70"
+             @click.self="battleResult = null">
+            <div class="pixel-card p-6 w-[420px] max-w-[95vw] max-h-[80vh] overflow-y-auto">
+                <template x-if="battleResult">
+                    <div>
+                        <!-- 結果標題 -->
+                        <div class="text-center mb-4">
+                            <div class="text-4xl mb-2" x-text="battleResult.won ? '&#127942;' : '&#128148;'"></div>
+                            <h3 class="font-heading text-lg" :class="battleResult.won ? 'text-primary glow-gold' : 'text-negative'">
+                                <span x-text="battleResult.won ? '勝利！' : '失敗...'"></span>
+                            </h3>
+                            <p class="text-[11px] text-text-muted mt-1">
+                                <span x-text="battleResult.myName"></span> vs <span x-text="battleResult.opponentName"></span>
+                            </p>
+                        </div>
+
+                        <!-- 戰力對比 -->
+                        <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+                            <div>
+                                <div class="text-sm font-heading text-primary" x-text="battleResult.myPower"></div>
+                                <div class="text-[9px] text-text-muted">我方戰力</div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-heading text-text-muted" x-text="'VS'"></div>
+                                <div class="text-[9px] text-text-muted" x-text="battleResult.totalRounds + ' 回合'"></div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-heading text-cta" x-text="battleResult.opponentPower"></div>
+                                <div class="text-[9px] text-text-muted">敵方戰力</div>
+                            </div>
+                        </div>
+
+                        <!-- 獎勵 -->
+                        <div class="pixel-card p-3 mb-4 space-y-1">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-text-muted">Rating</span>
+                                <span :class="battleResult.ratingChange >= 0 ? 'text-positive' : 'text-negative'"
+                                      x-text="(battleResult.ratingChange >= 0 ? '+' : '') + battleResult.ratingChange + ' → ' + battleResult.newRating"></span>
+                            </div>
+                            <template x-if="battleResult.expReward > 0">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-text-muted">EXP</span>
+                                    <span class="text-positive" x-text="'+' + battleResult.expReward"></span>
+                                </div>
+                            </template>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-text-muted">金幣</span>
+                                <span :class="battleResult.goldReward >= 0 ? 'text-positive' : 'text-negative'"
+                                      x-text="(battleResult.goldReward >= 0 ? '+' : '') + battleResult.goldReward + ' G'"></span>
+                            </div>
+                        </div>
+
+                        <!-- 戰鬥回合記錄 -->
+                        <div class="mb-4">
+                            <h4 class="font-heading text-[11px] text-text-muted mb-2">&#128220; 戰鬥記錄</h4>
+                            <div class="max-h-40 overflow-y-auto space-y-1 px-1">
+                                <template x-for="r in battleResult.rounds" :key="r.round">
+                                    <div class="text-[10px] pixel-card p-1.5 flex items-center gap-2">
+                                        <span class="text-text-muted w-10 shrink-0" x-text="'R' + r.round"></span>
+                                        <div class="flex-1 space-y-0.5">
+                                            <template x-if="r.attackerDmg !== undefined">
+                                                <div>
+                                                    <span class="text-primary">我方</span>
+                                                    <template x-if="r.attackerDodge"><span class="text-yellow-400"> MISS</span></template>
+                                                    <template x-if="!r.attackerDodge">
+                                                        <span>
+                                                            <span class="text-negative" x-text="' -' + r.attackerDmg"></span>
+                                                            <template x-if="r.attackerCrit"><span class="text-yellow-400"> CRIT!</span></template>
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <template x-if="r.defenderDmg !== undefined">
+                                                <div>
+                                                    <span class="text-cta">敵方</span>
+                                                    <template x-if="r.defenderDodge"><span class="text-yellow-400"> MISS</span></template>
+                                                    <template x-if="!r.defenderDodge">
+                                                        <span>
+                                                            <span class="text-negative" x-text="' -' + r.defenderDmg"></span>
+                                                            <template x-if="r.defenderCrit"><span class="text-yellow-400"> CRIT!</span></template>
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <div class="text-[9px] text-text-muted shrink-0">
+                                            <span class="text-primary" x-text="r.atkHp"></span>/<span class="text-cta" x-text="r.dfsHp"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <button @click="battleResult = null; refreshOpponents()"
+                                class="w-full pixel-btn pixel-btn-gold text-sm py-2 cursor-pointer">
+                            繼續挑戰
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- 分頁：排行榜 + 歷史 -->
+        <div class="pixel-card p-4">
+            <div class="flex items-center gap-2 mb-4">
+                <button @click="tab = 'leaderboard'"
+                        class="pixel-btn text-[11px] py-1.5 px-3 cursor-pointer"
+                        :class="tab === 'leaderboard' ? 'pixel-btn-gold' : 'pixel-btn-purple'">
+                    &#127942; 排行榜
+                </button>
+                <button @click="tab = 'history'; loadHistory()"
+                        class="pixel-btn text-[11px] py-1.5 px-3 cursor-pointer"
+                        :class="tab === 'history' ? 'pixel-btn-gold' : 'pixel-btn-purple'">
+                    &#128220; 戰績
+                </button>
+            </div>
+
+            <!-- 排行榜 -->
+            <div x-show="tab === 'leaderboard'">
+                <div class="space-y-1">
+                    <template x-for="(entry, idx) in leaderboard" :key="idx">
+                        <div class="pixel-card p-2 flex items-center gap-3">
+                            <div class="w-8 text-center font-heading text-sm"
+                                 :class="idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-amber-600' : 'text-text-muted'">
+                                <span x-text="idx < 3 ? ['&#127942;','&#129352;','&#129353;'][idx] : '#' + (idx+1)"></span>
+                            </div>
+                            <div class="shrink-0">
+                                <img x-show="entry.avatarUrl" :src="entry.avatarUrl" class="w-8 h-8 border border-border-main"
+                                     style="image-rendering: pixelated;" alt="">
+                                <div x-show="!entry.avatarUrl" class="w-8 h-8 bg-cta/20 flex items-center justify-center text-cta font-heading text-sm border border-border-main"
+                                     x-text="(entry.displayName || '?')[0]"></div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-text-heading" x-text="entry.displayName"></span>
+                                    <span class="text-[9px] text-cta" x-text="'Lv.' + entry.level"></span>
+                                    <span class="text-[9px] text-text-muted" x-text="classLabel(entry.characterClass)"></span>
+                                </div>
+                                <div class="text-[10px] text-text-muted">
+                                    <span x-text="entry.wins + 'W / ' + entry.losses + 'L'"></span>
+                                    <span class="ml-2" x-text="'&#9876; ' + entry.teamPower"></span>
+                                </div>
+                            </div>
+                            <div class="text-sm font-heading text-primary" x-text="'&#9733; ' + entry.pvpRating"></div>
+                        </div>
+                    </template>
+                </div>
+                <div x-show="leaderboard.length === 0" class="text-center py-6 text-text-muted text-sm">
+                    尚無排行榜資料
+                </div>
+            </div>
+
+            <!-- 戰績歷史 -->
+            <div x-show="tab === 'history'">
+                <div class="space-y-1">
+                    <template x-for="(h, idx) in history" :key="idx">
+                        <div class="pixel-card p-2 flex items-center gap-3">
+                            <div class="w-8 text-center text-lg">
+                                <span x-text="h.won ? '&#127942;' : '&#128148;'"></span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs" :class="h.won ? 'text-positive' : 'text-negative'"
+                                          x-text="h.won ? '勝利' : '失敗'"></span>
+                                    <span class="text-xs text-text-heading">vs</span>
+                                    <span class="text-xs text-text-heading" x-text="h.opponentName"></span>
+                                    <span class="text-[9px] text-text-muted" x-text="'Lv.' + h.opponentLevel"></span>
+                                </div>
+                                <div class="text-[10px] text-text-muted">
+                                    <span x-text="h.myPower + ' vs ' + h.opponentPower"></span>
+                                    <span class="ml-1" x-text="h.rounds + '回合'"></span>
+                                    <template x-if="h.ratingChange !== 0">
+                                        <span class="ml-1" :class="h.ratingChange > 0 ? 'text-positive' : 'text-negative'"
+                                              x-text="(h.ratingChange > 0 ? '+' : '') + h.ratingChange"></span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div x-show="history.length === 0" class="text-center py-6 text-text-muted text-sm">
+                    尚無戰績紀錄
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div x-show="toast.show" x-transition
+         class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pixel-card px-4 py-2 text-sm"
+         :class="toast.success ? 'text-positive' : 'text-negative'">
+        <span x-text="toast.message"></span>
+    </div>
+
+</main>
+
+<script>
+function pvpApp() {
+    return {
+        loading: true,
+        tab: 'leaderboard',
+        status: { pvpRating: 1000, wins: 0, losses: 0, stamina: 50, maxStamina: 50, staminaCost: 5, teamPower: 0 },
+        opponents: [],
+        leaderboard: [],
+        history: [],
+        battleResult: null,
+        battling: false,
+        searchingOpponents: false,
+        toast: { show: false, message: '', success: true },
+
+        get winRate() {
+            const total = this.status.wins + this.status.losses;
+            if (total === 0) return '0%';
+            return Math.round(this.status.wins / total * 100) + '%';
+        },
+
+        async init() {
+            await Promise.all([this.loadStatus(), this.refreshOpponents(), this.loadLeaderboard()]);
+            this.loading = false;
+        },
+
+        async loadStatus() {
+            try {
+                const resp = await fetch('/api/user/pvp/status');
+                if (resp.ok) this.status = await resp.json();
+            } catch (e) { /* silent */ }
+        },
+
+        async refreshOpponents() {
+            this.searchingOpponents = true;
+            try {
+                const resp = await fetch('/api/user/pvp/opponents');
+                if (resp.ok) this.opponents = await resp.json();
+            } catch (e) { /* silent */ }
+            this.searchingOpponents = false;
+        },
+
+        async loadLeaderboard() {
+            try {
+                const resp = await fetch('/api/user/pvp/leaderboard');
+                if (resp.ok) this.leaderboard = await resp.json();
+            } catch (e) { /* silent */ }
+        },
+
+        async loadHistory() {
+            try {
+                const resp = await fetch('/api/user/pvp/history');
+                if (resp.ok) this.history = await resp.json();
+            } catch (e) { /* silent */ }
+        },
+
+        async startBattle(opponentId) {
+            if (this.battling) return;
+            this.battling = true;
+            try {
+                const resp = await fetch('/api/user/pvp/battle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ opponentId })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    this.battleResult = result;
+                    await this.loadStatus();
+                    await this.loadLeaderboard();
+                } else {
+                    this.showToast(result.message, false);
+                }
+            } catch (e) {
+                this.showToast('對戰失敗', false);
+            }
+            this.battling = false;
+        },
+
+        showToast(msg, success) {
+            this.toast = { show: true, message: msg, success };
+            setTimeout(() => { this.toast.show = false; }, 2500);
+        },
+
+        classLabel(cls) {
+            const map = { WARRIOR: '戰士', MAGE: '法師', RANGER: '遊俠', ASSASSIN: '刺客' };
+            return map[cls] || cls;
+        },
+
+        diffClass(label) {
+            const map = { '強敵': 'text-negative', '略強': 'text-yellow-400', '均勢': 'text-text-muted', '略弱': 'text-positive', '弱敵': 'text-positive' };
+            return map[label] || 'text-text-muted';
+        }
+    };
+}
+</script>
+
+</body>
+</html>

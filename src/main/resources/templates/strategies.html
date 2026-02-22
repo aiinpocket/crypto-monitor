@@ -80,6 +80,40 @@
         </div>
     </div>
 
+    <!-- 策略排行榜 -->
+    <div x-show="!loading && leaderboard.length > 0" class="mb-6">
+        <h2 class="font-heading text-sm text-text-heading mb-3">&#127942; 策略排行榜 <span class="text-text-muted text-[10px] font-normal">— 近 1 月最佳策略</span></h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+            <template x-for="(entry, idx) in leaderboard" :key="entry.templateId">
+                <div class="pixel-card p-3 relative" :class="idx === 0 ? 'ring-1 ring-primary/50' : ''">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-lg" x-text="idx < 3 ? ['&#127942;','&#129352;','&#129353;'][idx] : '#' + (idx+1)"></span>
+                        <span class="text-xs font-heading text-text-heading truncate" x-text="entry.templateName"></span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1 text-[10px]">
+                        <div>
+                            <span class="text-text-muted">月報酬</span>
+                            <span class="ml-1 font-heading" :class="entry.monthReturn >= 0 ? 'text-positive' : 'text-negative'"
+                                  x-text="(entry.monthReturn * 100).toFixed(1) + '%'"></span>
+                        </div>
+                        <div>
+                            <span class="text-text-muted">Sharpe</span>
+                            <span class="ml-1 font-heading text-primary" x-text="entry.monthSharpe.toFixed(2)"></span>
+                        </div>
+                        <div>
+                            <span class="text-text-muted">勝率</span>
+                            <span class="ml-1 font-heading text-cta" x-text="(entry.monthWinRate * 100).toFixed(0) + '%'"></span>
+                        </div>
+                        <div>
+                            <span class="text-text-muted">回撤</span>
+                            <span class="ml-1 font-heading text-yellow-400" x-text="(Math.abs(entry.monthDrawdown) * 100).toFixed(1) + '%'"></span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
     <!-- 績效對比 -->
     <div class="mb-6">
         <div class="flex items-center justify-between mb-3">
@@ -206,6 +240,7 @@
             templates: [], showEditor: false, editing: {}, message: '', messageType: 'success',
             loading: true, computeStatus: '', activeStrategyId: null,
             perfSummaries: [], perfLoading: false, selectedMetric: 'totalReturn', lastComputedTime: '',
+            leaderboard: [],
             metricOptions: [
                 { key: 'totalReturn', label: '累計報酬' }, { key: 'annualizedReturn', label: '年化報酬' },
                 { key: 'winRate', label: '勝率' }, { key: 'maxDrawdown', label: '最大回撤' },
@@ -235,7 +270,25 @@
                 { key: 'rsiShortEntryMin', label: '做空 RSI 下限' }, { key: 'rsiShortEntryMax', label: '做空 RSI 上限' },
                 { key: 'rsiLongExitExtreme', label: '做多出場極端' }, { key: 'rsiShortExitExtreme', label: '做空出場極端' },
             ],
-            async init() { try { await Promise.all([this.loadTemplates(), this.loadActiveStrategy()]); await this.loadPerformance(); await this.checkActiveCompute(); } finally { this.loading = false; } },
+            async init() { try { await Promise.all([this.loadTemplates(), this.loadActiveStrategy(), this.loadLeaderboard()]); await this.loadPerformance(); await this.checkActiveCompute(); } finally { this.loading = false; } },
+            async loadLeaderboard() {
+                try {
+                    const r = await fetch('/api/user/strategies/leaderboard');
+                    if (!r.ok) return;
+                    const data = await r.json();
+                    this.leaderboard = data.map(s => {
+                        const m1 = s.periods?.find(p => p.periodKey === 'RECENT_1M');
+                        return {
+                            templateId: s.templateId,
+                            templateName: s.templateName,
+                            monthReturn: m1 ? Number(m1.annualizedReturn || 0) : 0,
+                            monthSharpe: m1 ? Number(m1.sharpeRatio || 0) : 0,
+                            monthWinRate: m1 ? Number(m1.winRate || 0) : 0,
+                            monthDrawdown: m1 ? Number(m1.maxDrawdown || 0) : 0
+                        };
+                    }).sort((a, b) => b.monthReturn - a.monthReturn);
+                } catch(e) {}
+            },
             async loadActiveStrategy() { try { const r = await fetch('/api/user/strategies/active'); if (r.ok) { const s = await r.json(); if (s.active) this.activeStrategyId = s.id; } } catch(e){} },
             async activateStrategy(id, name) { if (this.activeStrategyId === id) return; try { const r = await fetch('/api/user/strategies/' + id + '/activate', { method: 'POST' }); if (r.ok) { this.activeStrategyId = id; this.showMsg('已啟用策略: ' + name, 'success'); } else { const e = await r.json(); this.showMsg(e.error || '啟用失敗', 'error'); } } catch(e) { this.showMsg('網路錯誤', 'error'); } },
             async checkActiveCompute() {

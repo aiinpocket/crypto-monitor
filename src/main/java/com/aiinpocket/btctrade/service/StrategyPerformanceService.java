@@ -286,4 +286,40 @@ public class StrategyPerformanceService {
 
         return summaries;
     }
+
+    /**
+     * 策略績效排行榜（所有系統預設模板）。
+     * 依指定時段的年化報酬排序。
+     */
+    public List<StrategyPerformanceSummary> getStrategyLeaderboard() {
+        List<StrategyTemplate> templates = templateRepo.findAllBySystemDefaultTrue();
+        if (templates.isEmpty()) return List.of();
+
+        List<Long> templateIds = templates.stream().map(StrategyTemplate::getId).toList();
+        List<StrategyPerformance> allPerfs = perfRepo.findByStrategyTemplateIdInAndSymbol(
+                templateIds, BENCHMARK_SYMBOL);
+
+        Map<Long, List<StrategyPerformance>> perfMap = allPerfs.stream()
+                .collect(Collectors.groupingBy(p -> p.getStrategyTemplate().getId()));
+
+        List<StrategyPerformanceSummary> summaries = new ArrayList<>();
+        for (StrategyTemplate tmpl : templates) {
+            List<StrategyPerformance> perfs = perfMap.getOrDefault(tmpl.getId(), List.of());
+            List<PeriodMetric> periods = perfs.stream()
+                    .map(p -> new PeriodMetric(
+                            p.getPeriodKey(), p.getPeriodLabel(),
+                            p.getWinRate(), p.getTotalReturn(),
+                            p.getAnnualizedReturn(), p.getMaxDrawdown(),
+                            p.getSharpeRatio(), p.getTotalTrades(),
+                            p.getUnrealizedPnlPct(), p.getUnrealizedDirection()))
+                    .toList();
+            Instant lastComputed = perfs.stream()
+                    .map(StrategyPerformance::getComputedAt)
+                    .max(Instant::compareTo).orElse(null);
+            summaries.add(new StrategyPerformanceSummary(
+                    tmpl.getId(), tmpl.getName(), tmpl.getDescription(),
+                    tmpl.isSystemDefault(), periods, lastComputed));
+        }
+        return summaries;
+    }
 }

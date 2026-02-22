@@ -1,5 +1,5 @@
 app:
-  version: v1.8.2
+  version: v1.9.0
 
 spring:
   application:

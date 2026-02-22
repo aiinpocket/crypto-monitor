@@ -173,6 +173,12 @@ public class StrategyTemplateController {
                 "failed", progress.getFailed()));
     }
 
+    /** 策略績效排行榜（所有系統預設模板） */
+    @GetMapping("/leaderboard")
+    public List<StrategyPerformanceSummary> getLeaderboard() {
+        return performanceService.getStrategyLeaderboard();
+    }
+
     /** 啟用指定策略模板為活躍策略 */
     @PostMapping("/{id}/activate")
     public ResponseEntity<?> activateStrategy(

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-Hant">
+<head th:replace="~{fragments/head :: head('BtcTrade - 市場總覽')}"></head>
+<body class="bg-bg-dark text-text-main min-h-screen">
+
+<div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
+<div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
+
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-7xl mx-auto" x-data="marketApp()">
+
+    <!-- 頁面標題 -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="font-heading text-lg text-primary glow-gold">&#127760; 市場總覽</h1>
+            <p class="text-text-muted text-[13px] mt-1">追蹤幣對的 24 小時行情概覽</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-[10px] text-text-muted" x-text="lastUpdate ? '更新: ' + lastUpdate : ''"></span>
+            <button @click="refresh()" class="pixel-btn pixel-btn-purple text-[10px] py-1 px-2 cursor-pointer"
+                    :disabled="loading">
+                <span x-show="!loading">&#128260; 刷新</span>
+                <span x-show="loading" class="anim-flash">載入中...</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 市場摘要 -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div class="pixel-card p-3 text-center">
+            <div class="text-2xl font-heading text-primary" x-text="summary.totalSymbols">0</div>
+            <div class="text-[10px] text-text-muted">追蹤幣對</div>
+        </div>
+        <div class="pixel-card p-3 text-center">
+            <div class="text-2xl font-heading text-positive" x-text="summary.gainers">0</div>
+            <div class="text-[10px] text-text-muted">上漲</div>
+        </div>
+        <div class="pixel-card p-3 text-center">
+            <div class="text-2xl font-heading text-negative" x-text="summary.losers">0</div>
+            <div class="text-[10px] text-text-muted">下跌</div>
+        </div>
+        <div class="pixel-card p-3 text-center">
+            <div class="text-sm font-heading" :class="Number(summary.avgChangePercent) >= 0 ? 'text-positive' : 'text-negative'"
+                 x-text="fmtPct(summary.avgChangePercent)">0%</div>
+            <div class="text-[10px] text-text-muted">平均漲幅</div>
+        </div>
+    </div>
+
+    <!-- 排序選項 -->
+    <div class="flex items-center gap-2 mb-3 flex-wrap">
+        <button @click="sortBy = 'change'; sortDir = -1" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                :class="sortBy === 'change' ? 'pixel-btn-gold' : 'pixel-btn-purple'">漲幅</button>
+        <button @click="sortBy = 'volume'; sortDir = -1" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                :class="sortBy === 'volume' ? 'pixel-btn-gold' : 'pixel-btn-purple'">成交量</button>
+        <button @click="sortBy = 'price'; sortDir = -1" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                :class="sortBy === 'price' ? 'pixel-btn-gold' : 'pixel-btn-purple'">價格</button>
+        <button @click="sortBy = 'trades'; sortDir = -1" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                :class="sortBy === 'trades' ? 'pixel-btn-gold' : 'pixel-btn-purple'">交易數</button>
+    </div>
+
+    <!-- 行情列表 -->
+    <div class="pixel-card overflow-hidden">
+        <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full text-xs">
+                <thead>
+                    <tr class="border-b border-border-main">
+                        <th class="px-3 py-2 text-left text-text-muted">#</th>
+                        <th class="px-3 py-2 text-left text-text-muted">幣對</th>
+                        <th class="px-3 py-2 text-right text-text-muted">最新價</th>
+                        <th class="px-3 py-2 text-right text-text-muted">24h 漲跌</th>
+                        <th class="px-3 py-2 text-right text-text-muted hidden sm:table-cell">24h 高</th>
+                        <th class="px-3 py-2 text-right text-text-muted hidden sm:table-cell">24h 低</th>
+                        <th class="px-3 py-2 text-right text-text-muted">成交額(USDT)</th>
+                        <th class="px-3 py-2 text-right text-text-muted hidden md:table-cell">交易數</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="(t, idx) in sortedTickers" :key="t.symbol">
+                        <tr class="border-b border-border-main/30 hover:bg-white/[0.02] transition-colors">
+                            <td class="px-3 py-2 text-text-muted" x-text="idx + 1"></td>
+                            <td class="px-3 py-2">
+                                <a :href="'/?symbol=' + t.symbol" class="text-text-heading hover:text-primary font-heading text-xs" x-text="t.symbol"></a>
+                            </td>
+                            <td class="px-3 py-2 text-right font-heading text-text-heading" x-text="fmtPrice(t.lastPrice)"></td>
+                            <td class="px-3 py-2 text-right font-heading"
+                                :class="Number(t.priceChangePercent) >= 0 ? 'text-positive' : 'text-negative'">
+                                <span x-text="fmtPct(t.priceChangePercent)"></span>
+                            </td>
+                            <td class="px-3 py-2 text-right text-text-muted hidden sm:table-cell" x-text="fmtPrice(t.highPrice)"></td>
+                            <td class="px-3 py-2 text-right text-text-muted hidden sm:table-cell" x-text="fmtPrice(t.lowPrice)"></td>
+                            <td class="px-3 py-2 text-right text-text-muted" x-text="fmtVol(t.quoteVolume)"></td>
+                            <td class="px-3 py-2 text-right text-text-muted hidden md:table-cell" x-text="fmtNum(t.tradeCount)"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        <div x-show="tickers.length === 0 && !loading" class="text-center py-8 text-text-muted text-sm">
+            沒有追蹤中的幣對
+        </div>
+    </div>
+
+</main>
+
+<script>
+function marketApp() {
+    return {
+        loading: true,
+        tickers: [],
+        summary: { totalSymbols: 0, gainers: 0, losers: 0, totalQuoteVolume: 0, avgChangePercent: 0 },
+        sortBy: 'change',
+        sortDir: -1,
+        lastUpdate: '',
+        autoRefreshTimer: null,
+
+        get sortedTickers() {
+            return [...this.tickers].sort((a, b) => {
+                let va, vb;
+                if (this.sortBy === 'change') { va = Number(a.priceChangePercent); vb = Number(b.priceChangePercent); }
+                else if (this.sortBy === 'volume') { va = Number(a.quoteVolume); vb = Number(b.quoteVolume); }
+                else if (this.sortBy === 'price') { va = Number(a.lastPrice); vb = Number(b.lastPrice); }
+                else if (this.sortBy === 'trades') { va = a.tradeCount; vb = b.tradeCount; }
+                else { va = 0; vb = 0; }
+                return (vb - va) * this.sortDir;
+            });
+        },
+
+        async init() {
+            await Promise.all([this.loadTickers(), this.loadSummary()]);
+            this.loading = false;
+            // 每 60 秒自動刷新
+            this.autoRefreshTimer = setInterval(() => this.refresh(), 60000);
+        },
+
+        destroy() {
+            if (this.autoRefreshTimer) clearInterval(this.autoRefreshTimer);
+        },
+
+        async loadTickers() {
+            try {
+                const resp = await fetch('/api/market/overview');
+                if (resp.ok) {
+                    this.tickers = await resp.json();
+                    this.lastUpdate = new Date().toLocaleTimeString('zh-TW');
+                }
+            } catch (e) { console.error('Failed to load market data', e); }
+        },
+
+        async loadSummary() {
+            try {
+                const resp = await fetch('/api/market/summary');
+                if (resp.ok) this.summary = await resp.json();
+            } catch (e) { /* silent */ }
+        },
+
+        async refresh() {
+            await Promise.all([this.loadTickers(), this.loadSummary()]);
+        },
+
+        fmtPrice(v) {
+            const n = Number(v);
+            if (isNaN(n)) return '-';
+            if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (n >= 1) return n.toFixed(4);
+            return n.toPrecision(4);
+        },
+
+        fmtPct(v) {
+            const n = Number(v);
+            if (isNaN(n)) return '0%';
+            return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+        },
+
+        fmtVol(v) {
+            const n = Number(v);
+            if (isNaN(n)) return '-';
+            if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+            if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+            return n.toFixed(0);
+        },
+
+        fmtNum(v) {
+            if (!v) return '-';
+            return Number(v).toLocaleString();
+        }
+    };
+}
+</script>
+
+</body>
+</html>

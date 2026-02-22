@@ -106,6 +106,23 @@ public class AppUser {
     @Builder.Default
     private Integer maxPartySize = 1;
 
+    // ===== PVP 競技場欄位 =====
+
+    /** PVP 積分（Elo-like，預設 1000） */
+    @Column(name = "pvp_rating", nullable = false, columnDefinition = "integer default 1000")
+    @Builder.Default
+    private Integer pvpRating = 1000;
+
+    /** PVP 勝場數 */
+    @Column(name = "pvp_wins", nullable = false, columnDefinition = "integer default 0")
+    @Builder.Default
+    private Integer pvpWins = 0;
+
+    /** PVP 敗場數 */
+    @Column(name = "pvp_losses", nullable = false, columnDefinition = "integer default 0")
+    @Builder.Default
+    private Integer pvpLosses = 0;
+
     // ===== 體力系統欄位 =====
 
     /** 當前體力值 */
