@@ -45,6 +45,65 @@
         </div>
     </div>
 
+    <!-- Fear & Greed 情緒指標 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <!-- 當前情緒儀表 -->
+        <div class="pixel-card p-4">
+            <h2 class="font-heading text-xs text-text-heading mb-3">&#128165; Fear &amp; Greed Index</h2>
+            <div class="flex items-center gap-4">
+                <!-- 圓形儀表 -->
+                <div class="relative w-28 h-28 flex-shrink-0">
+                    <svg viewBox="0 0 120 120" class="w-full h-full">
+                        <!-- 背景弧 -->
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="#1e293b" stroke-width="10"
+                                stroke-dasharray="235.6 78.5" stroke-dashoffset="-39.3" stroke-linecap="round"/>
+                        <!-- 彩色弧 -->
+                        <circle cx="60" cy="60" r="50" fill="none"
+                                :stroke="sentimentColor(sentiment.currentValue)"
+                                stroke-width="10"
+                                :stroke-dasharray="(sentiment.currentValue / 100 * 235.6) + ' ' + (314.16 - sentiment.currentValue / 100 * 235.6)"
+                                stroke-dashoffset="-39.3" stroke-linecap="round"
+                                class="transition-all duration-1000"/>
+                        <!-- 數值文字 -->
+                        <text x="60" y="55" text-anchor="middle" class="font-heading" font-size="22"
+                              :fill="sentimentColor(sentiment.currentValue)"
+                              x-text="sentiment.currentValue"></text>
+                        <text x="60" y="72" text-anchor="middle" font-size="8" fill="#94a3b8"
+                              x-text="sentimentLabel(sentiment.classification)"></text>
+                    </svg>
+                </div>
+                <!-- 說明 -->
+                <div class="flex-1">
+                    <div class="text-sm font-heading mb-2"
+                         :class="sentimentTextClass(sentiment.currentValue)"
+                         x-text="sentimentLabel(sentiment.classification)">--</div>
+                    <div class="text-[11px] text-text-muted leading-relaxed">
+                        0 = 極度恐懼（買入機會）<br>
+                        100 = 極度貪婪（賣出警示）
+                    </div>
+                    <!-- 情緒色階 -->
+                    <div class="mt-2 h-2 rounded-full overflow-hidden flex">
+                        <div class="flex-1 bg-red-500/80"></div>
+                        <div class="flex-1 bg-orange-500/80"></div>
+                        <div class="flex-1 bg-yellow-500/80"></div>
+                        <div class="flex-1 bg-green-400/80"></div>
+                        <div class="flex-1 bg-green-500/80"></div>
+                    </div>
+                    <div class="flex justify-between text-[8px] text-text-muted mt-0.5">
+                        <span>極度恐懼</span><span>恐懼</span><span>中性</span><span>貪婪</span><span>極度貪婪</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 30 天情緒走勢 -->
+        <div class="pixel-card p-4">
+            <h2 class="font-heading text-xs text-text-heading mb-3">&#128200; 30 天情緒走勢</h2>
+            <div class="h-[120px]">
+                <canvas id="sentimentChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- 排序選項 -->
     <div class="flex items-center gap-2 mb-3 flex-wrap">
         <button @click="sortBy = 'change'; sortDir = -1" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
@@ -101,16 +160,19 @@
 
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 function marketApp() {
     return {
         loading: true,
         tickers: [],
         summary: { totalSymbols: 0, gainers: 0, losers: 0, totalQuoteVolume: 0, avgChangePercent: 0 },
+        sentiment: { currentValue: 50, classification: 'Neutral', history: [] },
         sortBy: 'change',
         sortDir: -1,
         lastUpdate: '',
         autoRefreshTimer: null,
+        sentimentChart: null,
 
         get sortedTickers() {
             return [...this.tickers].sort((a, b) => {
@@ -125,14 +187,14 @@ function marketApp() {
         },
 
         async init() {
-            await Promise.all([this.loadTickers(), this.loadSummary()]);
+            await Promise.all([this.loadTickers(), this.loadSummary(), this.loadSentiment()]);
             this.loading = false;
-            // 每 60 秒自動刷新
             this.autoRefreshTimer = setInterval(() => this.refresh(), 60000);
         },
 
         destroy() {
             if (this.autoRefreshTimer) clearInterval(this.autoRefreshTimer);
+            if (this.sentimentChart) this.sentimentChart.destroy();
         },
 
         async loadTickers() {
@@ -150,6 +212,105 @@ function marketApp() {
                 const resp = await fetch('/api/market/summary');
                 if (resp.ok) this.summary = await resp.json();
             } catch (e) { /* silent */ }
+        },
+
+        async loadSentiment() {
+            try {
+                const resp = await fetch('/api/market/sentiment');
+                if (resp.ok) {
+                    this.sentiment = await resp.json();
+                    this.$nextTick(() => this.renderSentimentChart());
+                }
+            } catch (e) { /* silent */ }
+        },
+
+        renderSentimentChart() {
+            const ctx = document.getElementById('sentimentChart');
+            if (!ctx || !this.sentiment.history || this.sentiment.history.length === 0) return;
+            if (this.sentimentChart) this.sentimentChart.destroy();
+
+            const data = [...this.sentiment.history].reverse();
+            const labels = data.map(p => {
+                const d = new Date(p.timestamp);
+                return (d.getMonth()+1) + '/' + d.getDate();
+            });
+            const values = data.map(p => p.value);
+            const colors = values.map(v => this.sentimentColor(v));
+
+            this.sentimentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        borderColor: '#8B5CF6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 2,
+                        pointBackgroundColor: colors,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const v = ctx.parsed.y;
+                                    return v + ' - ' + this.sentimentLabel(this.classifyValue(v));
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, maxTicksLimit: 8 },
+                            grid: { color: 'rgba(255,255,255,0.03)' }
+                        },
+                        y: {
+                            min: 0, max: 100,
+                            ticks: { color: '#64748b', font: { size: 9 }, stepSize: 25 },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    }
+                }
+            });
+        },
+
+        sentimentColor(v) {
+            if (v <= 20) return '#ef4444';
+            if (v <= 40) return '#f97316';
+            if (v <= 60) return '#eab308';
+            if (v <= 80) return '#4ade80';
+            return '#22c55e';
+        },
+
+        sentimentTextClass(v) {
+            if (v <= 20) return 'text-red-500';
+            if (v <= 40) return 'text-orange-400';
+            if (v <= 60) return 'text-yellow-400';
+            if (v <= 80) return 'text-green-400';
+            return 'text-green-500';
+        },
+
+        sentimentLabel(cls) {
+            const map = {
+                'Extreme Fear': '極度恐懼', 'Fear': '恐懼', 'Neutral': '中性',
+                'Greed': '貪婪', 'Extreme Greed': '極度貪婪'
+            };
+            return map[cls] || cls;
+        },
+
+        classifyValue(v) {
+            if (v <= 20) return 'Extreme Fear';
+            if (v <= 40) return 'Fear';
+            if (v <= 60) return 'Neutral';
+            if (v <= 80) return 'Greed';
+            return 'Extreme Greed';
         },
 
         async refresh() {

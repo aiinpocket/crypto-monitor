@@ -2,8 +2,16 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title th:text="${title}">BtcTrade</title>
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#e2b714">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BtcTrade">
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+    <meta name="mobile-web-app-capable" content="yes">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -1260,6 +1268,14 @@
             container.appendChild(el);
             setTimeout(() => { el.classList.add('toast-exit'); setTimeout(() => el.remove(), 300); }, 3000);
         };
+    </script>
+    <!-- PWA Service Worker 註冊 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').catch(function() { /* silent */ });
+            });
+        }
     </script>
 </head>
 </html>

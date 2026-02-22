@@ -1,0 +1,25 @@
+{
+  "name": "BtcTrade - 加密貨幣策略平台",
+  "short_name": "BtcTrade",
+  "description": "加密貨幣交易策略模擬與回測平台",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#e2b714",
+  "orientation": "any",
+  "categories": ["finance", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

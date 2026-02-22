@@ -45,6 +45,117 @@
         </div>
     </template>
 
+    <!-- 新手教學引導 -->
+    <div x-data="tutorialGuide()" x-cloak>
+        <!-- 教學彈窗 -->
+        <template x-if="showTutorial">
+            <div class="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                <div class="pixel-card p-5 max-w-md mx-4 relative">
+                    <button @click="skipTutorial()" class="absolute top-2 right-3 text-text-muted hover:text-negative text-sm cursor-pointer bg-transparent border-none">&#10005;</button>
+                    <div class="flex items-center justify-center gap-1 mb-4">
+                        <template x-for="(s, i) in steps" :key="i">
+                            <div class="w-2 h-2 rounded-full transition-all"
+                                 :class="i === currentStep ? 'bg-primary scale-125' : i < currentStep ? 'bg-primary/50' : 'bg-border-main'"></div>
+                        </template>
+                    </div>
+                    <div class="text-center text-3xl mb-3" x-text="steps[currentStep]?.icon"></div>
+                    <h2 class="font-heading text-sm text-primary text-center mb-2" x-text="steps[currentStep]?.title"></h2>
+                    <p class="text-text-muted text-[13px] text-center leading-relaxed mb-4" x-text="steps[currentStep]?.desc"></p>
+                    <div class="bg-bg-dark/50 pixel-border-dark p-3 mb-4" x-show="steps[currentStep]?.tip">
+                        <div class="text-[11px] text-primary">&#128161; 小提示</div>
+                        <div class="text-[11px] text-text-muted mt-1" x-text="steps[currentStep]?.tip"></div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button @click="prevStep()" x-show="currentStep > 0"
+                                class="pixel-btn pixel-btn-purple text-[11px] py-1.5 px-3 cursor-pointer">&#9664; 上一步</button>
+                        <div x-show="currentStep === 0"></div>
+                        <div class="flex items-center gap-2">
+                            <button @click="skipTutorial()" class="text-[11px] text-text-muted hover:text-text-heading cursor-pointer bg-transparent border-none">跳過教學</button>
+                            <button @click="nextStep()"
+                                    class="pixel-btn pixel-btn-gold text-[11px] py-1.5 px-3 cursor-pointer"
+                                    x-text="currentStep < steps.length - 1 ? '下一步 &#9654;' : '&#10003; 開始冒險！'"></button>
+                        </div>
+                    </div>
+                    <div class="text-center text-[10px] text-text-muted mt-3" x-text="(currentStep + 1) + ' / ' + steps.length"></div>
+                </div>
+            </div>
+        </template>
+        <!-- 頁面提示氣泡 -->
+        <template x-if="showPageTip">
+            <div class="fixed bottom-20 right-4 z-[180] pixel-card p-3 max-w-xs anim-slide-in">
+                <div class="flex items-start gap-2">
+                    <div class="text-lg flex-shrink-0" x-text="pageTip.icon"></div>
+                    <div class="flex-1">
+                        <div class="text-primary text-xs font-heading" x-text="pageTip.title"></div>
+                        <div class="text-text-muted text-[11px] mt-1 leading-relaxed" x-text="pageTip.desc"></div>
+                    </div>
+                    <button @click="dismissPageTip()" class="text-text-muted hover:text-negative text-xs cursor-pointer bg-transparent border-none flex-shrink-0">&#10005;</button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <script>
+        function tutorialGuide() {
+            const STORAGE_KEY = 'btctrade_tutorial';
+            const PAGE_TIPS_KEY = 'btctrade_page_tips';
+            return {
+                showTutorial: false, currentStep: 0, showPageTip: false,
+                pageTip: { icon: '', title: '', desc: '' },
+                steps: [
+                    { icon: '\u2694\uFE0F', title: '歡迎來到 BtcTrade!', desc: '這是一個加密貨幣交易策略模擬平台。你將扮演一位交易冒險家，透過回測和策略優化在市場中競爭！', tip: '所有交易都是模擬的，不涉及真實資金。' },
+                    { icon: '\uD83D\uDCCA', title: '主控台', desc: '主控台顯示即時價格、交易訊號和你的持倉狀態。左側觀察清單可以切換不同幣對。', tip: '點擊觀察清單中的幣對可切換顯示的 K 線圖。' },
+                    { icon: '\uD83D\uDCD6', title: '策略管理', desc: '在「策略」頁面可以查看、克隆和自訂交易策略。每個策略都有不同的風險/報酬特性。', tip: '系統預設的四職業策略已經經過回測驗證，可以直接使用。' },
+                    { icon: '\u26A1', title: '副本挑戰（回測）', desc: '在「回測」頁面選擇策略和幣對，用歷史資料模擬交易。查看勝率、報酬率和最大回撤。', tip: '回測會消耗運算資源，通常需要 1~3 分鐘完成。' },
+                    { icon: '\u2694\uFE0F', title: '戰鬥與 PVP', desc: '回測過程中會觸發戰鬥事件，擊敗怪物獲得裝備和金幣。你也可以在 PVP 競技場挑戰其他玩家！', tip: '裝備會提升你的戰鬥數值，記得在背包裡裝備最強的武器和盔甲。' },
+                    { icon: '\uD83D\uDD14', title: '通知設定', desc: '在「設定」頁面可以配置 Discord、Gmail 或 Telegram 通知，當策略產生交易訊號時會即時推送。', tip: '建議至少設定一個通知管道，才不會錯過重要訊號。' },
+                    { icon: '\uD83C\uDF1F', title: '開始你的冒險！', desc: '現在你已經了解基本操作。去探索各個功能，建立你的交易策略，在市場中成為傳奇！', tip: '每日登入可領取獎勵，完成成就也能獲得 EXP。' }
+                ],
+                pageTips: {
+                    '/': { icon: '\uD83C\uDFE0', title: '主控台提示', desc: '點擊左側觀察清單的幣對可切換 K 線圖。即時交易訊號會顯示在右下方。' },
+                    '/strategies': { icon: '\uD83D\uDCD6', title: '策略提示', desc: '點擊「克隆」可複製系統策略並自訂參數。修改後記得回測驗證。' },
+                    '/backtest': { icon: '\u26A1', title: '回測提示', desc: '選擇策略和幣對後點擊「開始挑戰」。回測完成後可以查看權益曲線和交易明細。' },
+                    '/battle': { icon: '\u2694\uFE0F', title: '戰鬥提示', desc: '戰鬥在回測過程中自動觸發。擊敗怪物可獲得裝備、金幣和經驗值。' },
+                    '/inventory': { icon: '\uD83C\uDF92', title: '背包提示', desc: '在這裡管理你的裝備。點擊「裝備」可以穿戴武器或盔甲，提升戰鬥力。' },
+                    '/market': { icon: '\uD83D\uDCC8', title: '市場提示', desc: '這裡顯示所有追蹤幣對的 24 小時行情和市場情緒指標。' },
+                    '/pvp': { icon: '\u2694\uFE0F', title: 'PVP 提示', desc: '挑戰其他玩家！每場戰鬥消耗 5 點鬥志，每 3 分鐘恢復 1 點。' },
+                    '/settings': { icon: '\u2699\uFE0F', title: '設定提示', desc: '在這裡配置 Discord / Gmail / Telegram 通知。設定後點「測試」確認是否正常。' }
+                },
+                init() {
+                    const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+                    if (!state.completed) { this.showTutorial = true; } else { this.checkPageTip(); }
+                },
+                nextStep() { if (this.currentStep < this.steps.length - 1) this.currentStep++; else this.completeTutorial(); },
+                prevStep() { if (this.currentStep > 0) this.currentStep--; },
+                skipTutorial() { this.completeTutorial(); },
+                completeTutorial() {
+                    this.showTutorial = false;
+                    const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+                    state.completed = true;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                    this.$nextTick(() => this.checkPageTip());
+                },
+                checkPageTip() {
+                    const path = window.location.pathname;
+                    const tip = this.pageTips[path];
+                    if (!tip) return;
+                    const seen = JSON.parse(localStorage.getItem(PAGE_TIPS_KEY) || '{}');
+                    if (seen[path]) return;
+                    this.pageTip = tip;
+                    this.showPageTip = true;
+                    setTimeout(() => { this.showPageTip = false; }, 8000);
+                },
+                dismissPageTip() {
+                    this.showPageTip = false;
+                    const path = window.location.pathname;
+                    const seen = JSON.parse(localStorage.getItem(PAGE_TIPS_KEY) || '{}');
+                    seen[path] = true;
+                    localStorage.setItem(PAGE_TIPS_KEY, JSON.stringify(seen));
+                }
+            };
+        }
+    </script>
+
     <script>
         function pixelEventOverlay() {
             return {

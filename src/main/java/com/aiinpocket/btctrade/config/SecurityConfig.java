@@ -26,7 +26,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 登入頁面、錯誤頁、靜態資源不需認證
                         .requestMatchers("/login", "/error", "/favicon.ico").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/icons/**").permitAll()
+                        .requestMatchers("/manifest.json", "/sw.js").permitAll()
                         // WebSocket 端點放行（由 UserWebSocketInterceptor 自行處理認證）
                         .requestMatchers("/ws/**").permitAll()
                         // Actuator 只放行健康檢查端點（K8s liveness/readiness probe 用）

@@ -4,14 +4,20 @@ import com.aiinpocket.btctrade.security.AppUserPrincipal;
 import com.aiinpocket.btctrade.service.MarketOverviewService;
 import com.aiinpocket.btctrade.service.MarketOverviewService.MarketSummary;
 import com.aiinpocket.btctrade.service.MarketOverviewService.MarketTicker;
+import com.aiinpocket.btctrade.service.HistoricalEventService;
+import com.aiinpocket.btctrade.service.HistoricalEventService.CryptoEvent;
+import com.aiinpocket.btctrade.service.MarketSentimentService;
+import com.aiinpocket.btctrade.service.MarketSentimentService.SentimentData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +30,8 @@ import java.util.Map;
 public class MarketController {
 
     private final MarketOverviewService marketService;
+    private final MarketSentimentService sentimentService;
+    private final HistoricalEventService historicalEventService;
 
     /** 市場總覽頁面 */
     @GetMapping("/market")
@@ -52,5 +60,26 @@ public class MarketController {
     public ResponseEntity<Map<String, Object>> refresh() {
         List<MarketTicker> tickers = marketService.refreshMarketData();
         return ResponseEntity.ok(Map.of("count", tickers.size(), "message", "已刷新"));
+    }
+
+    /** Fear & Greed Index API */
+    @GetMapping("/api/market/sentiment")
+    @ResponseBody
+    public ResponseEntity<SentimentData> getSentiment() {
+        return ResponseEntity.ok(sentimentService.getSentiment());
+    }
+
+    /** 歷史事件 API（供回測圖表標註用） */
+    @GetMapping("/api/market/events")
+    @ResponseBody
+    public ResponseEntity<List<CryptoEvent>> getHistoricalEvents(
+            @RequestParam(required = false) String start,
+            @RequestParam(required = false) String end) {
+        if (start != null && end != null) {
+            Instant s = Instant.parse(start);
+            Instant e = Instant.parse(end);
+            return ResponseEntity.ok(historicalEventService.getEventsInRange(s, e));
+        }
+        return ResponseEntity.ok(historicalEventService.getAllEvents());
     }
 }

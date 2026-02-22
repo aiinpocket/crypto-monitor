@@ -3,6 +3,7 @@
 <head th:replace="~{fragments/head :: head('BtcTrade - 副本挑戰')}"></head>
 <body class="bg-bg-dark text-text-main min-h-screen">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
 
 <div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
 <div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
@@ -454,8 +455,25 @@
 
         <!-- 權益曲線 -->
         <div class="pixel-card p-4 mb-4">
-            <h3 class="text-sm text-text-heading mb-3">&#128200; 權益曲線</h3>
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm text-text-heading">&#128200; 權益曲線</h3>
+                <div class="flex items-center gap-2">
+                    <button @click="showEvents = !showEvents; renderChart()"
+                            class="pixel-btn text-[9px] py-0.5 px-2 cursor-pointer"
+                            :class="showEvents ? 'pixel-btn-gold' : 'pixel-btn-purple'">
+                        <span x-text="showEvents ? '&#128205; 事件 ON' : '&#128205; 事件 OFF'"></span>
+                    </button>
+                </div>
+            </div>
             <div class="h-64"><canvas id="equityChart"></canvas></div>
+            <!-- 事件圖例 -->
+            <div x-show="showEvents && historicalEvents.length > 0" class="flex flex-wrap gap-3 mt-2 text-[9px] text-text-muted">
+                <span><span class="inline-block w-2 h-2 bg-yellow-500 mr-1"></span>減半</span>
+                <span><span class="inline-block w-2 h-2 bg-green-500 mr-1"></span>利多</span>
+                <span><span class="inline-block w-2 h-2 bg-red-500 mr-1"></span>利空</span>
+                <span><span class="inline-block w-2 h-2 bg-blue-500 mr-1"></span>監管</span>
+                <span class="ml-2" x-text="'(' + historicalEvents.length + ' 個事件)'"></span>
+            </div>
         </div>
 
         <!-- 交易明細 -->
@@ -558,7 +576,8 @@
         return {
             form: { templateId: '', symbol: watchlistSymbolList[0] || 'BTCUSDT', years: 5 },
             allTemplates: [], running: false, result: null, history: [],
-            equityChart: null, message: '', messageType: 'success', pollPct: 0,
+            equityChart: null, historicalEvents: [], showEvents: true,
+            message: '', messageType: 'success', pollPct: 0,
             tradePage: 1, tradesPerPage: 50,
             charClass: _charClass,
             partyMembers: [],
@@ -1015,7 +1034,7 @@
 
             sleep(ms) { return new Promise(r => setTimeout(r, ms)); },
 
-            renderChart() {
+            async renderChart() {
                 const canvas = document.getElementById('equityChart');
                 if (!canvas || !this.result?.equityCurve) return;
                 if (this.equityChart) this.equityChart.destroy();
@@ -1023,10 +1042,58 @@
                 const step = Math.max(1, Math.floor(curve.length / 500));
                 const sampled = curve.filter((_, i) => i % step === 0);
                 const initEquity = sampled.length > 0 ? parseFloat(sampled[0].equity) : 1;
+                const labels = sampled.map(p => new Date(p.time).toLocaleDateString());
+
+                // 載入歷史事件
+                let annotations = {};
+                if (this.showEvents && this.result.startDate && this.result.endDate) {
+                    try {
+                        const resp = await fetch('/api/market/events?start=' + this.result.startDate + '&end=' + this.result.endDate);
+                        if (resp.ok) {
+                            this.historicalEvents = await resp.json();
+                            const catColors = { halving: '#F59E0B', bullish: '#22c55e', bearish: '#ef4444', regulation: '#3b82f6' };
+                            this.historicalEvents.forEach((evt, i) => {
+                                const evtDate = new Date(evt.timestamp).toLocaleDateString();
+                                const idx = labels.indexOf(evtDate);
+                                if (idx === -1) {
+                                    // 找最接近的標籤
+                                    const evtMs = new Date(evt.timestamp).getTime();
+                                    let closestIdx = 0, closestDiff = Infinity;
+                                    for (let j = 0; j < sampled.length; j++) {
+                                        const diff = Math.abs(new Date(sampled[j].time).getTime() - evtMs);
+                                        if (diff < closestDiff) { closestDiff = diff; closestIdx = j; }
+                                    }
+                                    if (closestDiff < 7 * 86400000) {
+                                        annotations['event' + i] = {
+                                            type: 'line', scaleID: 'x', value: labels[closestIdx],
+                                            borderColor: catColors[evt.category] || '#94a3b8',
+                                            borderWidth: 1, borderDash: [4, 2],
+                                            label: { display: true, content: evt.title,
+                                                font: { size: 8, family: '"Exo 2"' },
+                                                backgroundColor: 'rgba(15,23,42,0.85)', color: catColors[evt.category] || '#94a3b8',
+                                                position: i % 2 === 0 ? 'start' : 'end', rotation: -90, padding: 2 }
+                                        };
+                                    }
+                                } else {
+                                    annotations['event' + i] = {
+                                        type: 'line', scaleID: 'x', value: evtDate,
+                                        borderColor: catColors[evt.category] || '#94a3b8',
+                                        borderWidth: 1, borderDash: [4, 2],
+                                        label: { display: true, content: evt.title,
+                                            font: { size: 8, family: '"Exo 2"' },
+                                            backgroundColor: 'rgba(15,23,42,0.85)', color: catColors[evt.category] || '#94a3b8',
+                                            position: i % 2 === 0 ? 'start' : 'end', rotation: -90, padding: 2 }
+                                    };
+                                }
+                            });
+                        }
+                    } catch(e) { /* 靜默失敗 */ }
+                }
+
                 this.equityChart = new Chart(canvas.getContext('2d'), {
                     type: 'line',
                     data: {
-                        labels: sampled.map(p => new Date(p.time).toLocaleDateString()),
+                        labels,
                         datasets: [{
                             label: '報酬率',
                             data: sampled.map(p => ((parseFloat(p.equity) - initEquity) / initEquity * 100)),
@@ -1044,7 +1111,8 @@
                                 titleFont: { family: '"Exo 2"', size: 12 },
                                 bodyFont: { family: '"Exo 2"', size: 11 },
                                 callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + '%' }
-                            }
+                            },
+                            annotation: { annotations }
                         },
                         scales: {
                             x: { display: true, ticks: { color: '#7a7a9a', maxTicksLimit: 6, font: { family: '"Exo 2"', size: 10 } }, grid: { color: 'rgba(42,42,74,0.3)' } },
