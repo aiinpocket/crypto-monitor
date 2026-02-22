@@ -24,7 +24,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: api
-          image: ghcr.io/aiinpocket/crypto-monitor:ac62d18
+          image: ghcr.io/aiinpocket/crypto-monitor:f1596fc
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
