@@ -240,11 +240,11 @@ public class GamificationService {
     public List<LeaderboardEntry> getLeaderboard() {
         return userRepo.findTop10ByOrderByLevelDescExperienceDesc().stream()
                 .map(u -> new LeaderboardEntry(
-                        u.getDisplayName(),
+                        u.getPublicDisplayName(),
                         u.getLevel(),
                         u.getExperience(),
                         u.getCharacterClass(),
-                        u.getAvatarUrl()
+                        u.getPublicAvatarUrl()
                 ))
                 .toList();
     }

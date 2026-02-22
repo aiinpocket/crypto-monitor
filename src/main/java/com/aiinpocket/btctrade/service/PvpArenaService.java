@@ -83,7 +83,7 @@ public class PvpArenaService {
                 .map(c -> {
                     int opPower = calculateTeamPower(c.getId());
                     return new OpponentInfo(
-                            c.getId(), c.getDisplayName(), c.getAvatarUrl(),
+                            c.getId(), c.getPublicDisplayName(), c.getPublicAvatarUrl(),
                             c.getLevel(), c.getCharacterClass(),
                             c.getPvpRating(), opPower,
                             powerDiffLabel(myPower, opPower)
@@ -192,7 +192,7 @@ public class PvpArenaService {
                 combat.rounds, combat.rounds.size(),
                 expReward, goldReward, ratingChanges[0],
                 attacker.getPvpRating(),
-                attacker.getDisplayName(), defender.getDisplayName(),
+                attacker.getDisplayName(), defender.getPublicDisplayName(),
                 attacker.getCharacterClass(), defender.getCharacterClass(),
                 attacker.getLevel(), defender.getLevel()
         );
@@ -204,7 +204,7 @@ public class PvpArenaService {
     public List<PvpLeaderboardEntry> getLeaderboard() {
         return userRepo.findTop20ByPvpRating().stream()
                 .map(u -> new PvpLeaderboardEntry(
-                        u.getDisplayName(), u.getAvatarUrl(),
+                        u.getPublicDisplayName(), u.getPublicAvatarUrl(),
                         u.getLevel(), u.getCharacterClass(),
                         u.getPvpRating(), u.getPvpWins(), u.getPvpLosses(),
                         calculateTeamPower(u.getId())
@@ -223,7 +223,7 @@ public class PvpArenaService {
                     AppUser opponent = isAttacker ? r.getDefender() : r.getAttacker();
                     int ratingChange = isAttacker ? r.getAttackerRatingChange() : r.getDefenderRatingChange();
                     return new PvpHistoryEntry(
-                            opponent.getDisplayName(), opponent.getLevel(),
+                            opponent.getPublicDisplayName(), opponent.getLevel(),
                             opponent.getCharacterClass(), won,
                             isAttacker ? r.getAttackerPower() : r.getDefenderPower(),
                             isAttacker ? r.getDefenderPower() : r.getAttackerPower(),

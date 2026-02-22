@@ -71,10 +71,10 @@
             </div>
             <!-- 用戶名 -->
             <div class="text-sm text-text-main" th:text="${user.displayName}">User</div>
-            <!-- 頭像 -->
-            <img th:if="${user.avatarUrl != null}" th:src="${user.avatarUrl}"
+            <!-- 頭像（優先自訂頭像） -->
+            <img th:if="${user.effectiveAvatarUrl != null}" th:src="${user.effectiveAvatarUrl}"
                  class="w-7 h-7 border-2 border-primary" style="image-rendering: pixelated;" alt="avatar">
-            <div th:unless="${user.avatarUrl != null}"
+            <div th:unless="${user.effectiveAvatarUrl != null}"
                  class="w-7 h-7 bg-primary flex items-center justify-center text-pixel-dark text-sm font-heading border-2 border-primary-hover"
                  th:text="${user.displayName != null ? user.displayName.substring(0,1) : '?'}">U</div>
             <form action="/logout" method="POST" class="inline">

@@ -139,6 +139,53 @@ public class AppUser {
     @Column(name = "last_stamina_regen_at")
     private Instant lastStaminaRegenAt;
 
+    // ===== 隱私設定欄位 =====
+
+    /** 是否在排行榜/PVP 中隱藏真實名稱 */
+    @Column(name = "hide_profile_name", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean hideProfileName = false;
+
+    /** 是否在排行榜/PVP 中隱藏頭像 */
+    @Column(name = "hide_profile_avatar", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean hideProfileAvatar = false;
+
+    /** 自訂頭像 base64 data URL（縮圖，約 10~20KB） */
+    @Column(name = "custom_avatar_data", columnDefinition = "TEXT")
+    private String customAvatarData;
+
+    /**
+     * 取得顯示用頭像 URL（優先自訂頭像）。
+     */
+    public String getEffectiveAvatarUrl() {
+        if (customAvatarData != null && !customAvatarData.isEmpty()) {
+            return customAvatarData;
+        }
+        return avatarUrl;
+    }
+
+    /**
+     * 取得隱私保護後的顯示名稱。
+     * 對外展示用（排行榜/PVP），自己看到的仍是原名。
+     */
+    public String getPublicDisplayName() {
+        if (hideProfileName) {
+            return "匿名冒險者 #" + id;
+        }
+        return displayName;
+    }
+
+    /**
+     * 取得隱私保護後的頭像 URL。
+     */
+    public String getPublicAvatarUrl() {
+        if (hideProfileAvatar) {
+            return null; // 前端用首字母代替
+        }
+        return getEffectiveAvatarUrl();
+    }
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();

@@ -6,7 +6,9 @@
 <div th:replace="~{fragments/navbar :: navbar(${user})}"></div>
 <div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
 
-<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-4xl mx-auto" x-data="settingsApp()">
+<main class="pt-[60px] px-4 md:px-6 pb-12 max-w-4xl mx-auto" x-data="settingsApp()"
+      th:data-user-id="${user.id}" th:data-display-name="${user.displayName}"
+      th:data-avatar-url="${user.effectiveAvatarUrl}" th:data-has-custom-avatar="${user.customAvatarData != null}">
 
     <div class="mb-6">
         <h1 class="font-heading text-lg text-primary glow-gold">&#9881; 冒險設定</h1>
@@ -15,9 +17,12 @@
 
     <!-- 像素 Tab 導航 -->
     <div class="flex gap-1 mb-4 flex-wrap" role="tablist" aria-label="設定分頁">
+        <button @click="activeTab = 'profile'" role="tab" :aria-selected="activeTab === 'profile'"
+                :class="activeTab === 'profile' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
+                class="pixel-btn text-[13px] py-1.5 px-3 cursor-pointer">&#128100; 個人資訊</button>
         <button @click="activeTab = 'character'" role="tab" :aria-selected="activeTab === 'character'"
                 :class="activeTab === 'character' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
-                class="pixel-btn text-[13px] py-1.5 px-3 cursor-pointer">&#128100; 角色</button>
+                class="pixel-btn text-[13px] py-1.5 px-3 cursor-pointer">&#9876; 角色</button>
         <button @click="activeTab = 'discord'" role="tab" :aria-selected="activeTab === 'discord'"
                 :class="activeTab === 'discord' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
                 class="pixel-btn text-[13px] py-1.5 px-3 cursor-pointer">&#128172; Discord</button>
@@ -27,6 +32,76 @@
         <button @click="activeTab = 'telegram'" role="tab" :aria-selected="activeTab === 'telegram'"
                 :class="activeTab === 'telegram' ? 'pixel-btn-gold' : 'pixel-btn-purple opacity-60'"
                 class="pixel-btn text-[13px] py-1.5 px-3 cursor-pointer">&#9992; Telegram</button>
+    </div>
+
+    <!-- 個人資訊設定 -->
+    <div x-show="activeTab === 'profile'" x-cloak>
+        <div class="grid md:grid-cols-2 gap-4">
+            <!-- 頭像設定 -->
+            <div class="pixel-card p-4">
+                <h2 class="text-sm text-text-heading mb-3">&#128247; 頭像設定</h2>
+                <div class="flex items-center gap-4 mb-4">
+                    <img :src="avatarPreview || currentAvatarUrl" class="w-16 h-16 border-2 border-primary" style="image-rendering: pixelated;" alt="avatar">
+                    <div>
+                        <div class="text-xs text-text-muted" th:text="${user.displayName}"></div>
+                        <div class="text-[10px] text-text-muted mt-1">128x128 縮圖 / PNG</div>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="block">
+                        <span class="text-xs text-text-muted">上傳自訂頭像（10MB 以下）</span>
+                        <input type="file" accept="image/*" @change="previewAvatar($event)"
+                               class="block w-full text-xs text-text-muted mt-1 file:mr-2 file:py-1 file:px-3 file:text-[10px] file:pixel-btn file:pixel-btn-purple file:cursor-pointer file:border-0">
+                    </label>
+                    <div class="flex gap-2">
+                        <button @click="uploadAvatar()" :disabled="!avatarFile || uploadingAvatar"
+                                class="pixel-btn pixel-btn-gold text-[11px] py-1 px-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-show="!uploadingAvatar">&#10003; 上傳</span>
+                            <span x-show="uploadingAvatar" class="anim-flash">上傳中...</span>
+                        </button>
+                        <button @click="deleteAvatar()" x-show="hasCustomAvatar"
+                                class="pixel-btn pixel-btn-purple text-[11px] py-1 px-3 cursor-pointer">
+                            &#10005; 恢復 Google 頭像
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 隱私設定 -->
+            <div class="pixel-card p-4">
+                <h2 class="text-sm text-text-heading mb-3">&#128274; 隱私設定</h2>
+                <p class="text-[11px] text-text-muted mb-4">控制你在排行榜和 PVP 中的顯示方式</p>
+                <div class="space-y-3">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="privacy.hideProfileName" @change="savePrivacy()"
+                               class="w-4 h-4 accent-primary cursor-pointer">
+                        <div>
+                            <div class="text-xs text-text-heading">隱藏名稱</div>
+                            <div class="text-[10px] text-text-muted">在排行榜和 PVP 中顯示為「匿名冒險者」</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="privacy.hideProfileAvatar" @change="savePrivacy()"
+                               class="w-4 h-4 accent-primary cursor-pointer">
+                        <div>
+                            <div class="text-xs text-text-heading">隱藏頭像</div>
+                            <div class="text-[10px] text-text-muted">在排行榜和 PVP 中不顯示頭像</div>
+                        </div>
+                    </label>
+                </div>
+                <div class="mt-4 pixel-card p-3 bg-bg-dark/50">
+                    <div class="text-[10px] text-primary mb-1">&#128161; 預覽效果</div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 bg-primary/20 flex items-center justify-center text-primary text-[10px] font-heading border border-primary/30"
+                             x-show="privacy.hideProfileAvatar">?</div>
+                        <img :src="avatarPreview || currentAvatarUrl" class="w-6 h-6 border border-primary/30"
+                             x-show="!privacy.hideProfileAvatar" style="image-rendering: pixelated;" alt="">
+                        <span class="text-xs" :class="privacy.hideProfileName ? 'text-text-muted italic' : 'text-text-heading'"
+                              x-text="privacy.hideProfileName ? '匿名冒險者 #' + userId : displayName"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 角色設定 -->
@@ -252,7 +327,7 @@
 <script>
     function settingsApp() {
         return {
-            activeTab: 'character',
+            activeTab: 'profile',
             saving: false, savingClass: false, testing: false,
             message: '', messageType: 'success',
             selectedClass: 'WARRIOR',
@@ -266,9 +341,18 @@
             discord: { id: null, enabled: false, webhookUrl: '', notifyOnEntry: true, notifyOnExit: true },
             gmail: { id: null, enabled: false, recipientEmail: '', notifyOnEntry: true, notifyOnExit: true },
             telegram: { id: null, enabled: false, botToken: '', chatId: '', notifyOnEntry: true, notifyOnExit: true },
+            // 個人資訊 / 隱私
+            userId: '', displayName: '', currentAvatarUrl: '',
+            avatarPreview: null, avatarFile: null, uploadingAvatar: false, hasCustomAvatar: false,
+            privacy: { hideProfileName: false, hideProfileAvatar: false },
 
             async init() {
-                await Promise.all([this.loadProfile(), this.loadChannels()]);
+                const el = this.$el;
+                this.userId = el.dataset.userId || '';
+                this.displayName = el.dataset.displayName || '';
+                this.currentAvatarUrl = el.dataset.avatarUrl || '';
+                this.hasCustomAvatar = el.dataset.hasCustomAvatar === 'true';
+                await Promise.all([this.loadProfile(), this.loadChannels(), this.loadPrivacy()]);
             },
             async loadProfile() {
                 try {
@@ -367,6 +451,64 @@
                 else if (type==='TELEGRAM') { form=this.telegram; cfg=JSON.stringify({botToken:form.botToken,chatId:form.chatId}); }
                 else return null;
                 return { channelType:type, configJson:cfg, enabled:form.enabled, notifyOnEntry:form.notifyOnEntry, notifyOnExit:form.notifyOnExit };
+            },
+            // ===== 個人資訊 / 隱私 =====
+            async loadPrivacy() {
+                try {
+                    const r = await fetch('/api/user/privacy');
+                    if (!r.ok) return;
+                    const p = await r.json();
+                    this.privacy.hideProfileName = !!p.hideProfileName;
+                    this.privacy.hideProfileAvatar = !!p.hideProfileAvatar;
+                    this.hasCustomAvatar = !!p.hasCustomAvatar;
+                } catch (e) {}
+            },
+            async savePrivacy() {
+                try {
+                    const r = await fetch('/api/user/privacy', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(this.privacy) });
+                    if (r.ok) this.showMsg('隱私設定已更新', 'success');
+                    else this.showMsg('更新失敗', 'error');
+                } catch (e) { this.showMsg('網路錯誤', 'error'); }
+            },
+            previewAvatar(event) {
+                const file = event.target.files[0];
+                if (!file) { this.avatarFile = null; this.avatarPreview = null; return; }
+                if (file.size > 10 * 1024 * 1024) { this.showMsg('檔案大小超過 10MB', 'error'); event.target.value = ''; return; }
+                if (!file.type.startsWith('image/')) { this.showMsg('僅支援圖片檔案', 'error'); event.target.value = ''; return; }
+                this.avatarFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => { this.avatarPreview = e.target.result; };
+                reader.readAsDataURL(file);
+            },
+            async uploadAvatar() {
+                if (!this.avatarFile) return;
+                this.uploadingAvatar = true;
+                try {
+                    const fd = new FormData();
+                    fd.append('file', this.avatarFile);
+                    const r = await fetch('/api/user/avatar/upload', { method: 'POST', body: fd });
+                    const res = await r.json();
+                    if (res.success) {
+                        this.currentAvatarUrl = res.avatarUrl;
+                        this.hasCustomAvatar = true;
+                        this.avatarPreview = null;
+                        this.avatarFile = null;
+                        this.showMsg('頭像已更新', 'success');
+                    } else { this.showMsg(res.error || '上傳失敗', 'error'); }
+                } catch (e) { this.showMsg('網路錯誤', 'error'); }
+                finally { this.uploadingAvatar = false; }
+            },
+            async deleteAvatar() {
+                try {
+                    const r = await fetch('/api/user/avatar', { method: 'DELETE' });
+                    if (r.ok) {
+                        this.hasCustomAvatar = false;
+                        this.currentAvatarUrl = this.$el.dataset.avatarUrl || '';
+                        this.avatarPreview = null;
+                        this.showMsg('已恢復 Google 頭像', 'success');
+                        location.reload();
+                    } else this.showMsg('刪除失敗', 'error');
+                } catch (e) { this.showMsg('網路錯誤', 'error'); }
             },
             showMsg(m,t) { this.message=m; this.messageType=t; setTimeout(()=>{this.message='';},3000); }
         };
