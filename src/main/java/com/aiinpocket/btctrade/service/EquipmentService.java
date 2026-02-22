@@ -252,15 +252,19 @@ public class EquipmentService {
         String equippedArmorName = null;
         String equippedWeaponCss = null;
         String equippedArmorCss = null;
+        String equippedWeaponRarity = null;
+        String equippedArmorRarity = null;
 
         for (UserEquipment ue : equipped) {
             EquipmentTemplate t = ue.getEquipmentTemplate();
             if (t.getEquipmentType() == EquipmentType.WEAPON) {
                 equippedWeaponName = t.getName();
                 equippedWeaponCss = t.getPixelCssClass();
+                equippedWeaponRarity = t.getRarity().name();
             } else if (t.getEquipmentType() == EquipmentType.ARMOR) {
                 equippedArmorName = t.getName();
                 equippedArmorCss = t.getPixelCssClass();
+                equippedArmorRarity = t.getRarity().name();
             }
         }
 
@@ -269,7 +273,8 @@ public class EquipmentService {
                 user.getGameCurrency(),
                 calculateExpandCost(user.getInventorySlots()),
                 equippedWeaponName, equippedArmorName,
-                equippedWeaponCss, equippedArmorCss
+                equippedWeaponCss, equippedArmorCss,
+                equippedWeaponRarity, equippedArmorRarity
         );
     }
 
@@ -290,6 +295,7 @@ public class EquipmentService {
     public record InventorySummary(
             long itemCount, int maxSlots, long gameCurrency, long expandCost,
             String equippedWeaponName, String equippedArmorName,
-            String equippedWeaponCss, String equippedArmorCss
+            String equippedWeaponCss, String equippedArmorCss,
+            String equippedWeaponRarity, String equippedArmorRarity
     ) {}
 }

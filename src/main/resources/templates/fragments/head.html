@@ -755,6 +755,33 @@
                 0 42px 0 #fbbf24, 6px 42px 0 #0a0a0a, 12px 42px 0 #991b1b, 24px 42px 0 #991b1b, 30px 42px 0 #0a0a0a, 36px 42px 0 #fbbf24;
         }
 
+        /* ===== 裝備分層系統（疊加在角色精靈上） ===== */
+        .sprite-container { position: relative; width: 48px; height: 48px; }
+        .sprite-weapon-overlay {
+            position: absolute;
+            z-index: 10;
+            right: -4px;
+            bottom: 4px;
+            filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+            pointer-events: none;
+        }
+        .sprite-armor-overlay {
+            position: absolute;
+            z-index: 5;
+            left: 8px;
+            top: 6px;
+            opacity: 0.7;
+            mix-blend-mode: screen;
+            pointer-events: none;
+        }
+        /* 稀有度光暈 */
+        .sprite-weapon-overlay.rarity-glow-rare { filter: drop-shadow(0 0 3px rgba(59,130,246,0.6)); }
+        .sprite-weapon-overlay.rarity-glow-epic { filter: drop-shadow(0 0 4px rgba(168,85,247,0.7)); }
+        .sprite-weapon-overlay.rarity-glow-legendary { filter: drop-shadow(0 0 5px rgba(251,191,36,0.8)); }
+        .sprite-armor-overlay.rarity-glow-rare { filter: drop-shadow(0 0 3px rgba(59,130,246,0.4)); opacity: 0.8; }
+        .sprite-armor-overlay.rarity-glow-epic { filter: drop-shadow(0 0 4px rgba(168,85,247,0.5)); opacity: 0.85; }
+        .sprite-armor-overlay.rarity-glow-legendary { filter: drop-shadow(0 0 5px rgba(251,191,36,0.6)); opacity: 0.9; }
+
         /* ===== 裝備像素圖（6x6 grid, 4px/pixel = 24px icon） ===== */
         .pixel-equip { width: 24px; height: 24px; image-rendering: pixelated; }
         /* COMMON 武器 */

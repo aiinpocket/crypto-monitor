@@ -205,8 +205,14 @@
                 <div class="absolute z-20 transition-all duration-[1500ms] ease-linear"
                      :style="'left:calc(' + Math.min(pollPct, 92) + '% - 24px);bottom:44px'"
                      :class="advCurrentScene === 'walk' ? 'anim-walk' : 'anim-idle'">
-                    <div class="w-[48px] h-[48px] relative">
+                    <div class="sprite-container">
                         <div class="absolute top-0 left-0" :class="'pixel-char-' + charClass.toLowerCase()"></div>
+                        <template x-if="equippedWeaponCss">
+                            <div class="sprite-weapon-overlay" :class="equippedWeaponCss + ' ' + rarityGlowClass(weaponRarity)"></div>
+                        </template>
+                        <template x-if="equippedArmorCss">
+                            <div class="sprite-armor-overlay" :class="equippedArmorCss + ' ' + rarityGlowClass(armorRarity)"></div>
+                        </template>
                     </div>
                 </div>
                 <!-- 寶箱事件 -->
@@ -248,10 +254,16 @@
                                 <div class="h-full bg-positive transition-all duration-300" :style="'width:' + advPlayerHp + '%'"></div>
                             </div>
                         </div>
-                        <!-- 角色精靈 -->
-                        <div class="w-[48px] h-[48px] relative"
+                        <!-- 角色精靈（分層：角色 + 武器 + 防具） -->
+                        <div class="sprite-container"
                              :class="advPlayerAnim">
                             <div class="absolute top-0 left-0" :class="'pixel-char-' + charClass.toLowerCase()"></div>
+                            <template x-if="equippedWeaponCss">
+                                <div class="sprite-weapon-overlay" :class="equippedWeaponCss + ' ' + rarityGlowClass(weaponRarity)"></div>
+                            </template>
+                            <template x-if="equippedArmorCss">
+                                <div class="sprite-armor-overlay" :class="equippedArmorCss + ' ' + rarityGlowClass(armorRarity)"></div>
+                            </template>
                         </div>
                         <!-- 技能名 -->
                         <div x-show="advSkillName" x-transition
@@ -550,6 +562,8 @@
             tradePage: 1, tradesPerPage: 50,
             charClass: _charClass,
             partyMembers: [],
+            equippedWeaponCss: null, equippedArmorCss: null,
+            weaponRarity: null, armorRarity: null,
             backtestStartTime: null,
             get pagedTrades() { const t = this.result?.trades || []; const s = (this.tradePage-1)*this.tradesPerPage; return t.slice(s, s+this.tradesPerPage); },
             get totalTradePages() { return Math.ceil((this.result?.trades?.length || 0) / this.tradesPerPage); },
@@ -613,8 +627,13 @@
             symMatches: [], symShowDrop: false, symValidating: false,
             symCustomValid: false, symCustomChecked: false,
 
+            rarityGlowClass(rarity) {
+                if (!rarity) return '';
+                const map = { RARE: 'rarity-glow-rare', EPIC: 'rarity-glow-epic', LEGENDARY: 'rarity-glow-legendary' };
+                return map[rarity] || '';
+            },
             async init() {
-                await Promise.all([this.loadTemplates(), this.loadStamina(), this.loadHistory(), this.loadPartyMembers()]);
+                await Promise.all([this.loadTemplates(), this.loadStamina(), this.loadHistory(), this.loadPartyMembers(), this.loadEquipment()]);
                 this.symSearch();
                 this.restoreAdventure();
                 this.startStaminaTimer();
@@ -1089,6 +1108,18 @@
                 try {
                     const r = await fetch('/api/user/equipment/party-members');
                     if (r.ok) this.partyMembers = await r.json();
+                } catch(e) {}
+            },
+            async loadEquipment() {
+                try {
+                    const r = await fetch('/api/user/equipment/summary');
+                    if (r.ok) {
+                        const eq = await r.json();
+                        this.equippedWeaponCss = eq.equippedWeaponCss;
+                        this.equippedArmorCss = eq.equippedArmorCss;
+                        this.weaponRarity = eq.equippedWeaponRarity;
+                        this.armorRarity = eq.equippedArmorRarity;
+                    }
                 } catch(e) {}
             },
 

@@ -37,9 +37,15 @@
             <div class="pixel-card p-4">
                 <h2 class="font-heading text-sm text-primary mb-3">&#128100; 主角裝備</h2>
                 <div class="flex flex-col items-center mb-4">
-                    <div class="relative w-[48px] h-[48px] mb-2">
-                        <div class="absolute top-0 left-0 anim-idle"
+                    <div class="sprite-container mb-2 anim-idle">
+                        <div class="absolute top-0 left-0"
                              :class="'pixel-char-' + charClass.toLowerCase()"></div>
+                        <template x-if="summary.equippedWeaponCss">
+                            <div class="sprite-weapon-overlay" :class="summary.equippedWeaponCss + ' ' + rarityGlowClass(summary.equippedWeaponRarity)"></div>
+                        </template>
+                        <template x-if="summary.equippedArmorCss">
+                            <div class="sprite-armor-overlay" :class="summary.equippedArmorCss + ' ' + rarityGlowClass(summary.equippedArmorRarity)"></div>
+                        </template>
                     </div>
                     <span class="text-xs text-text-muted" x-text="charLabel"></span>
                 </div>
@@ -259,7 +265,8 @@ function inventoryApp() {
         summary: {
             itemCount: 0, maxSlots: 100, gameCurrency: 0, expandCost: 50,
             equippedWeaponName: null, equippedArmorName: null,
-            equippedWeaponCss: null, equippedArmorCss: null
+            equippedWeaponCss: null, equippedArmorCss: null,
+            equippedWeaponRarity: null, equippedArmorRarity: null
         },
         toast: { show: false, message: '', success: true },
         equipDialog: { show: false, item: null },
@@ -425,6 +432,27 @@ function inventoryApp() {
         classLabel(cls) {
             const map = { WARRIOR: '戰士', MAGE: '法師', RANGER: '遊俠', ASSASSIN: '刺客' };
             return map[cls] || cls;
+        },
+        rarityGlowClass(rarity) {
+            if (!rarity) return '';
+            const map = { RARE: 'rarity-glow-rare', EPIC: 'rarity-glow-epic', LEGENDARY: 'rarity-glow-legendary' };
+            return map[rarity] || '';
+        },
+        getMemberWeaponCss(memberId) {
+            const item = this.items.find(i => i.equippedByMemberId === memberId && i.equipmentType === 'WEAPON');
+            return item ? item.pixelCssClass : null;
+        },
+        getMemberArmorCss(memberId) {
+            const item = this.items.find(i => i.equippedByMemberId === memberId && i.equipmentType === 'ARMOR');
+            return item ? item.pixelCssClass : null;
+        },
+        getMemberWeaponRarity(memberId) {
+            const item = this.items.find(i => i.equippedByMemberId === memberId && i.equipmentType === 'WEAPON');
+            return item ? item.rarity : null;
+        },
+        getMemberArmorRarity(memberId) {
+            const item = this.items.find(i => i.equippedByMemberId === memberId && i.equipmentType === 'ARMOR');
+            return item ? item.rarity : null;
         }
     };
 }

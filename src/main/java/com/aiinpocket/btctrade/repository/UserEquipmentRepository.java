@@ -47,4 +47,8 @@ public interface UserEquipmentRepository extends JpaRepository<UserEquipment, Lo
     /** 按取得時間倒序（eager fetch template + member 避免 N+1 和 LazyInit） */
     @EntityGraph(attributePaths = {"equipmentTemplate", "equippedByMember"})
     List<UserEquipment> findByUserIdOrderByAcquiredAtDesc(Long userId);
+
+    /** 批次查詢多個隊員身上的裝備（eager fetch template） */
+    @EntityGraph(attributePaths = {"equipmentTemplate"})
+    List<UserEquipment> findByEquippedByMemberIdIn(List<Long> memberIds);
 }

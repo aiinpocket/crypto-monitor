@@ -36,15 +36,34 @@
             <!-- 已有成員 -->
             <template x-for="m in activeMembers" :key="m.id">
                 <div class="pixel-card p-4 text-center relative">
-                    <!-- 種族像素圖 -->
-                    <div class="relative w-[48px] h-[48px] mx-auto mb-2">
-                        <div class="absolute top-0 left-0 anim-idle" :class="m.pixelCssClass"></div>
+                    <!-- 種族像素圖 + 裝備分層 -->
+                    <div class="sprite-container mx-auto mb-2 anim-idle">
+                        <div class="absolute top-0 left-0" :class="m.pixelCssClass"></div>
+                        <template x-if="m.equippedWeaponCss">
+                            <div class="sprite-weapon-overlay"
+                                 :class="m.equippedWeaponCss + ' ' + rarityGlowClass(m.equippedWeaponRarity)"></div>
+                        </template>
+                        <template x-if="m.equippedArmorCss">
+                            <div class="sprite-armor-overlay"
+                                 :class="m.equippedArmorCss + ' ' + rarityGlowClass(m.equippedArmorRarity)"></div>
+                        </template>
                     </div>
                     <div class="font-heading text-sm text-text-heading" x-text="m.name"></div>
                     <div class="text-xs text-primary mt-0.5" x-text="m.speciesName"></div>
                     <div class="flex justify-center gap-1 mt-1">
                         <span class="text-[10px] px-1.5 py-0.5 bg-cta/20 text-cta" x-text="m.characterClass"></span>
                         <span class="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary" x-text="m.gender === 'MALE' ? '♂' : '♀'"></span>
+                    </div>
+                    <!-- 裝備簡示 -->
+                    <div class="flex justify-center gap-2 mt-1.5" x-show="m.equippedWeaponName || m.equippedArmorName">
+                        <template x-if="m.equippedWeaponName">
+                            <span class="text-[9px] px-1 py-0.5 bg-negative/10 text-negative/80 truncate max-w-[60px]"
+                                  x-text="'&#9876; ' + m.equippedWeaponName" :title="m.equippedWeaponName"></span>
+                        </template>
+                        <template x-if="m.equippedArmorName">
+                            <span class="text-[9px] px-1 py-0.5 bg-cta/10 text-cta/80 truncate max-w-[60px]"
+                                  x-text="'&#128737; ' + m.equippedArmorName" :title="m.equippedArmorName"></span>
+                        </template>
                     </div>
                     <div class="text-[10px] text-text-muted mt-1" x-text="'Slot ' + m.slot"></div>
                     <!-- 解散按鈕 -->
@@ -217,6 +236,11 @@ function partyApp() {
         slotUnlockLevel(slotNumber) {
             const levels = {2: 5, 3: 15, 4: 30};
             return levels[slotNumber] || '?';
+        },
+        rarityGlowClass(rarity) {
+            if (!rarity) return '';
+            const map = { RARE: 'rarity-glow-rare', EPIC: 'rarity-glow-epic', LEGENDARY: 'rarity-glow-legendary' };
+            return map[rarity] || '';
         },
 
         async init() {
