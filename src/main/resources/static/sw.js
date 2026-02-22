@@ -1,7 +1,6 @@
 // BtcTrade Service Worker - 離線快取策略
-const CACHE_NAME = 'btctrade-v1';
+const CACHE_NAME = 'btctrade-v2';
 const PRECACHE_URLS = [
-  '/',
   '/manifest.json'
 ];
 
@@ -27,8 +26,13 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // API 請求：始終走網路
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) {
+  // API、WebSocket、OAuth 回調、登入/登出：不攔截，直接走網路
+  if (url.pathname.startsWith('/api/')
+      || url.pathname.startsWith('/ws/')
+      || url.pathname.startsWith('/login')
+      || url.pathname.startsWith('/logout')
+      || url.pathname.startsWith('/oauth2')
+      || url.pathname.startsWith('/actuator')) {
     return;
   }
 
