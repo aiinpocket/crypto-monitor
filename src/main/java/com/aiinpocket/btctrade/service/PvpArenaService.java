@@ -132,9 +132,11 @@ public class PvpArenaService {
             expReward = 10 + defender.getLevel();
             goldReward = 5L + (long) defender.getLevel() * 2;
             attacker.setPvpWins(attacker.getPvpWins() + 1);
+            defender.setPvpLosses(defender.getPvpLosses() + 1);
         } else {
             goldReward = -Math.min(3L, attacker.getGameCurrency());
             attacker.setPvpLosses(attacker.getPvpLosses() + 1);
+            defender.setPvpWins(defender.getPvpWins() + 1);
         }
 
         // 更新 rating

@@ -99,7 +99,49 @@ public class MonsterDataInitializer implements ApplicationRunner {
             log.info("[怪物初始化] 新增 {} 隻事件怪物", saved.size());
         }
 
+        // 遷移：填補缺少 stat 範圍的裝備模板（v1.7.1 → v1.8.0+ 升級）
+        migrateEquipmentStats();
+
         log.info("[怪物初始化] 怪物總數: {}", monsterRepo.count());
+    }
+
+    /**
+     * 修補缺少 stat 範圍的 EquipmentTemplate（舊版本建立的記錄）。
+     * 根據裝備的稀有度和類型自動填入數值範圍。
+     */
+    private void migrateEquipmentStats() {
+        List<EquipmentTemplate> templates = equipRepo.findAll();
+        int updated = 0;
+        for (EquipmentTemplate t : templates) {
+            if (t.getStatAtkMax() != null && t.getStatAtkMax() > 0) continue;
+            if (t.getStatDefMax() != null && t.getStatDefMax() > 0) continue;
+
+            // 補填 stat 範圍
+            Rarity rarity = t.getRarity();
+            EquipmentType type = t.getEquipmentType();
+            int[] primary = statRange(rarity, 0);
+            int[] secondary = statRange(rarity, 1);
+            int[] tertiary = statRange(rarity, 2);
+
+            if (type == EquipmentType.WEAPON) {
+                t.setStatAtkMin(primary[0]); t.setStatAtkMax(primary[1]);
+                t.setStatSpdMin(secondary[0]); t.setStatSpdMax(secondary[1]);
+                t.setStatDefMin(tertiary[0]); t.setStatDefMax(tertiary[1]);
+                t.setStatLuckMin(tertiary[0]); t.setStatLuckMax(tertiary[1]);
+                t.setStatHpMin(tertiary[0]); t.setStatHpMax(tertiary[1]);
+            } else {
+                t.setStatDefMin(primary[0]); t.setStatDefMax(primary[1]);
+                t.setStatHpMin(secondary[0]); t.setStatHpMax(secondary[1]);
+                t.setStatAtkMin(tertiary[0]); t.setStatAtkMax(tertiary[1]);
+                t.setStatSpdMin(tertiary[0]); t.setStatSpdMax(tertiary[1]);
+                t.setStatLuckMin(tertiary[0]); t.setStatLuckMax(tertiary[1]);
+            }
+            equipRepo.save(t);
+            updated++;
+        }
+        if (updated > 0) {
+            log.info("[怪物初始化] 已遷移 {} 件裝備的 stat 範圍", updated);
+        }
     }
 
     /** 建立全部怪物（P1 + P3） */

@@ -108,7 +108,7 @@ public class UserBacktestService {
         // 生成冒險計畫
         String adventureJson = "{}";
         try {
-            adventureJson = adventureService.generateAdventurePlan();
+            adventureJson = adventureService.generateAdventurePlan(years);
         } catch (Exception e) {
             log.warn("[用戶回測] 冒險計畫生成失敗，不影響回測", e);
         }

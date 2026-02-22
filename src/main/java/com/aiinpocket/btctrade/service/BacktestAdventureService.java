@@ -38,16 +38,35 @@ public class BacktestAdventureService {
     private final EquipmentService equipmentService;
     private final ObjectMapper objectMapper;
 
-    /** 冒險事件觸發的進度里程碑 */
-    private static final int[] MILESTONES = {15, 30, 50, 70, 85};
+    /** 基礎里程碑數量（最低保證） */
+    private static final int BASE_MILESTONES = 3;
+    /** 最大里程碑數量上限 */
+    private static final int MAX_MILESTONES = 10;
+
+    /**
+     * 根據體力消耗動態生成里程碑百分比。
+     * 消耗越多體力（回測越長），遭遇怪物越多。
+     * 公式：里程碑數 = min(max(3, staminaCost + 2), 10)
+     * 1年→3個, 3年→5個, 5年→7個, 8年→10個(上限)
+     */
+    static int[] generateMilestones(int staminaCost) {
+        int count = Math.min(Math.max(BASE_MILESTONES, staminaCost + 2), MAX_MILESTONES);
+        int[] milestones = new int[count];
+        for (int i = 0; i < count; i++) {
+            milestones[i] = (int) Math.round((double) (i + 1) / (count + 1) * 100);
+        }
+        return milestones;
+    }
 
     /**
      * 生成冒險計畫。回測提交時呼叫。
      * 從怪物圖鑑中隨機挑選怪物，分配到進度里程碑。
+     * 里程碑數量根據體力消耗（回測年數）動態調整。
      *
+     * @param staminaCost 體力消耗（= 回測年數）
      * @return 冒險計畫 JSON 字串
      */
-    public String generateAdventurePlan() {
+    public String generateAdventurePlan(int staminaCost) {
         List<Monster> allMonsters = monsterRepo.findAll();
         if (allMonsters.isEmpty()) {
             return "{}";
@@ -55,9 +74,10 @@ public class BacktestAdventureService {
 
         List<Map<String, Object>> events = new ArrayList<>();
         ThreadLocalRandom rng = ThreadLocalRandom.current();
+        int[] milestones = generateMilestones(staminaCost);
 
         // 在每個里程碑放置事件（怪物或寶箱）
-        for (int pct : MILESTONES) {
+        for (int pct : milestones) {
             if (rng.nextDouble() < 0.75) {
                 // 75% 機率出怪物
                 Monster m = allMonsters.get(rng.nextInt(allMonsters.size()));
