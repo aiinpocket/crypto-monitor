@@ -7,8 +7,9 @@
 <div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
 
 <main class="pt-[60px] px-4 md:px-6 pb-12 max-w-4xl mx-auto" x-data="settingsApp()"
-      th:data-user-id="${user.id}" th:data-display-name="${user.displayName}"
-      th:data-avatar-url="${user.effectiveAvatarUrl}" th:data-has-custom-avatar="${user.customAvatarData != null}">
+      th:data-user-id="${user.id}" th:data-nickname="${user.nickname}"
+      th:data-id-tag="${user.idTag}" th:data-avatar-url="${user.effectiveAvatarUrl}"
+      th:data-has-custom-avatar="${user.customAvatarData != null}">
 
     <div class="mb-6">
         <h1 class="font-heading text-lg text-primary glow-gold">&#9881; 冒險設定</h1>
@@ -41,10 +42,15 @@
             <div class="pixel-card p-4">
                 <h2 class="text-sm text-text-heading mb-3">&#128247; 頭像設定</h2>
                 <div class="flex items-center gap-4 mb-4">
-                    <img :src="avatarPreview || currentAvatarUrl" class="w-16 h-16 border-2 border-primary" style="image-rendering: pixelated;" alt="avatar">
+                    <template x-if="avatarPreview || currentAvatarUrl">
+                        <img :src="avatarPreview || currentAvatarUrl" class="w-16 h-16 border-2 border-primary" style="image-rendering: pixelated;" alt="avatar">
+                    </template>
+                    <template x-if="!avatarPreview && !currentAvatarUrl">
+                        <div class="w-16 h-16 bg-primary/20 flex items-center justify-center text-primary text-2xl font-heading border-2 border-primary">?</div>
+                    </template>
                     <div>
-                        <div class="text-xs text-text-muted" th:text="${user.displayName}"></div>
-                        <div class="text-[10px] text-text-muted mt-1">128x128 縮圖 / PNG</div>
+                        <div class="text-xs text-text-heading" x-text="nickname + '#' + idTag"></div>
+                        <div class="text-[10px] text-text-muted mt-1">128x128 / PNG</div>
                     </div>
                 </div>
                 <div class="space-y-2">
@@ -61,43 +67,47 @@
                         </button>
                         <button @click="deleteAvatar()" x-show="hasCustomAvatar"
                                 class="pixel-btn pixel-btn-purple text-[11px] py-1 px-3 cursor-pointer">
-                            &#10005; 恢復 Google 頭像
+                            &#10005; 移除頭像
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- 隱私設定 -->
+            <!-- 暱稱設定 -->
             <div class="pixel-card p-4">
-                <h2 class="text-sm text-text-heading mb-3">&#128274; 隱私設定</h2>
-                <p class="text-[11px] text-text-muted mb-4">控制你在排行榜和 PVP 中的顯示方式</p>
+                <h2 class="text-sm text-text-heading mb-3">&#9997; 暱稱設定</h2>
+                <p class="text-[11px] text-text-muted mb-4">你在排行榜和 PVP 中的顯示名稱（最多 20 字）</p>
                 <div class="space-y-3">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" x-model="privacy.hideProfileName" @change="savePrivacy()"
-                               class="w-4 h-4 accent-primary cursor-pointer">
-                        <div>
-                            <div class="text-xs text-text-heading">隱藏名稱</div>
-                            <div class="text-[10px] text-text-muted">在排行榜和 PVP 中顯示為「匿名冒險者」</div>
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1">暱稱</label>
+                        <div class="flex gap-2">
+                            <input type="text" x-model="nickname" maxlength="20" placeholder="輸入暱稱..."
+                                   class="flex-1 px-2 py-1.5 bg-bg-input pixel-border-dark text-text-main text-[13px] focus:outline-none">
+                            <span class="text-text-muted text-sm self-center">#<span x-text="idTag"></span></span>
                         </div>
-                    </label>
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" x-model="privacy.hideProfileAvatar" @change="savePrivacy()"
-                               class="w-4 h-4 accent-primary cursor-pointer">
-                        <div>
-                            <div class="text-xs text-text-heading">隱藏頭像</div>
-                            <div class="text-[10px] text-text-muted">在排行榜和 PVP 中不顯示頭像</div>
-                        </div>
-                    </label>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="saveNickname()" :disabled="savingNick"
+                                class="pixel-btn pixel-btn-gold text-[11px] py-1 px-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-show="!savingNick">&#10003; 儲存</span>
+                            <span x-show="savingNick" class="anim-flash">儲存中...</span>
+                        </button>
+                        <button @click="randomNickname()"
+                                class="pixel-btn pixel-btn-purple text-[11px] py-1 px-3 cursor-pointer">
+                            &#127922; 隨機
+                        </button>
+                    </div>
                 </div>
                 <div class="mt-4 pixel-card p-3 bg-bg-dark/50">
                     <div class="text-[10px] text-primary mb-1">&#128161; 預覽效果</div>
                     <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 bg-primary/20 flex items-center justify-center text-primary text-[10px] font-heading border border-primary/30"
-                             x-show="privacy.hideProfileAvatar">?</div>
-                        <img :src="avatarPreview || currentAvatarUrl" class="w-6 h-6 border border-primary/30"
-                             x-show="!privacy.hideProfileAvatar" style="image-rendering: pixelated;" alt="">
-                        <span class="text-xs" :class="privacy.hideProfileName ? 'text-text-muted italic' : 'text-text-heading'"
-                              x-text="privacy.hideProfileName ? '匿名冒險者 #' + userId : displayName"></span>
+                        <template x-if="avatarPreview || currentAvatarUrl">
+                            <img :src="avatarPreview || currentAvatarUrl" class="w-6 h-6 border border-primary/30" style="image-rendering: pixelated;" alt="">
+                        </template>
+                        <template x-if="!avatarPreview && !currentAvatarUrl">
+                            <div class="w-6 h-6 bg-primary/20 flex items-center justify-center text-primary text-[10px] font-heading border border-primary/30">?</div>
+                        </template>
+                        <span class="text-xs text-text-heading" x-text="nickname + '#' + idTag"></span>
                     </div>
                 </div>
             </div>
@@ -341,18 +351,18 @@
             discord: { id: null, enabled: false, webhookUrl: '', notifyOnEntry: true, notifyOnExit: true },
             gmail: { id: null, enabled: false, recipientEmail: '', notifyOnEntry: true, notifyOnExit: true },
             telegram: { id: null, enabled: false, botToken: '', chatId: '', notifyOnEntry: true, notifyOnExit: true },
-            // 個人資訊 / 隱私
-            userId: '', displayName: '', currentAvatarUrl: '',
+            // 個人資訊 / 暱稱
+            nickname: '', idTag: '', currentAvatarUrl: '',
             avatarPreview: null, avatarFile: null, uploadingAvatar: false, hasCustomAvatar: false,
-            privacy: { hideProfileName: false, hideProfileAvatar: false },
+            savingNick: false,
 
             async init() {
                 const el = this.$el;
-                this.userId = el.dataset.userId || '';
-                this.displayName = el.dataset.displayName || '';
+                this.nickname = el.dataset.nickname || '';
+                this.idTag = el.dataset.idTag || '0000';
                 this.currentAvatarUrl = el.dataset.avatarUrl || '';
                 this.hasCustomAvatar = el.dataset.hasCustomAvatar === 'true';
-                await Promise.all([this.loadProfile(), this.loadChannels(), this.loadPrivacy()]);
+                await Promise.all([this.loadProfile(), this.loadChannels()]);
             },
             async loadProfile() {
                 try {
@@ -452,24 +462,24 @@
                 else return null;
                 return { channelType:type, configJson:cfg, enabled:form.enabled, notifyOnEntry:form.notifyOnEntry, notifyOnExit:form.notifyOnExit };
             },
-            // ===== 個人資訊 / 隱私 =====
-            async loadPrivacy() {
+            // ===== 暱稱 =====
+            async saveNickname() {
+                if (!this.nickname.trim()) { this.showMsg('暱稱不能為空', 'error'); return; }
+                this.savingNick = true;
                 try {
-                    const r = await fetch('/api/user/privacy');
-                    if (!r.ok) return;
-                    const p = await r.json();
-                    this.privacy.hideProfileName = !!p.hideProfileName;
-                    this.privacy.hideProfileAvatar = !!p.hideProfileAvatar;
-                    this.hasCustomAvatar = !!p.hasCustomAvatar;
-                } catch (e) {}
-            },
-            async savePrivacy() {
-                try {
-                    const r = await fetch('/api/user/privacy', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(this.privacy) });
-                    if (r.ok) this.showMsg('隱私設定已更新', 'success');
-                    else this.showMsg('更新失敗', 'error');
+                    const r = await fetch('/api/user/nickname', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({nickname: this.nickname.trim()}) });
+                    const res = await r.json();
+                    if (res.success) this.showMsg('暱稱已更新', 'success');
+                    else this.showMsg(res.error || '更新失敗', 'error');
                 } catch (e) { this.showMsg('網路錯誤', 'error'); }
+                finally { this.savingNick = false; }
             },
+            randomNickname() {
+                const adj = ['小','大','快','勇','智','蒼','金','銀','紅','藍','暗','光','火','冰','雷','星','月','風','雲','鐵'];
+                const noun = ['天兵','勇者','法師','戰士','刺客','遊俠','騎士','旅人','冒險者','學徒','獵人','弓手','術士','劍客','守衛'];
+                this.nickname = adj[Math.floor(Math.random()*adj.length)] + noun[Math.floor(Math.random()*noun.length)];
+            },
+            // ===== 頭像 =====
             previewAvatar(event) {
                 const file = event.target.files[0];
                 if (!file) { this.avatarFile = null; this.avatarPreview = null; return; }
@@ -503,10 +513,9 @@
                     const r = await fetch('/api/user/avatar', { method: 'DELETE' });
                     if (r.ok) {
                         this.hasCustomAvatar = false;
-                        this.currentAvatarUrl = this.$el.dataset.avatarUrl || '';
+                        this.currentAvatarUrl = '';
                         this.avatarPreview = null;
-                        this.showMsg('已恢復 Google 頭像', 'success');
-                        location.reload();
+                        this.showMsg('頭像已移除', 'success');
                     } else this.showMsg('刪除失敗', 'error');
                 } catch (e) { this.showMsg('網路錯誤', 'error'); }
             },

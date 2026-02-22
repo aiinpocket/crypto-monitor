@@ -44,6 +44,32 @@ public class GmAccountInitializer {
     private record GmSpec(String displayName, String characterClass, String oauthId, String email) {}
 
     /**
+     * 為缺少暱稱的既有用戶生成隨機暱稱。
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    @Order(2)
+    public void migrateNicknames() {
+        List<AppUser> users = userRepo.findAll();
+        int migrated = 0;
+        for (AppUser u : users) {
+            if (u.getNickname() == null || u.getNickname().isEmpty()) {
+                // GM 帳號用原 displayName 作為暱稱
+                if ("SYSTEM".equals(u.getOauthProvider())) {
+                    u.setNickname(u.getDisplayName());
+                } else {
+                    u.setNickname(AppUser.generateRandomNickname());
+                }
+                userRepo.save(u);
+                migrated++;
+            }
+        }
+        if (migrated > 0) {
+            log.info("[暱稱遷移] 為 {} 個用戶生成了暱稱", migrated);
+        }
+    }
+
+    /**
      * 在 StrategyTemplateService 的 ensureDefaultTemplate() 之後執行。
      * 使用 @Order(1) 確保系統預設模板已建立。
      */
@@ -62,6 +88,7 @@ public class GmAccountInitializer {
                             .oauthId(spec.oauthId())
                             .email(spec.email())
                             .displayName(spec.displayName())
+                            .nickname(spec.displayName())
                             .role("USER")
                             .characterClass(spec.characterClass())
                             .level(10)

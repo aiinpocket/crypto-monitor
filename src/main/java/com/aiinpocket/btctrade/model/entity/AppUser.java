@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Random;
 
 /**
  * 應用程式使用者 Entity。
@@ -139,50 +140,76 @@ public class AppUser {
     @Column(name = "last_stamina_regen_at")
     private Instant lastStaminaRegenAt;
 
-    // ===== 隱私設定欄位 =====
+    // ===== 暱稱與頭像設定 =====
 
-    /** 是否在排行榜/PVP 中隱藏真實名稱 */
-    @Column(name = "hide_profile_name", nullable = false, columnDefinition = "boolean default false")
-    @Builder.Default
-    private boolean hideProfileName = false;
-
-    /** 是否在排行榜/PVP 中隱藏頭像 */
-    @Column(name = "hide_profile_avatar", nullable = false, columnDefinition = "boolean default false")
-    @Builder.Default
-    private boolean hideProfileAvatar = false;
+    /** 用戶自訂暱稱（公開顯示用），格式如「小天兵」 */
+    @Column(name = "nickname", length = 50)
+    private String nickname;
 
     /** 自訂頭像 base64 data URL（縮圖，約 10~20KB） */
     @Column(name = "custom_avatar_data", columnDefinition = "TEXT")
     private String customAvatarData;
 
+    // 保留舊欄位避免 DDL 問題（不再使用）
+    @Column(name = "hide_profile_name", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean hideProfileName = false;
+
+    @Column(name = "hide_profile_avatar", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean hideProfileAvatar = false;
+
+    // ===== 暱稱隨機生成 =====
+
+    private static final String[] NICK_ADJ = {
+            "小", "大", "快", "勇", "智", "蒼", "金", "銀", "紅", "藍",
+            "暗", "光", "火", "冰", "雷", "星", "月", "風", "雲", "鐵"
+    };
+    private static final String[] NICK_NOUN = {
+            "天兵", "勇者", "法師", "戰士", "刺客", "遊俠", "騎士", "旅人",
+            "冒險者", "學徒", "獵人", "弓手", "術士", "劍客", "守衛"
+    };
+
+    public static String generateRandomNickname() {
+        Random rng = new Random();
+        return NICK_ADJ[rng.nextInt(NICK_ADJ.length)] + NICK_NOUN[rng.nextInt(NICK_NOUN.length)];
+    }
+
+    /** ID 標籤（4 位 hex，如 "001f"） */
+    public String getIdTag() {
+        if (id == null) return "0000";
+        String hex = Long.toHexString(id);
+        if (hex.length() < 4) hex = "0".repeat(4 - hex.length()) + hex;
+        return hex.length() > 4 ? hex.substring(hex.length() - 4) : hex;
+    }
+
+    /** 取得含標籤的完整暱稱，如「小天兵#001f」 */
+    public String getNicknameWithTag() {
+        String nick = (nickname != null && !nickname.isEmpty()) ? nickname : "冒險者";
+        return nick + "#" + getIdTag();
+    }
+
     /**
-     * 取得顯示用頭像 URL（優先自訂頭像）。
+     * 取得顯示用頭像 URL（僅自訂頭像，不顯示 Google 頭像）。
      */
     public String getEffectiveAvatarUrl() {
         if (customAvatarData != null && !customAvatarData.isEmpty()) {
             return customAvatarData;
         }
-        return avatarUrl;
+        return null; // 預設顯示 "?"
     }
 
     /**
-     * 取得隱私保護後的顯示名稱。
-     * 對外展示用（排行榜/PVP），自己看到的仍是原名。
+     * 取得公開顯示名稱（暱稱#ID標籤）。
      */
     public String getPublicDisplayName() {
-        if (hideProfileName) {
-            return "匿名冒險者 #" + id;
-        }
-        return displayName;
+        return getNicknameWithTag();
     }
 
     /**
-     * 取得隱私保護後的頭像 URL。
+     * 取得公開頭像 URL（僅自訂頭像）。
      */
     public String getPublicAvatarUrl() {
-        if (hideProfileAvatar) {
-            return null; // 前端用首字母代替
-        }
         return getEffectiveAvatarUrl();
     }
 

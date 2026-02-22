@@ -65,38 +65,41 @@ public class SettingsController {
         return "settings";
     }
 
-    // ===== 隱私設定 API =====
+    // ===== 暱稱 API =====
 
-    /** 取得隱私設定 */
-    @GetMapping("/api/user/privacy")
+    /** 取得個人資訊 */
+    @GetMapping("/api/user/profile")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> getPrivacy(
+    public ResponseEntity<Map<String, Object>> getProfile(
             @AuthenticationPrincipal AppUserPrincipal principal) {
         AppUser user = principal.getAppUser();
         return ResponseEntity.ok(Map.of(
-                "hideProfileName", user.isHideProfileName(),
-                "hideProfileAvatar", user.isHideProfileAvatar(),
+                "nickname", user.getNickname() != null ? user.getNickname() : "",
+                "idTag", user.getIdTag(),
+                "fullName", user.getNicknameWithTag(),
                 "hasCustomAvatar", user.getCustomAvatarData() != null
         ));
     }
 
-    /** 更新隱私設定 */
-    @PostMapping("/api/user/privacy")
+    /** 更新暱稱 */
+    @PostMapping("/api/user/nickname")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> updatePrivacy(
+    public ResponseEntity<Map<String, Object>> updateNickname(
             @AuthenticationPrincipal AppUserPrincipal principal,
-            @RequestBody Map<String, Boolean> body) {
+            @RequestBody Map<String, String> body) {
+        String newNick = body.get("nickname");
+        if (newNick == null || newNick.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", "暱稱不能為空"));
+        }
+        newNick = newNick.trim();
+        if (newNick.length() > 20) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", "暱稱不能超過 20 字"));
+        }
         AppUser user = principal.getAppUser();
-        if (body.containsKey("hideProfileName")) {
-            user.setHideProfileName(Boolean.TRUE.equals(body.get("hideProfileName")));
-        }
-        if (body.containsKey("hideProfileAvatar")) {
-            user.setHideProfileAvatar(Boolean.TRUE.equals(body.get("hideProfileAvatar")));
-        }
+        user.setNickname(newNick);
         userRepo.save(user);
-        log.info("[隱私] 用戶 {} 更新隱私設定: name={}, avatar={}",
-                user.getId(), user.isHideProfileName(), user.isHideProfileAvatar());
-        return ResponseEntity.ok(Map.of("success", true));
+        log.info("[暱稱] 用戶 {} 更新暱稱為: {}", user.getId(), newNick);
+        return ResponseEntity.ok(Map.of("success", true, "fullName", user.getNicknameWithTag()));
     }
 
     // ===== 頭像上傳 API =====
@@ -152,7 +155,7 @@ public class SettingsController {
         }
     }
 
-    /** 刪除自訂頭像（恢復 Google 頭像） */
+    /** 刪除自訂頭像（恢復預設「?」頭像） */
     @DeleteMapping("/api/user/avatar")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> deleteAvatar(

@@ -40,13 +40,15 @@ public class CustomOidcUserService extends OidcUserService {
         // 嘗試從資料庫查找已存在的使用者，若不存在則建立新的
         AppUser appUser = appUserRepo.findByOauthProviderAndOauthId("GOOGLE", oauthId)
                 .orElseGet(() -> {
-                    log.info("[認證] 首次登入，建立新使用者: email={}", email);
+                    String nickname = AppUser.generateRandomNickname();
+                    log.info("[認證] 首次登入，建立新使用者: email={}, nickname={}", email, nickname);
                     return AppUser.builder()
                             .oauthProvider("GOOGLE")
                             .oauthId(oauthId)
                             .email(email)
                             .displayName(name)
                             .avatarUrl(avatar)
+                            .nickname(nickname)
                             .role("USER")
                             .build();
                 });

@@ -56,7 +56,7 @@ public class PvpArenaService {
                 user.getStamina(), user.getMaxStamina(),
                 PVP_STAMINA_COST, teamPower,
                 user.getLevel(), user.getCharacterClass(),
-                user.getDisplayName()
+                user.getPublicDisplayName()
         );
     }
 
@@ -192,7 +192,7 @@ public class PvpArenaService {
                 combat.rounds, combat.rounds.size(),
                 expReward, goldReward, ratingChanges[0],
                 attacker.getPvpRating(),
-                attacker.getDisplayName(), defender.getPublicDisplayName(),
+                attacker.getPublicDisplayName(), defender.getPublicDisplayName(),
                 attacker.getCharacterClass(), defender.getCharacterClass(),
                 attacker.getLevel(), defender.getLevel()
         );

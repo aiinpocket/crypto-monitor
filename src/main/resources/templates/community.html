@@ -7,7 +7,7 @@
 <div th:replace="~{fragments/pixel-overlay :: pixelOverlay}"></div>
 
 <main class="pt-[60px] px-4 md:px-6 pb-12 max-w-7xl mx-auto"
-      x-data="communityApp()" th:data-username="${user.displayName}">
+      x-data="communityApp()" th:data-username="${user.nicknameWithTag}">
 
     <!-- 頁面標題 -->
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">

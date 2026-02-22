@@ -89,7 +89,7 @@ public class CommunityTemplateService {
         }
 
         // 建立社群模板
-        String displayName = user.getDisplayName() + "/" + (customName != null ? customName : template.getName());
+        String displayName = user.getNicknameWithTag() + "/" + (customName != null ? customName : template.getName());
         CommunityTemplate community = CommunityTemplate.builder()
                 .submitter(user)
                 .strategyTemplate(template)
