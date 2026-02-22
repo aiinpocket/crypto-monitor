@@ -148,7 +148,7 @@ public class BacktestAdventureService {
             events = List.of();
         }
 
-        // 解析回測結果判斷勝敗
+        // 解析回測結果
         boolean profitable = false;
         double annualReturn = 0;
         try {
@@ -167,10 +167,18 @@ public class BacktestAdventureService {
         List<Map<String, Object>> droppedEquipment = new ArrayList<>();
         List<Long> discoveredMonsterIds = new ArrayList<>();
 
-        // 勝率基於回測結果：獲利 60~80%，虧損 20~40%
-        double winRate = profitable
-                ? 0.6 + Math.min(annualReturn * 0.5, 0.2)
-                : 0.2 + rng.nextDouble() * 0.2;
+        // 勝率基於年化報酬率（不再僅依賴 passed 判定）
+        // 20%+ 年化 → 70~80%, 0%+ → 50~65%, -10%~ → 35~50%, 更低 → 20~35%
+        double winRate;
+        if (annualReturn >= 0.20) {
+            winRate = 0.70 + Math.min(annualReturn * 0.3, 0.10);
+        } else if (annualReturn > 0) {
+            winRate = 0.50 + annualReturn * 0.75;
+        } else if (annualReturn > -0.10) {
+            winRate = 0.35 + (annualReturn + 0.10) * 1.5;
+        } else {
+            winRate = 0.20 + rng.nextDouble() * 0.15;
+        }
 
         for (Map<String, Object> event : events) {
             String type = (String) event.get("type");

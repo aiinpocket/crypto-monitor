@@ -430,9 +430,9 @@ public class BacktestService {
 
         int maxConsecLoss = calcMaxConsecLoss(trades);
 
-        boolean passed = annualizedReturn.doubleValue() >= 0.30
-                && maxSingleLossPct.doubleValue() >= -0.10
-                && maxDrawdown.abs().doubleValue() <= 0.30;
+        // 判定標準：年化報酬為正 + 最大回撤不超過 50%
+        boolean passed = annualizedReturn.doubleValue() > 0
+                && maxDrawdown.abs().doubleValue() <= 0.50;
 
         log.info("══════════════ Backtest Report ══════════════");
         log.info("Period:      {} → {}", startDate, endDate);
