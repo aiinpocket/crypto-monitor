@@ -77,6 +77,8 @@ public class PartyService {
     @Transactional
     public PartyMember recruit(AppUser user, Long speciesId, Gender gender,
                                 CharacterClass characterClass, String name) {
+        // 重新從 DB 載入，避免 session 快照覆蓋 DB 資料（如 pvpRating）
+        user = userRepo.findById(user.getId()).orElseThrow();
         // 檢查隊伍人數上限
         int maxSize = getMaxPartySize(user.getLevel());
         long currentSize = memberRepo.countByUserIdAndActiveTrue(user.getId());

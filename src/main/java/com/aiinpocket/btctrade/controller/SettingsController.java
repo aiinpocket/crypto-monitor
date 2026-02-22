@@ -95,9 +95,12 @@ public class SettingsController {
         if (newNick.length() > 20) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", "暱稱不能超過 20 字"));
         }
-        AppUser user = principal.getAppUser();
+        // 從 DB 載入最新狀態，避免 session 快照覆蓋其他欄位
+        AppUser user = userRepo.findById(principal.getUserId()).orElseThrow();
         user.setNickname(newNick);
         userRepo.save(user);
+        // 同步更新 session 快照
+        principal.getAppUser().setNickname(newNick);
         log.info("[暱稱] 用戶 {} 更新暱稱為: {}", user.getId(), newNick);
         return ResponseEntity.ok(Map.of("success", true, "fullName", user.getNicknameWithTag()));
     }
@@ -122,7 +125,8 @@ public class SettingsController {
         }
 
         try {
-            AppUser user = principal.getAppUser();
+            // 從 DB 載入最新狀態，避免 session 快照覆蓋其他欄位
+            AppUser user = userRepo.findById(principal.getUserId()).orElseThrow();
 
             // 1. 讀取原圖
             BufferedImage original = ImageIO.read(file.getInputStream());
@@ -142,6 +146,8 @@ public class SettingsController {
             // 4. 存入 DB
             user.setCustomAvatarData(dataUrl);
             userRepo.save(user);
+            // 同步更新 session 快照
+            principal.getAppUser().setCustomAvatarData(dataUrl);
 
             // 5. 原圖存證（最佳努力，不影響主流程）
             archiveOriginal(user.getId(), file);
@@ -160,9 +166,12 @@ public class SettingsController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> deleteAvatar(
             @AuthenticationPrincipal AppUserPrincipal principal) {
-        AppUser user = principal.getAppUser();
+        // 從 DB 載入最新狀態，避免 session 快照覆蓋其他欄位
+        AppUser user = userRepo.findById(principal.getUserId()).orElseThrow();
         user.setCustomAvatarData(null);
         userRepo.save(user);
+        // 同步更新 session 快照
+        principal.getAppUser().setCustomAvatarData(null);
         log.info("[頭像] 用戶 {} 刪除自訂頭像", user.getId());
         return ResponseEntity.ok(Map.of("success", true));
     }

@@ -41,6 +41,8 @@ public class StaminaService {
      */
     @Transactional
     public Map<String, Object> getStaminaInfo(AppUser user) {
+        // 重新從 DB 載入，避免 session 快照覆蓋 DB 資料（如 pvpRating）
+        user = userRepo.findById(user.getId()).orElseThrow();
         applyRegen(user);
         userRepo.save(user);
 
@@ -67,6 +69,8 @@ public class StaminaService {
      */
     @Transactional
     public void consumeStamina(AppUser user, int cost) {
+        // 重新從 DB 載入，避免 session 快照覆蓋 DB 資料
+        user = userRepo.findById(user.getId()).orElseThrow();
         applyRegen(user);
         if (user.getStamina() < cost) {
             throw new IllegalStateException(
@@ -87,6 +91,8 @@ public class StaminaService {
      */
     @Transactional
     public Map<String, Object> restoreWithGold(AppUser user, int amount) {
+        // 重新從 DB 載入，避免 session 快照覆蓋 DB 資料
+        user = userRepo.findById(user.getId()).orElseThrow();
         applyRegen(user);
 
         int missing = user.getMaxStamina() - user.getStamina();

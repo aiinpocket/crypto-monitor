@@ -40,6 +40,7 @@ public class PvpArenaService {
     /**
      * 取得 PVP 競技場狀態。
      */
+    @Transactional
     public ArenaStatus getArenaStatus(Long userId) {
         AppUser user = userRepo.findById(userId).orElseThrow();
         regenStamina(user);
@@ -149,9 +150,13 @@ public class PvpArenaService {
         userRepo.save(attacker);
         userRepo.save(defender);
 
-        // 發放經驗值
+        // 發放經驗值（try-catch 防止遊戲化失敗阻塞 PVP 核心邏輯）
         if (expReward > 0) {
-            gamificationService.awardExp(attacker, expReward, "PVP_VICTORY");
+            try {
+                gamificationService.awardExp(attacker, expReward, "PVP_VICTORY");
+            } catch (Exception e) {
+                log.warn("[PVP] 發放經驗值失敗（不影響 PVP 結果）: {}", e.getMessage());
+            }
         }
 
         // 序列化戰鬥記錄

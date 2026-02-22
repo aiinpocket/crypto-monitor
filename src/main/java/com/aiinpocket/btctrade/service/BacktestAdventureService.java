@@ -136,7 +136,8 @@ public class BacktestAdventureService {
             throw new IllegalStateException("獎勵已領取");
         }
 
-        AppUser user = run.getUser();
+        // 重新從 DB 載入，避免 session/relation 快照覆蓋 DB 資料（如 pvpRating）
+        AppUser user = userRepo.findById(run.getUser().getId()).orElseThrow();
 
         // 解析冒險計畫
         List<Map<String, Object>> events;

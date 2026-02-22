@@ -67,6 +67,8 @@ public class GamificationService {
      */
     @Transactional
     public LevelUpResult awardExp(AppUser user, long amount, String reason) {
+        // 重新從 DB 載入，避免 session 中的舊快照覆蓋其他欄位（如 pvpRating）
+        user = userRepo.findById(user.getId()).orElseThrow();
         int oldLevel = user.getLevel();
         long newExp = user.getExperience() + amount;
         user.setExperience(newExp);
@@ -104,6 +106,8 @@ public class GamificationService {
      */
     @Transactional
     public DailyRewardResult claimDailyReward(AppUser user) {
+        // 重新從 DB 載入，避免 session 快照覆蓋 DB 資料
+        user = userRepo.findById(user.getId()).orElseThrow();
         LocalDate today = LocalDate.now(TZ);
         if (today.equals(user.getLastDailyRewardDate())) {
             return new DailyRewardResult(false, 0, "今日已領取獎勵");
