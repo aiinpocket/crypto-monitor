@@ -73,7 +73,7 @@ public class Monster {
      * 是否為特殊事件怪物（僅在極端交易損益時觸發，不透過波動率匹配）。
      * true = 只在單筆交易 profitPct 超過門檻時出現。
      */
-    @Column(name = "event_only", nullable = false)
+    @Column(name = "event_only", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean eventOnly = false;
 
