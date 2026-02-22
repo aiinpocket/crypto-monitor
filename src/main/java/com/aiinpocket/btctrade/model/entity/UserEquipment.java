@@ -55,6 +55,23 @@ public class UserEquipment {
     @Column(name = "acquired_at", nullable = false)
     private Instant acquiredAt;
 
+    // ===== 隨機 roll 的裝備數值 =====
+
+    @Column(name = "stat_atk") @Builder.Default private Integer statAtk = 0;
+    @Column(name = "stat_def") @Builder.Default private Integer statDef = 0;
+    @Column(name = "stat_spd") @Builder.Default private Integer statSpd = 0;
+    @Column(name = "stat_luck") @Builder.Default private Integer statLuck = 0;
+    @Column(name = "stat_hp") @Builder.Default private Integer statHp = 0;
+
+    /** 計算裝備總戰力 */
+    public int getTotalPower() {
+        return (statAtk != null ? statAtk : 0)
+             + (statDef != null ? statDef : 0)
+             + (statSpd != null ? statSpd : 0)
+             + (statLuck != null ? statLuck : 0)
+             + (statHp != null ? statHp : 0);
+    }
+
     @PrePersist
     protected void onCreate() {
         if (this.acquiredAt == null) {

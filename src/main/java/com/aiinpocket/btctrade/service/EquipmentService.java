@@ -2,6 +2,7 @@ package com.aiinpocket.btctrade.service;
 
 import com.aiinpocket.btctrade.model.entity.AppUser;
 import com.aiinpocket.btctrade.model.entity.EquipmentTemplate;
+import com.aiinpocket.btctrade.model.entity.MonsterEncounter;
 import com.aiinpocket.btctrade.model.entity.PartyMember;
 import com.aiinpocket.btctrade.model.entity.UserEquipment;
 import com.aiinpocket.btctrade.model.enums.EquipmentType;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 裝備管理服務。
@@ -276,6 +278,29 @@ public class EquipmentService {
                 equippedWeaponCss, equippedArmorCss,
                 equippedWeaponRarity, equippedArmorRarity
         );
+    }
+
+    /**
+     * 建立帶隨機數值的裝備實例。
+     * 各屬性在模板定義的 min~max 範圍內隨機 roll。
+     */
+    public UserEquipment createWithRolledStats(AppUser user, EquipmentTemplate template, MonsterEncounter encounter) {
+        UserEquipment item = UserEquipment.builder()
+                .user(user)
+                .equipmentTemplate(template)
+                .sourceEncounter(encounter)
+                .statAtk(rollStat(template.getStatAtkMin(), template.getStatAtkMax()))
+                .statDef(rollStat(template.getStatDefMin(), template.getStatDefMax()))
+                .statSpd(rollStat(template.getStatSpdMin(), template.getStatSpdMax()))
+                .statLuck(rollStat(template.getStatLuckMin(), template.getStatLuckMax()))
+                .statHp(rollStat(template.getStatHpMin(), template.getStatHpMax()))
+                .build();
+        return userEquipRepo.save(item);
+    }
+
+    private static int rollStat(Integer min, Integer max) {
+        if (min == null || max == null || min >= max) return min != null ? min : 0;
+        return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
 
     // ===== Result Records =====

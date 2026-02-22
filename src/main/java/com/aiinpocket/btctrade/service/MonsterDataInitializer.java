@@ -316,9 +316,56 @@ public class MonsterDataInitializer implements ApplicationRunner {
 
     private static EquipmentTemplate eq(String name, String desc, EquipmentType type, Rarity rarity,
                                          CharacterClass cls, double dropRate, Long sellPrice, String css) {
-        return EquipmentTemplate.builder()
+        var builder = EquipmentTemplate.builder()
                 .name(name).description(desc).equipmentType(type).rarity(rarity)
                 .classRestriction(cls).dropRate(dropRate).sellPrice(sellPrice)
-                .pixelCssClass(css).build();
+                .pixelCssClass(css);
+
+        // 根據稀有度和裝備類型自動設定數值範圍
+        int[] primary = statRange(rarity, 0);   // 主屬性
+        int[] secondary = statRange(rarity, 1); // 副屬性
+        int[] tertiary = statRange(rarity, 2);  // 第三屬性
+
+        if (type == EquipmentType.WEAPON) {
+            builder.statAtkMin(primary[0]).statAtkMax(primary[1])     // ATK 主
+                   .statSpdMin(secondary[0]).statSpdMax(secondary[1]) // SPD 副
+                   .statDefMin(tertiary[0]).statDefMax(tertiary[1])   // DEF 三
+                   .statLuckMin(tertiary[0]).statLuckMax(tertiary[1]) // LUCK 三
+                   .statHpMin(tertiary[0]).statHpMax(tertiary[1]);    // HP 三
+        } else {
+            builder.statDefMin(primary[0]).statDefMax(primary[1])     // DEF 主
+                   .statHpMin(secondary[0]).statHpMax(secondary[1])   // HP 副（防具 HP 更高）
+                   .statAtkMin(tertiary[0]).statAtkMax(tertiary[1])   // ATK 三
+                   .statSpdMin(tertiary[0]).statSpdMax(tertiary[1])   // SPD 三
+                   .statLuckMin(tertiary[0]).statLuckMax(tertiary[1]);// LUCK 三
+        }
+
+        return builder.build();
+    }
+
+    /** 根據稀有度和層級（0=主,1=副,2=三）回傳 {min, max} */
+    private static int[] statRange(Rarity rarity, int tier) {
+        return switch (rarity) {
+            case COMMON -> switch (tier) {
+                case 0 -> new int[]{3, 8};
+                case 1 -> new int[]{1, 5};
+                default -> new int[]{0, 3};
+            };
+            case RARE -> switch (tier) {
+                case 0 -> new int[]{8, 18};
+                case 1 -> new int[]{3, 10};
+                default -> new int[]{1, 6};
+            };
+            case EPIC -> switch (tier) {
+                case 0 -> new int[]{15, 30};
+                case 1 -> new int[]{6, 18};
+                default -> new int[]{3, 10};
+            };
+            case LEGENDARY -> switch (tier) {
+                case 0 -> new int[]{25, 50};
+                case 1 -> new int[]{10, 25};
+                default -> new int[]{5, 15};
+            };
+        };
     }
 }

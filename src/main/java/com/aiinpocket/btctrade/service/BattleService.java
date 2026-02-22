@@ -36,6 +36,7 @@ public class BattleService {
     private final AppUserRepository userRepo;
     private final UserMonsterDiscoveryRepository discoveryRepo;
     private final GamificationService gamificationService;
+    private final EquipmentService equipmentService;
 
     // 戰敗金幣懲罰比例（損失當前金幣的 5%）
     private static final double DEFEAT_GOLD_PENALTY_PCT = 0.05;
@@ -252,15 +253,10 @@ public class BattleService {
                 return;
             }
 
-            UserEquipment item = UserEquipment.builder()
-                    .user(user)
-                    .equipmentTemplate(template)
-                    .sourceEncounter(encounter)
-                    .build();
-            userEquipRepo.save(item);
+            UserEquipment item = equipmentService.createWithRolledStats(user, template, encounter);
 
-            log.info("[特殊事件] 用戶 {} 獲得事件裝備「{}」({})！",
-                    user.getId(), template.getName(), template.getRarity());
+            log.info("[特殊事件] 用戶 {} 獲得事件裝備「{}」({}) 戰力={}！",
+                    user.getId(), template.getName(), template.getRarity(), item.getTotalPower());
         }
     }
 
@@ -395,15 +391,10 @@ public class BattleService {
                     return;
                 }
 
-                UserEquipment item = UserEquipment.builder()
-                        .user(user)
-                        .equipmentTemplate(template)
-                        .sourceEncounter(encounter)
-                        .build();
-                userEquipRepo.save(item);
+                UserEquipment item = equipmentService.createWithRolledStats(user, template, encounter);
 
-                log.info("[戰鬥] 用戶 {} 獲得裝備「{}」({})！",
-                        user.getId(), template.getName(), template.getRarity());
+                log.info("[戰鬥] 用戶 {} 獲得裝備「{}」({}) 戰力={}！",
+                        user.getId(), template.getName(), template.getRarity(), item.getTotalPower());
                 return; // 每場戰鬥最多掉一件
             }
         }

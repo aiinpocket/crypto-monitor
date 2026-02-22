@@ -63,4 +63,17 @@ public class EquipmentTemplate {
     /** CSS 類名，對應點陣圖樣式（覆蓋到角色上） */
     @Column(name = "pixel_css_class", nullable = false, length = 50)
     private String pixelCssClass;
+
+    // ===== 裝備數值範圍（掉落時在此範圍內隨機 roll） =====
+
+    @Column(name = "stat_atk_min") @Builder.Default private Integer statAtkMin = 0;
+    @Column(name = "stat_atk_max") @Builder.Default private Integer statAtkMax = 0;
+    @Column(name = "stat_def_min") @Builder.Default private Integer statDefMin = 0;
+    @Column(name = "stat_def_max") @Builder.Default private Integer statDefMax = 0;
+    @Column(name = "stat_spd_min") @Builder.Default private Integer statSpdMin = 0;
+    @Column(name = "stat_spd_max") @Builder.Default private Integer statSpdMax = 0;
+    @Column(name = "stat_luck_min") @Builder.Default private Integer statLuckMin = 0;
+    @Column(name = "stat_luck_max") @Builder.Default private Integer statLuckMax = 0;
+    @Column(name = "stat_hp_min") @Builder.Default private Integer statHpMin = 0;
+    @Column(name = "stat_hp_max") @Builder.Default private Integer statHpMax = 0;
 }

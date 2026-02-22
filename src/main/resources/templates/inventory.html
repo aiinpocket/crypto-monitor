@@ -169,8 +169,31 @@
                                         <span class="text-[9px] px-1 py-0.5"
                                               :class="rarityBadgeClass(item.rarity)"
                                               x-text="rarityLabel(item.rarity)"></span>
+                                        <template x-if="item.totalPower > 0">
+                                            <span class="text-[9px] text-primary font-heading" x-text="'&#9876; ' + item.totalPower"></span>
+                                        </template>
                                     </div>
                                     <div class="text-[10px] text-text-muted mt-0.5" x-text="item.description"></div>
+                                    <!-- 裝備數值條 -->
+                                    <template x-if="item.totalPower > 0">
+                                        <div class="flex gap-1.5 mt-1 flex-wrap">
+                                            <template x-if="item.statAtk > 0">
+                                                <span class="text-[9px] px-1 py-0.5 bg-red-500/15 text-red-400" x-text="'ATK ' + item.statAtk"></span>
+                                            </template>
+                                            <template x-if="item.statDef > 0">
+                                                <span class="text-[9px] px-1 py-0.5 bg-blue-500/15 text-blue-400" x-text="'DEF ' + item.statDef"></span>
+                                            </template>
+                                            <template x-if="item.statSpd > 0">
+                                                <span class="text-[9px] px-1 py-0.5 bg-green-500/15 text-green-400" x-text="'SPD ' + item.statSpd"></span>
+                                            </template>
+                                            <template x-if="item.statLuck > 0">
+                                                <span class="text-[9px] px-1 py-0.5 bg-yellow-500/15 text-yellow-400" x-text="'LCK ' + item.statLuck"></span>
+                                            </template>
+                                            <template x-if="item.statHp > 0">
+                                                <span class="text-[9px] px-1 py-0.5 bg-pink-500/15 text-pink-400" x-text="'HP ' + item.statHp"></span>
+                                            </template>
+                                        </div>
+                                    </template>
                                     <div class="flex items-center gap-2 mt-1 flex-wrap">
                                         <span class="text-[10px]"
                                               :class="item.equipmentType === 'WEAPON' ? 'text-negative' : 'text-cta'"

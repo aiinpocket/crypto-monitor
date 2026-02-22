@@ -32,6 +32,7 @@ public class BacktestAdventureService {
     private final BacktestRunRepository backtestRunRepo;
     private final GamificationService gamificationService;
     private final BattleService battleService;
+    private final EquipmentService equipmentService;
     private final ObjectMapper objectMapper;
 
     /** 冒險事件觸發的進度里程碑 */
@@ -263,17 +264,14 @@ public class BacktestAdventureService {
                     "dropped", false, "reason", "背包已滿");
         }
 
-        UserEquipment item = UserEquipment.builder()
-                .user(user)
-                .equipmentTemplate(selected)
-                .build();
-        userEquipRepo.save(item);
+        UserEquipment item = equipmentService.createWithRolledStats(user, selected, null);
 
         return Map.of(
                 "name", selected.getName(),
                 "rarity", selected.getRarity().name(),
                 "type", selected.getEquipmentType().name(),
-                "dropped", true
+                "dropped", true,
+                "totalPower", item.getTotalPower()
         );
     }
 }

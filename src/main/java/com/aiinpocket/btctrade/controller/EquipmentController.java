@@ -112,6 +112,8 @@ public class EquipmentController {
 
     // ===== DTO =====
 
+    private static int n(Integer v) { return v != null ? v : 0; }
+
     private EquipmentDto toDto(UserEquipment ue) {
         var t = ue.getEquipmentTemplate();
         PartyMember member = ue.getEquippedByMember();
@@ -126,7 +128,13 @@ public class EquipmentController {
                 Boolean.TRUE.equals(ue.getEquippedByUser()),
                 ue.getAcquiredAt().toString(),
                 member != null ? member.getId() : null,
-                member != null ? member.getName() : null
+                member != null ? member.getName() : null,
+                // 裝備數值（null-safe for legacy data）
+                n(ue.getStatAtk()), n(ue.getStatDef()), n(ue.getStatSpd()),
+                n(ue.getStatLuck()), n(ue.getStatHp()), ue.getTotalPower(),
+                // 數值範圍（供前端顯示品質）
+                n(t.getStatAtkMax()), n(t.getStatDefMax()), n(t.getStatSpdMax()),
+                n(t.getStatLuckMax()), n(t.getStatHpMax())
         );
     }
 
@@ -137,7 +145,13 @@ public class EquipmentController {
             String pixelCssClass, boolean equipped,
             String acquiredAt,
             Long equippedByMemberId,
-            String equippedByMemberName
+            String equippedByMemberName,
+            // 裝備數值
+            int statAtk, int statDef, int statSpd,
+            int statLuck, int statHp, int totalPower,
+            // 數值上限（用於品質百分比）
+            int maxAtk, int maxDef, int maxSpd,
+            int maxLuck, int maxHp
     ) {}
 
     record PartyMemberDto(Long id, String name, String characterClass, int slot) {}
