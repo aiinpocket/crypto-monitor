@@ -72,7 +72,8 @@ public class BattleController {
                 e.getGoldLost(),
                 e.getBattleLog(),
                 e.getStartedAt().toString(),
-                e.getEndedAt() != null ? e.getEndedAt().toString() : null
+                e.getEndedAt() != null ? e.getEndedAt().toString() : null,
+                e.getMonster().isEventOnly()
         );
     }
 
@@ -82,7 +83,7 @@ public class BattleController {
                 m.getRiskTier().name(), m.getLevel(),
                 m.getHp(), m.getAtk(), m.getDef(),
                 m.getExpReward(), m.getPixelCssClass(),
-                discovered
+                discovered, m.isEventOnly()
         );
     }
 
@@ -93,7 +94,8 @@ public class BattleController {
             String tradeDirection, String entryPrice, String exitPrice,
             Double profitPct, int expGained, long goldGained, long goldLost,
             String battleLog,
-            String startedAt, String endedAt
+            String startedAt, String endedAt,
+            boolean eventMonster
     ) {}
 
     record MonsterDto(
@@ -101,7 +103,7 @@ public class BattleController {
             String riskTier, int level,
             int hp, int atk, int def,
             int expReward, String pixelCssClass,
-            boolean discovered
+            boolean discovered, boolean eventOnly
     ) {}
 
     record BestiaryResponse(List<MonsterDto> monsters, long totalMonsters, long discoveredCount) {}

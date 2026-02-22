@@ -12,4 +12,7 @@ public interface MonsterRepository extends JpaRepository<Monster, Long> {
 
     List<Monster> findByMinVolatilityLessThanEqualAndMaxVolatilityGreaterThanEqual(
             Double volatility1, Double volatility2);
+
+    /** 查詢所有特殊事件怪物 */
+    List<Monster> findByEventOnlyTrue();
 }

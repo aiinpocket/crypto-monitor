@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,26 +40,31 @@ public class MonsterDataInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         long monsterCount = monsterRepo.count();
-        long equipCount = equipRepo.count();
 
         if (monsterCount == 0) {
-            log.info("[怪物初始化] 空資料庫，建立全部 40 隻怪物和裝備...");
+            log.info("[怪物初始化] 空資料庫，建立全部怪物和裝備...");
             List<EquipmentTemplate> allEquip = createAllEquipment();
             List<Monster> allMonsters = createAllMonsters();
             createDropTables(allMonsters, allEquip);
-            log.info("[怪物初始化] 完成！{} 隻怪物, {} 件裝備", allMonsters.size(), allEquip.size());
+            // 事件怪物
+            List<EquipmentTemplate> eventEquip = createEventEquipment();
+            List<Monster> eventMonsters = createEventMonsters();
+            createEventDropTables(eventMonsters, eventEquip);
+            log.info("[怪物初始化] 完成！{} 隻怪物（含 {} 事件怪物）, {} 件裝備",
+                    allMonsters.size() + eventMonsters.size(), eventMonsters.size(),
+                    allEquip.size() + eventEquip.size());
             return;
         }
 
-        // P3 擴展：已有 P1 資料，增量新增
-        if (monsterCount < 40) {
-            log.info("[怪物初始化] P3 擴展：現有 {} 隻怪物，新增至 40 隻...", monsterCount);
-            Set<String> existingNames = monsterRepo.findAll().stream()
-                    .map(Monster::getName).collect(Collectors.toSet());
-            Set<String> existingEquipNames = equipRepo.findAll().stream()
-                    .map(EquipmentTemplate::getName).collect(Collectors.toSet());
+        // 增量新增
+        Set<String> existingNames = monsterRepo.findAll().stream()
+                .map(Monster::getName).collect(Collectors.toSet());
+        Set<String> existingEquipNames = equipRepo.findAll().stream()
+                .map(EquipmentTemplate::getName).collect(Collectors.toSet());
 
-            // 新增缺少的裝備
+        // P3 擴展
+        if (monsterCount < 40) {
+            log.info("[怪物初始化] P3 擴展：現有 {} 隻怪物", monsterCount);
             List<EquipmentTemplate> newEquip = createP3Equipment().stream()
                     .filter(e -> !existingEquipNames.contains(e.getName()))
                     .toList();
@@ -66,21 +72,34 @@ public class MonsterDataInitializer implements ApplicationRunner {
                 equipRepo.saveAll(newEquip);
                 log.info("[怪物初始化] 新增 {} 件裝備", newEquip.size());
             }
-
-            // 新增缺少的怪物
             List<Monster> newMonsters = createP3Monsters().stream()
-                    .filter(m -> !existingNames.contains(m.getName()))
+                    .filter(m1 -> !existingNames.contains(m1.getName()))
                     .toList();
             if (!newMonsters.isEmpty()) {
                 List<Monster> saved = monsterRepo.saveAll(newMonsters);
-                // 為新怪物建立掉落表
-                List<EquipmentTemplate> allEquip = equipRepo.findAll();
-                createDropTables(saved, allEquip);
+                createDropTables(saved, equipRepo.findAll());
                 log.info("[怪物初始化] 新增 {} 隻怪物", saved.size());
             }
-        } else {
-            log.info("[怪物初始化] 已有 {} 隻怪物，跳過", monsterCount);
         }
+
+        // 事件怪物增量新增
+        List<EquipmentTemplate> newEventEquip = createEventEquipment().stream()
+                .filter(e -> !existingEquipNames.contains(e.getName()))
+                .toList();
+        if (!newEventEquip.isEmpty()) {
+            equipRepo.saveAll(newEventEquip);
+            log.info("[怪物初始化] 新增 {} 件事件裝備", newEventEquip.size());
+        }
+        List<Monster> newEventMonsters = createEventMonsters().stream()
+                .filter(m1 -> !existingNames.contains(m1.getName()))
+                .toList();
+        if (!newEventMonsters.isEmpty()) {
+            List<Monster> saved = monsterRepo.saveAll(newEventMonsters);
+            createEventDropTables(saved, equipRepo.findAll());
+            log.info("[怪物初始化] 新增 {} 隻事件怪物", saved.size());
+        }
+
+        log.info("[怪物初始化] 怪物總數: {}", monsterRepo.count());
     }
 
     /** 建立全部怪物（P1 + P3） */
@@ -223,6 +242,54 @@ public class MonsterDataInitializer implements ApplicationRunner {
         }
     }
 
+    // ==================== 特殊事件怪物（P4） ====================
+
+    private List<Monster> createEventMonsters() {
+        return List.of(
+            // 獲利事件怪物（+20/+30/+40%）
+            em("黃金哥布林王", "單筆獲利超過 20% 時從金幣堆中甦醒的傳說哥布林", MonsterRiskTier.HIGH, 25, 350, 55, 35, 100, 0.20, "pixel-monster-golden-goblin"),
+            em("翡翠龍王", "單筆獲利超過 30% 時被財富之力召喚的翠綠巨龍", MonsterRiskTier.EXTREME, 32, 500, 75, 50, 200, 0.30, "pixel-monster-emerald-dragon"),
+            em("鑽石泰坦", "單筆獲利超過 40% 時從結晶利潤中誕生的終極存在", MonsterRiskTier.EXTREME, 40, 800, 100, 70, 350, 0.40, "pixel-monster-diamond-titan"),
+            // 虧損事件怪物（-20/-30/-40%）
+            em("深淵魔影", "單筆虧損超過 20% 時從深淵裂縫中湧出的不可名狀之影", MonsterRiskTier.HIGH, 30, 999, 80, 60, 50, -0.20, "pixel-monster-abyss-shadow"),
+            em("虛空暴君", "單筆虧損超過 30% 時降臨的虛空支配者，無人能勝", MonsterRiskTier.EXTREME, 35, 9999, 150, 100, 80, -0.30, "pixel-monster-void-tyrant"),
+            em("末日審判者", "單筆虧損超過 40% 時出現的終焉化身，見證毀滅的審判者", MonsterRiskTier.EXTREME, 40, 99999, 999, 999, 120, -0.40, "pixel-monster-doom-judge")
+        );
+    }
+
+    /** 事件怪物專屬傳說裝備 */
+    private List<EquipmentTemplate> createEventEquipment() {
+        return List.of(
+            eq("黃金之牙", "從黃金哥布林王口中拔下的金色獠牙，閃耀著貪婪的光芒", EquipmentType.WEAPON, Rarity.LEGENDARY, null, 0.40, 800L, "pixel-equip-golden-fang"),
+            eq("翡翠龍冠", "翡翠龍王頭上的王冠，蘊含大自然的原始力量", EquipmentType.ARMOR, Rarity.LEGENDARY, null, 0.40, 1200L, "pixel-equip-emerald-crown"),
+            eq("鑽石帝鎧", "以鑽石泰坦的結晶核心鍛造的無上鎧甲", EquipmentType.ARMOR, Rarity.LEGENDARY, null, 0.40, 2000L, "pixel-equip-diamond-armor")
+        );
+    }
+
+    /** 建立事件怪物的掉落表（僅獲利事件怪物掉落傳說裝備） */
+    private void createEventDropTables(List<Monster> eventMonsters, List<EquipmentTemplate> allEquip) {
+        // 事件怪物名稱 → 對應的傳說裝備名稱
+        var eventDropMap = Map.of(
+                "黃金哥布林王", "黃金之牙",
+                "翡翠龍王", "翡翠龍冠",
+                "鑽石泰坦", "鑽石帝鎧"
+        );
+
+        Map<String, EquipmentTemplate> equipByName = allEquip.stream()
+                .collect(Collectors.toMap(EquipmentTemplate::getName, e -> e, (a, b) -> a));
+
+        for (Monster m : eventMonsters) {
+            String equipName = eventDropMap.get(m.getName());
+            if (equipName != null && equipByName.containsKey(equipName)) {
+                dropRepo.save(MonsterDrop.builder()
+                        .monster(m)
+                        .equipmentTemplate(equipByName.get(equipName))
+                        .build());
+            }
+            // 虧損怪物無掉落
+        }
+    }
+
     // ==================== Helper Methods ====================
 
     private static Monster m(String name, String desc, MonsterRiskTier tier, int lv, int hp, int atk, int def, int exp,
@@ -232,6 +299,19 @@ public class MonsterDataInitializer implements ApplicationRunner {
                 .level(lv).hp(hp).atk(atk).def(def).expReward(exp)
                 .minVolatility(minVol).maxVolatility(maxVol)
                 .pixelCssClass(css).build();
+    }
+
+    /** 建立事件怪物（eventOnly=true + profitThreshold） */
+    private static Monster em(String name, String desc, MonsterRiskTier tier, int lv, int hp, int atk, int def, int exp,
+                               double profitThreshold, String css) {
+        return Monster.builder()
+                .name(name).description(desc).riskTier(tier)
+                .level(lv).hp(hp).atk(atk).def(def).expReward(exp)
+                .minVolatility(0.0).maxVolatility(0.0)
+                .pixelCssClass(css)
+                .eventOnly(true)
+                .profitThreshold(profitThreshold)
+                .build();
     }
 
     private static EquipmentTemplate eq(String name, String desc, EquipmentType type, Rarity rarity,

@@ -62,7 +62,9 @@
 
         <div class="space-y-3">
             <template x-for="enc in encounters" :key="enc.id">
-                <div class="pixel-card p-4">
+                <div class="pixel-card p-4" :class="enc.eventMonster ? 'border-2 border-yellow-500/60' : ''">
+                    <!-- 事件怪物標記 -->
+                    <div x-show="enc.eventMonster" class="text-[9px] font-heading text-yellow-400 mb-2">&#9889; SPECIAL EVENT</div>
                     <!-- 上半：怪物資訊 + 結果 -->
                     <div class="flex items-center gap-4 mb-3">
                         <!-- 怪物像素圖 -->
@@ -166,14 +168,18 @@
                     :class="tierFilter === 'HIGH' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#128293; HIGH</button>
             <button @click="tierFilter = 'EXTREME'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
                     :class="tierFilter === 'EXTREME' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#128128; EXTREME</button>
+            <button @click="tierFilter = 'EVENT'" class="pixel-btn text-[10px] py-1 px-2 cursor-pointer"
+                    :class="tierFilter === 'EVENT' ? 'pixel-btn-gold' : 'pixel-btn-purple'">&#9889; EVENT</button>
             <span class="text-[10px] text-text-muted self-center ml-2"
                   x-text="bestiaryProgress + ' (' + filteredBestiary.length + ' 隻)'"></span>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <template x-for="m in filteredBestiary" :key="m.id">
-                <div class="pixel-card p-4 text-center" :class="!m.discovered ? 'opacity-60' : ''">
+                <div class="pixel-card p-4 text-center" :class="[!m.discovered ? 'opacity-60' : '', m.eventOnly ? 'border-2 border-yellow-500/60' : '']">
                     <template x-if="m.discovered">
                         <div>
+                            <!-- 事件怪物標記 -->
+                            <div x-show="m.eventOnly" class="text-[9px] font-heading mb-1 text-yellow-400">&#9889; EVENT MONSTER</div>
                             <!-- 已發現：顯示完整資訊 -->
                             <div class="relative w-[48px] h-[48px] mx-auto mb-3">
                                 <div class="absolute top-0 left-0 anim-monster" :class="m.pixelCssClass"></div>
@@ -207,6 +213,8 @@
                     </template>
                     <template x-if="!m.discovered">
                         <div>
+                            <!-- 事件怪物標記（未發現） -->
+                            <div x-show="m.eventOnly" class="text-[9px] font-heading mb-1 text-yellow-400/50">&#9889; EVENT</div>
                             <!-- 未發現：顯示問號剪影 -->
                             <div class="relative w-[48px] h-[48px] mx-auto mb-3 flex items-center justify-center">
                                 <span class="text-3xl text-text-muted/40 font-heading">?</span>
@@ -250,7 +258,8 @@ function battleApp() {
 
         get filteredBestiary() {
             if (this.tierFilter === 'ALL') return this.bestiary;
-            return this.bestiary.filter(m => m.riskTier === this.tierFilter);
+            if (this.tierFilter === 'EVENT') return this.bestiary.filter(m => m.eventOnly);
+            return this.bestiary.filter(m => m.riskTier === this.tierFilter && !m.eventOnly);
         },
 
         get bestiaryProgress() {

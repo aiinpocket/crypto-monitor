@@ -297,6 +297,15 @@ public class GamificationService {
         };
     }
 
+    /**
+     * 直接解鎖指定成就（供外部服務如 BattleService 呼叫）。
+     * 冪等操作：已解鎖則跳過。
+     */
+    @Transactional
+    public void unlockAchievement(AppUser user, AchievementDef def) {
+        tryUnlock(user, def, true);
+    }
+
     // ===== 內部方法 =====
 
     private List<AchievementDef> tryUnlockBatch(AppUser user, AchievementDef def, boolean condition, Set<String> alreadyUnlocked) {

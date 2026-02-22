@@ -1,6 +1,7 @@
 package com.aiinpocket.btctrade.service;
 
 import com.aiinpocket.btctrade.model.entity.*;
+import com.aiinpocket.btctrade.model.enums.AchievementDef;
 import com.aiinpocket.btctrade.model.enums.BattleResult;
 import com.aiinpocket.btctrade.model.enums.Rarity;
 import com.aiinpocket.btctrade.repository.*;
@@ -93,7 +94,7 @@ public class BattleService {
     }
 
     /**
-     * 交易平倉時觸發：結算所有進行中的遭遇。
+     * 交易平倉時觸發：結算所有進行中的遭遇，並檢查是否觸發特殊事件怪物。
      *
      * @param symbol    幣對符號
      * @param profitPct 交易報酬率（正數=獲利，負數=虧損）
@@ -108,16 +109,202 @@ public class BattleService {
 
         boolean isVictory = profitPct.compareTo(BigDecimal.ZERO) > 0;
 
+        // 收集受影響的用戶（去重）
+        Set<AppUser> affectedUsers = new HashSet<>();
+
         for (MonsterEncounter encounter : allInProgress) {
             try {
                 resolveOne(encounter, profitPct, isVictory, exitTime, exitPrice);
+                affectedUsers.add(encounter.getUser());
             } catch (Exception e) {
                 log.error("[戰鬥] 結算遭遇 {} 失敗: {}", encounter.getId(), e.getMessage());
             }
         }
 
+        // 檢查是否觸發特殊事件怪物
+        double pctValue = profitPct.doubleValue();
+        if (Math.abs(pctValue) >= 0.20) {
+            for (AppUser user : affectedUsers) {
+                try {
+                    triggerEventMonster(user, symbol, pctValue, exitTime, exitPrice, profitPct);
+                } catch (Exception e) {
+                    log.error("[特殊事件] 觸發事件怪物失敗 userId={}: {}", user.getId(), e.getMessage());
+                }
+            }
+        }
+
         log.info("[戰鬥] {} 平倉 → {} 場遭遇結算完畢（{}）",
                 symbol, allInProgress.size(), isVictory ? "勝利" : "戰敗");
+    }
+
+    /**
+     * 觸發特殊事件怪物。
+     * 獲利 ≥ 20%：召喚獲利事件怪物 → 必勝 → 中等機率掉落傳說裝備
+     * 虧損 ≤ -20%：召喚虧損事件怪物 → 必敗 → 獲得特殊稱號
+     */
+    private void triggerEventMonster(AppUser user, String symbol, double pctValue,
+                                      Instant exitTime, BigDecimal exitPrice, BigDecimal profitPct) {
+        List<Monster> eventMonsters = monsterRepo.findByEventOnlyTrue();
+        if (eventMonsters.isEmpty()) return;
+
+        // 找到最匹配的事件怪物（門檻最高但不超過實際損益的）
+        Monster bestMatch = null;
+        if (pctValue > 0) {
+            // 獲利事件：找正門檻中最大且 ≤ pctValue 的
+            for (Monster m : eventMonsters) {
+                if (m.getProfitThreshold() != null && m.getProfitThreshold() > 0
+                        && pctValue >= m.getProfitThreshold()) {
+                    if (bestMatch == null || m.getProfitThreshold() > bestMatch.getProfitThreshold()) {
+                        bestMatch = m;
+                    }
+                }
+            }
+        } else {
+            // 虧損事件：找負門檻中最小（絕對值最大）且 ≥ pctValue 的
+            for (Monster m : eventMonsters) {
+                if (m.getProfitThreshold() != null && m.getProfitThreshold() < 0
+                        && pctValue <= m.getProfitThreshold()) {
+                    if (bestMatch == null || m.getProfitThreshold() < bestMatch.getProfitThreshold()) {
+                        bestMatch = m;
+                    }
+                }
+            }
+        }
+
+        if (bestMatch == null) return;
+
+        boolean isProfit = pctValue > 0;
+
+        // 建立特殊遭遇（立即結算）
+        MonsterEncounter encounter = MonsterEncounter.builder()
+                .user(user)
+                .monster(bestMatch)
+                .symbol(symbol)
+                .startedAt(exitTime)
+                .endedAt(exitTime)
+                .entryPrice(exitPrice)
+                .exitPrice(exitPrice)
+                .profitPct(profitPct)
+                .tradeDirection(isProfit ? "EVENT_PROFIT" : "EVENT_LOSS")
+                .build();
+
+        if (isProfit) {
+            // 獲利事件怪物：必勝
+            encounter.setResult(BattleResult.VICTORY);
+            int exp = bestMatch.getExpReward();
+            long gold = (long) bestMatch.getLevel() * 20;
+            encounter.setExpGained(exp);
+            encounter.setGoldGained(gold);
+
+            user.setGameCurrency(user.getGameCurrency() + gold);
+            userRepo.save(user);
+            gamificationService.awardExp(user, exp, "EVENT_MONSTER_VICTORY");
+
+            // 中等機率掉落傳說裝備（40% 機率）
+            rollEventEquipmentDrop(encounter);
+
+            encounter.setBattleLog(generateEventBattleLog(bestMatch, user, true, pctValue));
+
+            // 獲利事件成就
+            AchievementDef slayerAchievement = getSlayerAchievement(pctValue);
+            if (slayerAchievement != null) {
+                gamificationService.unlockAchievement(user, slayerAchievement);
+            }
+
+            log.info("[特殊事件] 用戶 {} 擊敗「{}」！獲利 {}% → +{} EXP, +{} G",
+                    user.getId(), bestMatch.getName(), String.format("%.1f", pctValue * 100), exp, gold);
+        } else {
+            // 虧損事件怪物：必敗（不扣金幣，僅給稱號）
+            encounter.setResult(BattleResult.DEFEAT);
+            encounter.setGoldLost(0L);
+            encounter.setBattleLog(generateEventBattleLog(bestMatch, user, false, pctValue));
+
+            // 虧損事件稱號
+            AchievementDef survivorAchievement = getSurvivorAchievement(pctValue);
+            if (survivorAchievement != null) {
+                gamificationService.unlockAchievement(user, survivorAchievement);
+            }
+
+            log.info("[特殊事件] 用戶 {} 遭遇「{}」！虧損 {}% → 獲得稱號",
+                    user.getId(), bestMatch.getName(), String.format("%.1f", pctValue * 100));
+        }
+
+        encounterRepo.save(encounter);
+        recordDiscovery(user, bestMatch);
+    }
+
+    /**
+     * 事件怪物的傳說裝備掉落（40% 基礎機率）。
+     */
+    private void rollEventEquipmentDrop(MonsterEncounter encounter) {
+        List<MonsterDrop> dropTable = dropRepo.findByMonsterId(encounter.getMonster().getId());
+        if (dropTable.isEmpty()) return;
+
+        if (ThreadLocalRandom.current().nextDouble() < 0.40) {
+            // 從掉落表中隨機選一件
+            MonsterDrop drop = dropTable.get(ThreadLocalRandom.current().nextInt(dropTable.size()));
+            EquipmentTemplate template = drop.getEquipmentTemplate();
+
+            AppUser user = encounter.getUser();
+            long currentItems = userEquipRepo.countByUserId(user.getId());
+            if (currentItems >= user.getInventorySlots()) {
+                log.info("[特殊事件] 用戶 {} 背包已滿，傳說裝備丟失", user.getId());
+                return;
+            }
+
+            UserEquipment item = UserEquipment.builder()
+                    .user(user)
+                    .equipmentTemplate(template)
+                    .sourceEncounter(encounter)
+                    .build();
+            userEquipRepo.save(item);
+
+            log.info("[特殊事件] 用戶 {} 獲得事件裝備「{}」({})！",
+                    user.getId(), template.getName(), template.getRarity());
+        }
+    }
+
+    /** 根據獲利幅度取得對應擊敗成就 */
+    private AchievementDef getSlayerAchievement(double pctValue) {
+        if (pctValue >= 0.40) return AchievementDef.SLAYER_40;
+        if (pctValue >= 0.30) return AchievementDef.SLAYER_30;
+        if (pctValue >= 0.20) return AchievementDef.SLAYER_20;
+        return null;
+    }
+
+    /** 根據虧損幅度取得對應倖存稱號 */
+    private AchievementDef getSurvivorAchievement(double pctValue) {
+        if (pctValue <= -0.40) return AchievementDef.SURVIVOR_40;
+        if (pctValue <= -0.30) return AchievementDef.SURVIVOR_30;
+        if (pctValue <= -0.20) return AchievementDef.SURVIVOR_20;
+        return null;
+    }
+
+    /**
+     * 生成特殊事件戰鬥日誌。
+     */
+    private String generateEventBattleLog(Monster monster, AppUser user,
+                                           boolean isVictory, double pctValue) {
+        String monsterName = monster.getName();
+        String pctStr = String.format("%.1f%%", Math.abs(pctValue * 100));
+
+        if (isVictory) {
+            String[] patterns = {
+                    "⚡ 天空裂開一道金光！「%s」從異界裂縫中現身！冒險者以 %s 的驚人獲利之力，一擊將其擊敗！「%s」爆裂成無數金幣和寶物散落一地！",
+                    "⚡ 大地震動！傳說中的「%s」被 %s 的獲利能量所召喚！冒險者與之展開史詩決鬥...最終冒險者的交易之力壓倒了「%s」，將其徹底征服！",
+                    "⚡ 「%s」降臨！這是只有達成 %s 獲利的強者才有資格挑戰的存在！冒險者以精湛的交易技巧將「%s」斬殺，傳說裝備從其身軀中溢出！"
+            };
+            String pattern = patterns[ThreadLocalRandom.current().nextInt(patterns.length)];
+            return String.format(pattern, monsterName, pctStr, monsterName);
+        } else {
+            String[] patterns = {
+                    "💀 黑暗吞噬了一切...「%s」從 %s 虧損的深淵中甦醒！冒險者的一切攻擊都被吸入虛無...這是無法戰勝的存在。冒險者帶著傷痕和教訓撤退，但活著回來就是最大的勝利。",
+                    "💀 末日降臨！「%s」由 %s 的虧損能量凝聚而成！冒險者奮力抵抗，但「%s」的力量如同市場崩盤般不可阻擋...冒險者被擊退，卻因此獲得了珍貴的生存經驗。",
+                    "💀 「%s」出現了！%s 的虧損引來了這個不可名狀的存在！冒險者拼盡全力，但命運早已注定...敗北的冒險者拖著疲憊的身軀離開，心中銘記這次教訓。"
+            };
+            String pattern = patterns[ThreadLocalRandom.current().nextInt(patterns.length)];
+            return String.format(pattern, monsterName, pctStr, monsterName);
+        }
     }
 
     /**
@@ -223,17 +410,22 @@ public class BattleService {
     }
 
     /**
-     * 依據波動率選擇怪物。
+     * 依據波動率選擇怪物（排除特殊事件怪物）。
      */
     private Monster selectMonster(double volatility) {
-        // 先查找波動率範圍匹配的怪物
+        // 先查找波動率範圍匹配的怪物（排除事件怪物）
         List<Monster> matching = monsterRepo
                 .findByMinVolatilityLessThanEqualAndMaxVolatilityGreaterThanEqual(
-                        volatility, volatility);
+                        volatility, volatility)
+                .stream()
+                .filter(m -> !m.isEventOnly())
+                .toList();
 
         if (matching.isEmpty()) {
-            // 若無完全匹配，取最接近的風險等級
-            List<Monster> all = monsterRepo.findAll();
+            // 若無完全匹配，從所有非事件怪物中隨機選取
+            List<Monster> all = monsterRepo.findAll().stream()
+                    .filter(m -> !m.isEventOnly())
+                    .toList();
             if (all.isEmpty()) return null;
             return all.get(ThreadLocalRandom.current().nextInt(all.size()));
         }
@@ -372,26 +564,18 @@ public class BattleService {
 
     /**
      * 記錄怪物發現（冪等，已發現則跳過）。
+     * 使用 INSERT ON CONFLICT DO NOTHING 實現原子性冪等操作，
+     * 從 DB 層面消除 Check-Then-Act 競態條件。
      */
     public void recordDiscovery(AppUser user, Monster monster) {
-        try {
-            if (!discoveryRepo.existsByUserIdAndMonsterId(user.getId(), monster.getId())) {
-                discoveryRepo.save(UserMonsterDiscovery.builder()
-                        .user(user)
-                        .monster(monster)
-                        .build());
-            }
-        } catch (Exception e) {
-            // unique constraint violation is benign (concurrent discovery)
-            log.debug("[圖鑑] 用戶 {} 已發現怪物 {}", user.getId(), monster.getName());
-        }
+        discoveryRepo.discoverOrIgnore(user.getId(), monster.getId());
     }
 
     /**
      * 根據 monster ID 記錄發現（供冒險系統使用）。
      */
     public void recordDiscoveryById(AppUser user, Long monsterId) {
-        monsterRepo.findById(monsterId).ifPresent(m -> recordDiscovery(user, m));
+        discoveryRepo.discoverOrIgnore(user.getId(), monsterId);
     }
 
     public record BattleStats(long total, long victories, long defeats, double winRate) {}

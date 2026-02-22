@@ -68,4 +68,19 @@ public class Monster {
     /** CSS 類名，對應 head.html 中的點陣圖樣式 */
     @Column(name = "pixel_css_class", nullable = false, length = 50)
     private String pixelCssClass;
+
+    /**
+     * 是否為特殊事件怪物（僅在極端交易損益時觸發，不透過波動率匹配）。
+     * true = 只在單筆交易 profitPct 超過門檻時出現。
+     */
+    @Column(name = "event_only", nullable = false)
+    @Builder.Default
+    private boolean eventOnly = false;
+
+    /**
+     * 觸發門檻（正數=獲利怪物如 0.20 表示 +20%，負數=虧損怪物如 -0.20 表示 -20%）。
+     * 僅 eventOnly=true 時有意義。null 表示非事件怪物。
+     */
+    @Column(name = "profit_threshold")
+    private Double profitThreshold;
 }
