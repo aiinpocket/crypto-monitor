@@ -39,7 +39,10 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
                                    @Param("minRating") int minRating,
                                    @Param("maxRating") int maxRating);
 
-    /** PVP 排行榜 Top 20（按 rating 排序） */
-    @Query("SELECT u FROM AppUser u WHERE u.oauthProvider != 'SYSTEM' ORDER BY u.pvpRating DESC LIMIT 20")
+    /** PVP 排行榜 Top 20（按 rating 排序，含 GM 系統帳號） */
+    @Query("SELECT u FROM AppUser u WHERE u.activeStrategyTemplateId IS NOT NULL ORDER BY u.pvpRating DESC LIMIT 20")
     List<AppUser> findTop20ByPvpRating();
+
+    /** 查詢特定 OAuth 提供者的所有帳號 */
+    List<AppUser> findByOauthProvider(String oauthProvider);
 }

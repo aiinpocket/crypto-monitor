@@ -15,4 +15,7 @@ public interface MonsterRepository extends JpaRepository<Monster, Long> {
 
     /** 查詢所有特殊事件怪物 */
     List<Monster> findByEventOnlyTrue();
+
+    /** 查詢所有一般怪物（排除特殊事件怪物） */
+    List<Monster> findByEventOnlyFalse();
 }
