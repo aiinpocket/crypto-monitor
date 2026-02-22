@@ -109,19 +109,29 @@
                         </div>
                     </div>
 
-                    <!-- 交易詳情（非進行中才顯示） -->
-                    <template x-if="enc.result !== 'IN_PROGRESS' && enc.tradeDirection">
+                    <!-- 回測冒險標記 -->
+                    <template x-if="enc.tradeDirection === 'BACKTEST'">
+                        <div class="border-t border-white/10 pt-2 mb-2">
+                            <span class="text-[10px] px-1.5 py-0.5 bg-cta/20 text-cta font-heading">&#9889; 回測冒險</span>
+                        </div>
+                    </template>
+
+                    <!-- 交易詳情（非進行中、非回測才顯示） -->
+                    <template x-if="enc.result !== 'IN_PROGRESS' && enc.tradeDirection && enc.tradeDirection !== 'BACKTEST'">
                         <div class="border-t border-white/10 pt-2 mb-2">
                             <div class="flex items-center gap-3 text-xs flex-wrap">
                                 <span class="px-1.5 py-0.5 font-heading"
-                                      :class="enc.tradeDirection === 'LONG' ? 'bg-positive/20 text-positive' : 'bg-negative/20 text-negative'"
-                                      x-text="enc.tradeDirection === 'LONG' ? '&#9650; 做多' : '&#9660; 做空'"></span>
-                                <span class="text-text-muted">
+                                      :class="enc.tradeDirection === 'LONG' ? 'bg-positive/20 text-positive' :
+                                              enc.tradeDirection.startsWith('EVENT') ? 'bg-primary/20 text-primary' : 'bg-negative/20 text-negative'"
+                                      x-text="enc.tradeDirection === 'LONG' ? '&#9650; 做多' :
+                                              enc.tradeDirection === 'EVENT_PROFIT' ? '&#9889; 獲利事件' :
+                                              enc.tradeDirection === 'EVENT_LOSS' ? '&#9889; 虧損事件' : '&#9660; 做空'"></span>
+                                <span class="text-text-muted" x-show="enc.entryPrice">
                                     入場 <span class="text-text-heading" x-text="'$' + Number(enc.entryPrice).toLocaleString()"></span>
                                     &#8594;
                                     出場 <span class="text-text-heading" x-text="'$' + Number(enc.exitPrice).toLocaleString()"></span>
                                 </span>
-                                <span class="font-heading"
+                                <span class="font-heading" x-show="enc.profitPct != null"
                                       :class="enc.profitPct >= 0 ? 'text-positive' : 'text-negative'"
                                       x-text="(enc.profitPct >= 0 ? '+' : '') + (enc.profitPct * 100).toFixed(2) + '%'"></span>
                             </div>

@@ -2,6 +2,7 @@ package com.aiinpocket.btctrade.service;
 
 import com.aiinpocket.btctrade.model.entity.*;
 import com.aiinpocket.btctrade.model.enums.BacktestRunStatus;
+import com.aiinpocket.btctrade.model.enums.BattleResult;
 import com.aiinpocket.btctrade.model.enums.Rarity;
 import com.aiinpocket.btctrade.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -26,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class BacktestAdventureService {
 
     private final MonsterRepository monsterRepo;
+    private final MonsterEncounterRepository encounterRepo;
     private final EquipmentTemplateRepository equipmentTemplateRepo;
     private final UserEquipmentRepository userEquipRepo;
     private final AppUserRepository userRepo;
@@ -157,23 +160,29 @@ public class BacktestAdventureService {
                 int monsterLevel = ((Number) event.get("monsterLevel")).intValue();
 
                 // 收集怪物 ID（事務提交後再記錄圖鑑發現）
+                Long monsterId = null;
                 Object monsterIdObj = event.get("monsterId");
                 if (monsterIdObj instanceof Number) {
-                    discoveredMonsterIds.add(((Number) monsterIdObj).longValue());
+                    monsterId = ((Number) monsterIdObj).longValue();
+                    discoveredMonsterIds.add(monsterId);
                 }
 
+                int encounterExp = 0;
+                long encounterGold = 0;
+                long encounterGoldLost = 0;
+
                 if (victory) {
-                    int exp = monsterLevel * 3;
-                    long gold = (long) monsterLevel * 8;
-                    totalExp += exp;
-                    totalGold += gold;
+                    encounterExp = monsterLevel * 3;
+                    encounterGold = (long) monsterLevel * 8;
+                    totalExp += encounterExp;
+                    totalGold += encounterGold;
                     battleResults.add(Map.of(
                             "monsterName", monsterName,
                             "monsterLevel", monsterLevel,
                             "monsterCss", event.getOrDefault("monsterCss", ""),
                             "victory", true,
-                            "exp", exp,
-                            "gold", gold
+                            "exp", encounterExp,
+                            "gold", encounterGold
                     ));
 
                     // 裝備掉落（勝利時 15% 機率）
@@ -184,14 +193,38 @@ public class BacktestAdventureService {
                         }
                     }
                 } else {
-                    long penalty = Math.max((long) (monsterLevel * 2), 5);
+                    encounterGoldLost = Math.max((long) (monsterLevel * 2), 5);
                     battleResults.add(Map.of(
                             "monsterName", monsterName,
                             "monsterLevel", monsterLevel,
                             "monsterCss", event.getOrDefault("monsterCss", ""),
                             "victory", false,
-                            "goldLost", penalty
+                            "goldLost", encounterGoldLost
                     ));
+                }
+
+                // 持久化戰鬥紀錄到 DB（修復 Issue #19：回測戰鬥紀錄不顯示）
+                if (monsterId != null) {
+                    Monster monster = monsterRepo.findById(monsterId).orElse(null);
+                    if (monster != null) {
+                        Instant now = Instant.now();
+                        MonsterEncounter encounter = MonsterEncounter.builder()
+                                .user(user)
+                                .monster(monster)
+                                .symbol(run.getSymbol())
+                                .result(victory ? BattleResult.VICTORY : BattleResult.DEFEAT)
+                                .tradeDirection("BACKTEST")
+                                .startedAt(now)
+                                .endedAt(now)
+                                .expGained(encounterExp)
+                                .goldGained(encounterGold)
+                                .goldLost(encounterGoldLost)
+                                .battleLog(victory
+                                        ? "【冒險】在回測副本中遭遇「" + monsterName + "」(Lv." + monsterLevel + ")，奮勇作戰後成功擊敗！"
+                                        : "【冒險】在回測副本中遭遇「" + monsterName + "」(Lv." + monsterLevel + ")，激戰後不敵對手，被迫撤退...")
+                                .build();
+                        encounterRepo.save(encounter);
+                    }
                 }
             } else if ("TREASURE".equals(type)) {
                 long goldAmount = ((Number) event.get("goldAmount")).longValue();
